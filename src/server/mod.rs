@@ -1,5 +1,7 @@
 extern crate urlparse;
+use urlparse::quote_plus;
 use urlparse::unquote_plus;
+
 extern crate chrono;
 
 use std::net::{TcpListener, TcpStream};
@@ -12,12 +14,15 @@ use std::env;
 use std::collections::HashMap;
 use std::path::Path;
 use std::fs::{self, metadata, File};
+use std::time::Duration;
 
 mod args; //命令行参数处理
 mod resource; //资源性字符串/u8数组
 mod path; // dir/file修改时间和大小
+pub mod htm;  //html拼接
 
-const BUFFER_SIZE: usize = 1024 * 2048; //字节1024*1024=>1m
+const BUFFER_SIZE: usize = 1024 * 1024 * 1; //字节1024*1024=>1m
+const TIME_OUT: u64 = 6;// secs
 
 pub fn fht2p<'a>() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
@@ -36,13 +41,16 @@ pub fn fht2p<'a>() -> Result<(), String> {
 fn listener<'a>(args: &args::Args) -> Result<(), io::Error> {
     let addr = format!("{}:{}", args.ip, args.port);
     let listener = TcpListener::bind(&addr[0..])?;
-    println!("Fht2p Serving at {} for {}", addr, args.dir);
+    println!("Fht2p/{} Serving at {} for {}",
+             htm::VERSION,
+             addr,
+             args.dir);
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
                 match deal_client(args.dir.to_string(), stream) {
                     Ok(_) => {}
-                    Err(e) => println!("{:?}", e),
+                    Err(e) => std_err("stream,", e.description()),
                 }
             }
             Err(e) => {
@@ -85,6 +93,18 @@ fn deal_client(dir: String, mut stream: TcpStream) -> Result<(), io::Error> {
              &client_addr,
              &server_addr);
 
+    // println!("read_time_out: {:?}\nwrite_time_out: {:?}",
+    //          stream.read_timeout(),
+    //          stream.write_timeout());
+
+
+    let time_out = Duration::new(TIME_OUT, 0);
+    stream.set_read_timeout(Some(time_out))?;
+    stream.set_write_timeout(Some(time_out))?;
+
+    // println!("read_time_out: {:?}\nwrite_time_out: {:?}",
+    //          stream.read_timeout(),
+    //          stream.write_timeout());
 
     println!("read: {:?}", request_read_len);
     // 大小为0的请求？？？请求行都为空
@@ -171,9 +191,16 @@ fn to_request(vec8: Vec<u8>, dir: &str) -> Request {
             let vs: Vec<String> = line.split(' ').map(|x| x.to_string()).collect();
             method = (&vs[0]).to_string();
             {
+                let url = unquote_plus(&vs[1]);
+                let url_decode = match url {
+                    Ok(ok) => ok,
+                    Err(e) => {
+                        std_err(&format!("url_decode_error: {}", e.description()), &vs[1]);
+                        "/".to_string()
+                    }
+                };
                 // 消去多余的 "/"
-                let p: Vec<String> = (&vs[1])
-                    .split("/")
+                let p: Vec<String> = url_decode.split("/")
                     .filter(|x| !x.is_empty())
                     .map(|x| x.to_string())
                     .collect();
@@ -186,12 +213,11 @@ fn to_request(vec8: Vec<u8>, dir: &str) -> Request {
                 // println!("dir: {} pr: {}", dir, pr);
                 let path_str = String::new() + dir + &pr;
                 let path_str_origin = &pr;
-                // 如果路径本身就存在，就不解码？浏览器对URL只编码一次。
-                if Path::new(&path_str).exists() {
-                    path = path_str;
-                } else {
-                    path = String::new() + dir + &unquote_plus(path_str_origin).unwrap();
-                }
+                // 如果路径本身就存在，就不二次解码,(三次编码则会产生"/"等字符,不可能是真实路径。浏览器对URL只编码一次。
+                match Path::new(&path_str).exists() {
+                    false => path = String::new() + dir + &unquote_plus(path_str_origin).unwrap(),
+                    true => path = path_str,
+                };
             }
             let vss: Vec<String> = vs[2].split('/').map(|x| x.to_string()).collect();
             protocol = (&vss[0]).to_string();
@@ -270,7 +296,16 @@ fn to_response(server_addr: String,
         }
     };
     match path.exists() {
-        true => code = 200,
+        true => {
+            match File::open(path) {
+                Ok(_) => code = 200,
+                Err(e) => {
+                    std_err(e.description(), &request.line.path);
+                    code = 500;
+                    response_type = "500";
+                }
+            }
+        }
         false => {
             if path_no_dir_str == resource::FAVICON_ICO_PATH ||
                path_no_dir_str == resource::CSS_PATH {
@@ -301,17 +336,21 @@ fn to_response(server_addr: String,
                 None => {
                     response_type = "500";
                     code = 500;
-                    content_lenth = resource::HTM_500.len() as u64
+                    html = Some(htm::s500(&client_addr, &server_addr));
+                    content_lenth = html.as_ref().unwrap().len() as u64;
+                    content_type = extname_type.get("html").unwrap().to_string();
                 }
             }
         }
 
         "404" => {
-            content_lenth = resource::HTM_404.len() as u64;
+            html = Some(htm::s404(&client_addr, &server_addr));
+            content_lenth = html.as_ref().unwrap().len() as u64;
             content_type = extname_type.get("html").unwrap().to_string();
         }
         "500" => {
-            content_lenth = resource::HTM_500.len() as u64;
+            html = Some(htm::s500(&client_addr, &server_addr));
+            content_lenth = html.as_ref().unwrap().len() as u64;
             content_type = extname_type.get("html").unwrap().to_string();
         }
         _ => panic!("match response_type failed !"),
@@ -374,11 +413,11 @@ fn response_write(path_no_dir_str: &str,
 
         "404" => {
             println!("response_write_404: {:?}", path);
-            let _ = stream.write(resource::HTM_404.as_bytes());
+            let _ = stream.write(html.unwrap().as_bytes());
         }
         "500" => {
             println!("response_write_500: {:?}", path);
-            let _ = stream.write(resource::HTM_500.as_bytes());
+            let _ = stream.write(html.unwrap().as_bytes());
         }
         _ => {
             std_err(path.to_string_lossy().into_owned().as_str(),
@@ -453,33 +492,28 @@ fn dir_lenth(dir: String,
              path: &Path)
              -> Option<(u64, Option<String>)> {
     let path_str = path.to_string_lossy().into_owned();
-    // println!("dir: {}\tpath: {}", dir, path_str);
+    // println!("dir: {}\tno_dir: {}\tpath: {}", dir, path_no_dir_str, path_str);
     let path_no_dir_str_end = path_no_dir_str.ends_with("/");
-    // println!("dir: {} \tpath_no_root: {}", dir, path_no_dir_str);
-    let mut lenth = resource::HTM_INDEX_HTML0_TITLE0.len() + path_no_dir_str.len() * 2 +
-                    resource::HTM_INDEX_TITLE1_H10.len() +
-                    resource::HTM_INDEX_H11_SPAN0.len() +
-                    resource::HTM_INDEX_SPAN1_UL0.len() + client_addr.len();
 
-    let mut html = String::new() + resource::HTM_INDEX_HTML0_TITLE0 + path_no_dir_str +
-                   resource::HTM_INDEX_TITLE1_H10 + path_no_dir_str +
-                   resource::HTM_INDEX_H11_SPAN0 + client_addr +
-                   resource::HTM_INDEX_SPAN1_UL0;
+    let title = path_no_dir_str.to_string();
+    let h1 = title.clone();
 
-    let tp_len = resource::HTM_INDEX_LI0.len() + resource::HTM_INDEX_LI1.len() +
-                 resource::HTM_INDEX_LI2.len() + resource::HTM_INDEX_LI3.len() +
-                 resource::HTM_INDEX_LI4.len();
-    // println!("dir: {} no_dir: {}", dir, path_no_dir_str);
+    let mut ul = htm::Ul::new();
+
     if path_no_dir_str != "/" {
         let path_parent =
             Path::new(path_no_dir_str).parent().unwrap().to_string_lossy().into_owned();
+        let path_parent = match quote_plus(path_parent.clone(), b"") {
+            Ok(ok) => ok,
+            Err(e) => {
+                std_err(&format!("url_encode_error: {}", e.description()),
+                        &path_parent);
+                path_parent
+            }
+        };
         // println!("parent: {}", &path_parent);
         let (date, size) = path::fms(&(String::new() + &dir + &path_no_dir_str));
-        lenth += tp_len + path_parent.len() + "../ Parent Directory".len() + date.len() +
-                 size.len();
-        html = html + resource::HTM_INDEX_LI0 + &path_parent + resource::HTM_INDEX_LI1 +
-               "../ Parent Directory" + resource::HTM_INDEX_LI2 + &date +
-               resource::HTM_INDEX_LI3 + &size + resource::HTM_INDEX_LI4;
+        ul.push(htm::Li::new(path_parent, "../ Parent Directory".to_string(), date, size));
     }
     match fs::read_dir(path) {
         Ok(ok) => {
@@ -490,53 +524,41 @@ fn dir_lenth(dir: String,
                 // let entry_str = entry.to_string_lossy().into_owned();
                 let entry_name = entry.file_name().unwrap().to_string_lossy().into_owned();
                 let (date, size) = path::fms(&(String::new() + &path_str + "/" + &entry_name));
-                let date_size_len = date.len() + size.len();
+
                 // 以防 /home/viw/Downloads/cache/muut/srcmain.rs，找不到文件。
-                let mut path_http = match path_no_dir_str_end {
+                let path_http = match path_no_dir_str_end {
                     true => String::new() + path_no_dir_str + &entry_name,
                     false => String::new() + path_no_dir_str + "/" + &entry_name,
                 };
-                match entry.is_dir() {
-                    true => {
-                        // match path_http后的"/"，
-                        // 以防 i~~mkv//i~~mkv/刘珂矣 - 如是.mp4 引起的处理响应路径引起崩溃。
-                        // 后一个是为了区分目录与文件(视觉)
-                        match path_http.ends_with("/") {
-                            true => {}
-                            false => {
-                                path_http += "/";
-                            }
-                        };
-                        lenth += tp_len + path_http.len() + "/".len() + entry_name.len() +
-                                 date_size_len;
-                        html = html + resource::HTM_INDEX_LI0 + &path_http +
-                               resource::HTM_INDEX_LI1 +
-                               &entry_name + "/" +
-                               resource::HTM_INDEX_LI2 + &date +
-                               resource::HTM_INDEX_LI3 + &size +
-                               resource::HTM_INDEX_LI4;
+                let path_http = match quote_plus(path_http.clone(), b"") {
+                    Ok(ok) => ok,
+                    Err(e) => {
+                        std_err(&format!("url_encode_error: {}", e.description()),
+                                &path_http);
+                        path_http
                     }
-                    false => {
-                        lenth += tp_len + path_http.len() + entry_name.len() + date_size_len;
-                        html = html + resource::HTM_INDEX_LI0 + &path_http +
-                               resource::HTM_INDEX_LI1 +
-                               &entry_name +
-                               resource::HTM_INDEX_LI2 + &date +
-                               resource::HTM_INDEX_LI3 + &size +
-                               resource::HTM_INDEX_LI4;
 
-                    }
+                };
+                // println!("no_dir:{}\tentry_name: {}\tpath_http: {}",
+                //          path_no_dir_str,
+                //          &entry_name,
+                //          path_http);
+                match entry.is_dir() {
+                    true => 
+                            // "/" 区分目录与文件(视觉)
+                              ul.push(htm::Li::new(path_http,entry_name+"/",date,size)),
+
+                    false =>  ul.push(htm::Li::new(path_http,entry_name,date,size)),
                 };
             }
-            lenth += resource::HTM_INDEX_UL1_ADDR0.len() + resource::HTM_INDEX_UL1_ADDR00.len() +
-                     resource::HTM_INDEX_UL1_ADDR01.len() +
-                     resource::HTM_INDEX_ADDR1_HTML1.len() +
-                     server_addr.len() * 2;
-
-            html = html + resource::HTM_INDEX_UL1_ADDR0 + resource::HTM_INDEX_UL1_ADDR00 +
-                   server_addr + resource::HTM_INDEX_UL1_ADDR01 + server_addr +
-                   resource::HTM_INDEX_ADDR1_HTML1;
-            // println!("{}\nhtml_len: {}\tcount_len: {}", html, html.len(), lenth);
+            let addr = htm::Address::new(server_addr);
+            let html = htm::Html::new(title,
+                                      htm::H1::new(h1, client_addr.to_string()),
+                                      Some(ul),
+                                      addr);
+            let html = format!("{}", html);
+            let lenth = html.len();
+            // println!("{}\nhtml_len: {}", html, lenth);
             Some((lenth as u64, Some(html)))
         }
         Err(e) => {

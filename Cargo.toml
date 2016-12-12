@@ -1,10 +1,10 @@
 [package]
 name = "fht2p"
-version = "0.1.0"
+version = "0.3.0"
 authors = ["biluohc <biluohc@outlook.com>"]
 
 [dependencies]
 #urlparse="0.73"     URL decode()
 urlparse="*"
-#chrono = "0.2"   		Path Modified_Date
+#chrono = "0.2"   	 Path Modified_Date
 chrono = "*"
