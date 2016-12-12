@@ -10,7 +10,7 @@ use std::io::{self, Write};
 use std::io::prelude::*;
 use std::error::Error;
 use std::env;
-
+use std::thread;
 use std::collections::HashMap;
 use std::path::Path;
 use std::fs::{self, metadata, File};
@@ -40,7 +40,7 @@ pub fn fht2p<'a>() -> Result<(), String> {
 }
 fn listener<'a>(args: &args::Args) -> Result<(), io::Error> {
     let addr = format!("{}:{}", args.ip, args.port);
-    let listener = TcpListener::bind(&addr[0..])?;
+    let listener = TcpListener::bind(&addr[..])?;
     println!("Fht2p/{} Serving at {} for {}",
              htm::VERSION,
              addr,
@@ -48,10 +48,13 @@ fn listener<'a>(args: &args::Args) -> Result<(), io::Error> {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                match deal_client(args.dir.to_string(), stream) {
-                    Ok(_) => {}
-                    Err(e) => std_err("stream,", e.description()),
-                }
+                let dir = args.dir.to_string();
+                let _ = thread::spawn(move || {
+                    match deal_client(dir, stream) {
+                        Ok(_) => {}
+                        Err(e) => std_err("stream,", e.description()),
+                    }
+                });
             }
             Err(e) => {
                 println!("{:?}", e);
@@ -62,21 +65,6 @@ fn listener<'a>(args: &args::Args) -> Result<(), io::Error> {
     Ok(())
 }
 
-
-fn tcpstream_to_vec(mut stream: &mut TcpStream) -> Vec<u8> {
-    let mut vec: Vec<u8> = vec![];
-    let mut buffer = [0u8; BUFFER_SIZE];
-    loop {
-        let read_len = stream.read(&mut buffer).unwrap();
-        if read_len < BUFFER_SIZE {
-            vec.append(&mut buffer[..read_len].to_vec());
-            break;
-        }
-        vec.append(&mut buffer.to_vec());
-    }
-    vec
-
-}
 
 fn deal_client(dir: String, mut stream: TcpStream) -> Result<(), io::Error> {
     // // Length是下面的包括那两个换行符的html文本长度，若是小于则截断，超过则"连接被重置"。
@@ -93,11 +81,6 @@ fn deal_client(dir: String, mut stream: TcpStream) -> Result<(), io::Error> {
              &client_addr,
              &server_addr);
 
-    // println!("read_time_out: {:?}\nwrite_time_out: {:?}",
-    //          stream.read_timeout(),
-    //          stream.write_timeout());
-
-
     let time_out = Duration::new(TIME_OUT, 0);
     stream.set_read_timeout(Some(time_out))?;
     stream.set_write_timeout(Some(time_out))?;
@@ -113,19 +96,32 @@ fn deal_client(dir: String, mut stream: TcpStream) -> Result<(), io::Error> {
     }
     let request_read_ = request_read.clone();
 
-    // request line bytes[].
-    // println!("RSQ0: {}", String::from_utf8(request_read_).unwrap());
     println!("RSQ0: {}",
              String::from_utf8(request_read_).unwrap().lines().nth(0).unwrap());
 
     let request = to_request(request_read, &dir);
 
-    // request line
+    // print request line
     print_request(&request);
 
     // write response.
     to_response(server_addr, client_addr, dir, request, stream);
     Ok(())
+}
+
+
+fn tcpstream_to_vec(mut stream: &mut TcpStream) -> Vec<u8> {
+    let mut vec: Vec<u8> = vec![];
+    let mut buffer = [0u8; BUFFER_SIZE];
+    loop {
+        let read_len = stream.read(&mut buffer).unwrap();
+        if read_len < BUFFER_SIZE {
+            vec.append(&mut buffer[..read_len].to_vec());
+            break;
+        }
+        vec.append(&mut buffer.to_vec());
+    }
+    vec
 }
 
 fn print_request(request: &Request) {

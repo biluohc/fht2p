@@ -63,6 +63,9 @@ fn help() {
 
      ./fht2p -h  or  ./fht2p --help
      print this "help"
+
+Author: biluohc@outlook.com
+Github: https://github.com/biluohc/fht2p
     "#;
-    println!("using: {}", explain);
+    println!("Using: {}", explain);
 }
