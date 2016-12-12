@@ -15,21 +15,18 @@ h1 {
     text-align: left;
 }
 
-span {
-    font-size: x-large;
-    font: bold;
+
+/* h1 client addr*/
+
+#client {
     text-align: right;
     color: #FF6600;
 }
-
-form {}
 
 input {
     font: medium;
     color: #333333;
 }
-
-pre {}
 
 a {
     text-decoration: none;

@@ -25,9 +25,9 @@ pub fn fms(path: &str) -> (String, String) {
 
         }
         Err(_) => {
-            // println!("{:?}", e);
-            date = String::from("--  --");
-            size = String::from("--");
+            // println!("{:?}", e); 2015-06-13 12:38:05      27.13 M
+            date = String::from("-- - -  ---");
+            size = String::from("-- -");
 
         }
     };

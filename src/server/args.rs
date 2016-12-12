@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use super::htm;
 #[derive(Debug)]
 pub struct Args<'a> {
     pub ip: &'a str,
@@ -11,6 +12,10 @@ pub struct Args<'a> {
 pub fn deal_args<'a>(args: &'a [String]) -> Result<Args<'a>, String> {
     let (mut ip, mut port, mut dir) = ("0.0.0.0", 8080u32, ".");
     for arg in args {
+        if arg == "-h" || arg == "--help" {
+            help();
+            return Err("".to_string());
+        }
         if arg.starts_with("-i") {
             if arg.len() > 2 {
                 ip = &arg[2..];
@@ -43,4 +48,21 @@ pub fn deal_args<'a>(args: &'a [String]) -> Result<Args<'a>, String> {
         port: port,
         dir: dir,
     })
+}
+
+fn help() {
+    println!("{}/{}: A HTTP Servers for Static File Serving.\n",
+             htm::NAME,
+             htm::VERSION);
+    let explain = r#"    
+    ./fht2p  -i0.0.0.0 -p8080  dir/
+     path    ip         port   dir
+
+     default:
+    ./fht2p  -i0.0.0.0 -p8080  ./
+
+     ./fht2p -h  or  ./fht2p --help
+     print this "help"
+    "#;
+    println!("using: {}", explain);
 }
