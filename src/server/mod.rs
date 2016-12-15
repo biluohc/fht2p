@@ -6,7 +6,7 @@ extern crate chrono;
 
 use std::net::{TcpListener, TcpStream};
 use std::result::Result;
-use std::io::{self, Write};
+use std::io;
 use std::io::prelude::*;
 use std::error::Error;
 use std::env;
