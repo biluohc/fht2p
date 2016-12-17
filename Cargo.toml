@@ -1,6 +1,6 @@
 [package]
 name = "fht2p"
-version = "0.4.0"
+version = "0.42.0"
 authors = ["biluohc <biluohc@outlook.com>"]
 
 [dependencies]

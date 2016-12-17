@@ -24,7 +24,7 @@ pub mod htm;  //html拼接
 const BUFFER_SIZE: usize = 1024 * 1024 * 1; //字节1024*1024=>1m
 const TIME_OUT: u64 = 6;// secs
 
-pub fn fht2p<'a>() -> Result<(), String> {
+pub fn fht2p() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
     let args = args::deal_args(&args[1..]);
     // println!("{:?}", args);
@@ -38,7 +38,7 @@ pub fn fht2p<'a>() -> Result<(), String> {
         Err(e) => return Err(e),
     };
 }
-fn listener<'a>(args: &args::Args) -> Result<(), io::Error> {
+fn listener(args: &args::Args) -> Result<(), io::Error> {
     let addr = format!("{}:{}", args.ip, args.port);
     let listener = TcpListener::bind(&addr[..])?;
     println!("Fht2p/{} Serving at {} for {}",
@@ -49,12 +49,17 @@ fn listener<'a>(args: &args::Args) -> Result<(), io::Error> {
         match stream {
             Ok(stream) => {
                 let dir = args.dir.to_string();
-                let _ = thread::spawn(move || {
-                    match deal_client(dir, stream) {
-                        Ok(_) => {}
-                        Err(e) => std_err("stream,", e.description()),
-                    }
-                });
+                let _ = thread::Builder::new()
+                    .name("client_x".to_string())
+                    // 一个进程一个堆，一个线程一个栈。
+                    // 栈大小，linux默认8m，win 2m,rust直接spawn估计分配 2M- (这里给rust坑死了,一直stackover。以后要注意默认值)。
+                    .stack_size(8 * 1024 * 1024)
+                    .spawn(move || {
+                        match deal_client(dir, stream) {
+                            Ok(_) => {}
+                            Err(e) => std_err("stream,", e.description()),
+                        };
+                    });
             }
             Err(e) => {
                 println!("{:?}", e);

@@ -3,7 +3,7 @@
 use std::fmt;
 
 pub const NAME: &'static str = "fht2p";
-pub const VERSION: f64 = 0.40;
+pub const VERSION: f64 = 0.42;
 pub const PLATFORM: &'static str = "Linux/openSUSE";
 
 #[derive(Debug)]
