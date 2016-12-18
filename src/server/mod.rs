@@ -53,7 +53,7 @@ fn listener(args: &args::Args) -> Result<(), io::Error> {
                     .name("client_x".to_string())
                     // 一个进程一个堆，一个线程一个栈。
                     // 栈大小，linux默认8m，win 2m,rust直接spawn估计分配 2M- (这里给rust坑死了,一直stackover。以后要注意默认值)。
-                    .stack_size(8 * 1024 * 1024)
+                    .stack_size(4 * 1024 * 1024)
                     .spawn(move || {
                         match deal_client(dir, stream) {
                             Ok(_) => {}
@@ -278,13 +278,16 @@ fn to_response(server_addr: String,
     let (mut code, mut response_type);
     let (mut content_type, mut content_lenth);
     content_lenth = 0u64;  //possibly uninitialized 。。无力吐槽
-    match path.is_dir() {
+    match path.exists() {
         true => {
-            content_type = extname_type.get("html").unwrap().to_string();
-            response_type = "dir";
-        }
-        false => {
-            match path.extension() {
+            code = 200;
+            match path.is_dir() {
+                true => {
+                    content_type = extname_type.get("html").unwrap().to_string();
+                    response_type = "dir";
+                }
+                false => {
+                    match path.extension() {
                     Some(s) => 
                         // 未包含后缀？处理到* 
                         content_type = match  extname_type.get(s.to_str().unwrap()) {
@@ -293,29 +296,30 @@ fn to_response(server_addr: String,
                         },
                     None => content_type = extname_type.get("*").unwrap().to_string(),
                 };
-            response_type = "file";
-        }
-    };
-    match path.exists() {
-        true => {
-            match File::open(path) {
-                Ok(_) => code = 200,
-                Err(e) => {
-                    std_err(e.description(), &request.line.path);
-                    code = 500;
-                    response_type = "500";
+                    response_type = "file";
                 }
-            }
+            };
         }
         false => {
-            if path_no_dir_str == resource::FAVICON_ICO_PATH ||
-               path_no_dir_str == resource::CSS_PATH {
-                code = 200;
-                response_type = "static";
-            } else {
-                code = 404;
-                response_type = "404";
-            }
+
+            match path_no_dir_str {
+                resource::FAVICON_ICO_PATH => {
+                    content_type = extname_type.get("ico").unwrap().to_string();
+                    code = 200;
+                    response_type = "static";
+                }
+                resource::CSS_PATH => {
+                    content_type = extname_type.get("css").unwrap().to_string();
+                    code = 200;
+                    response_type = "static";
+                }
+                _ => {
+                    content_type = extname_type.get("html").unwrap().to_string();
+                    code = 404;
+                    response_type = "404";
+                }
+
+            };
         }
     };
 
