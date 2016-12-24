@@ -1,28 +1,29 @@
 extern crate urlparse;
-use urlparse::quote_plus;
-use urlparse::unquote_plus;
+use urlparse::quote;
+use urlparse::unquote;
 
 extern crate chrono;
 
 use std::net::{TcpListener, TcpStream};
+use std::fs::{self, metadata, File};
+use std::collections::HashMap;
 use std::result::Result;
-use std::io;
+use std::time::Duration;
 use std::io::prelude::*;
 use std::error::Error;
-use std::env;
-use std::thread;
-use std::collections::HashMap;
 use std::path::Path;
-use std::fs::{self, metadata, File};
-use std::time::Duration;
+use std::env;
+use std::io;
 
 mod args; //命令行参数处理
 mod resource; //资源性字符串/u8数组
 mod path; // dir/file修改时间和大小
+mod pool; // 简单线程池实现
 pub mod htm;  //html拼接
 
 const BUFFER_SIZE: usize = 1024 * 1024 * 1; //字节1024*1024=>1m
-const TIME_OUT: u64 = 6;// secs
+const TIME_OUT: u64 = 5;// secs
+// set_nonblocking 不能使用,因为读取文件会阻塞，只能set_write/read_timeout() 来断开一直阻塞的连接。
 
 pub fn fht2p() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
@@ -45,21 +46,14 @@ fn listener(args: &args::Args) -> Result<(), io::Error> {
              htm::VERSION,
              addr,
              args.dir);
+    let pool = pool::Pool::new();
     for stream in listener.incoming() {
         match stream {
-            Ok(stream) => {
+            Ok(mut stream) => {
                 let dir = args.dir.to_string();
-                let _ = thread::Builder::new()
-                    .name("client_x".to_string())
-                    // 一个进程一个堆，一个线程一个栈。
-                    // 栈大小，linux默认8m，win 2m,rust直接spawn估计分配 2M- (这里给rust坑死了,一直stackover。以后要注意默认值)。
-                    .stack_size(4 * 1024 * 1024)
-                    .spawn(move || {
-                        match deal_client(dir, stream) {
-                            Ok(_) => {}
-                            Err(e) => std_err("stream,", e.description()),
-                        };
-                    });
+                // 一个进程一个堆，一个线程一个栈。
+                // 栈大小，linux默认8m，win 2m,rust直接spawn估计分配 2M- (这里给rust坑死了,一直stackover。以后要注意默认值)。
+                pool.spawn(Box::new(move || match_client(&dir, &mut stream)));
             }
             Err(e) => {
                 println!("{:?}", e);
@@ -70,8 +64,13 @@ fn listener(args: &args::Args) -> Result<(), io::Error> {
     Ok(())
 }
 
-
-fn deal_client(dir: String, mut stream: TcpStream) -> Result<(), io::Error> {
+fn match_client(dir: &String, mut stream: &mut TcpStream) {
+    match deal_client(dir, stream) {
+        Ok(_) => {}
+        Err(e) => std_err("stream,", e.description()),
+    };
+}
+fn deal_client(dir: &String, mut stream: &mut TcpStream) -> Result<(), io::Error> {
     // // Length是下面的包括那两个换行符的html文本长度，若是小于则截断，超过则"连接被重置"。
     // // 请求一定要读取完，否则浏览器会报错？特别是UC。
     // // 注意换行符不能省略，否则也是"连接被重置"。
@@ -90,10 +89,6 @@ fn deal_client(dir: String, mut stream: TcpStream) -> Result<(), io::Error> {
     stream.set_read_timeout(Some(time_out))?;
     stream.set_write_timeout(Some(time_out))?;
 
-    // println!("read_time_out: {:?}\nwrite_time_out: {:?}",
-    //          stream.read_timeout(),
-    //          stream.write_timeout());
-
     println!("read: {:?}", request_read_len);
     // 大小为0的请求？？？请求行都为空
     if request_read_len.unwrap() == 0 {
@@ -110,7 +105,7 @@ fn deal_client(dir: String, mut stream: TcpStream) -> Result<(), io::Error> {
     print_request(&request);
 
     // write response.
-    to_response(server_addr, client_addr, dir, request, stream);
+    to_response(server_addr, client_addr, dir, request, &mut stream);
     Ok(())
 }
 
@@ -192,7 +187,7 @@ fn to_request(vec8: Vec<u8>, dir: &str) -> Request {
             let vs: Vec<String> = line.split(' ').map(|x| x.to_string()).collect();
             method = (&vs[0]).to_string();
             {
-                let url = unquote_plus(&vs[1]);
+                let url = unquote(&vs[1]);
                 let url_decode = match url {
                     Ok(ok) => ok,
                     Err(e) => {
@@ -216,7 +211,7 @@ fn to_request(vec8: Vec<u8>, dir: &str) -> Request {
                 let path_str_origin = &pr;
                 // 如果路径本身就存在，就不二次解码,(三次编码则会产生"/"等字符,不可能是真实路径。浏览器对URL只编码一次。
                 match Path::new(&path_str).exists() {
-                    false => path = String::new() + dir + &unquote_plus(path_str_origin).unwrap(),
+                    false => path = String::new() + dir + &unquote(path_str_origin).unwrap(),
                     true => path = path_str,
                 };
             }
@@ -265,9 +260,9 @@ struct Response {
 // 以后也可以用URL参数提供排序功能（名字，修改时间，文件大小），排序交给js（和服务器无关）。
 fn to_response(server_addr: String,
                client_addr: String,
-               dir: String,
+               dir: &String,
                request: Request,
-               stream: TcpStream) {
+               mut stream: &mut TcpStream) {
     let code_name: HashMap<u32, &'static str> = resource::CNS.into_iter().map(|xy| *xy).collect();
     let extname_type: HashMap<&'static str, &'static str> = resource::ETS.into_iter()
         .map(|xy| *xy)
@@ -374,21 +369,21 @@ fn to_response(server_addr: String,
     };
     println!("Content-Type: {}", response.content_type);
     println!("Content-Length: {}", response.content_lenth);
-    response_write(path_no_dir_str, html, path, &response, stream);
+    response_write(path_no_dir_str, html, path, &response, &mut stream);
 }
 
 fn response_write(path_no_dir_str: &str,
                   html: Option<String>,
                   path: &Path,
                   response: &Response,
-                  mut stream: TcpStream) {
+                  mut stream: &mut TcpStream) {
     let header = format!("{}/{} {} {}\n",
                          response.status.protocol,
                          response.status.version,
                          response.status.code,
                          &response.status.name);
     let _ = stream.write(header.as_bytes());
-    let content = format!("{}: {}\n{}: {}\n\n",
+    let content = format!("Connection: close\n{}: {}\n{}: {}\n\n",
                           "Content-Type",
                           response.content_type,
                           "Content-Length",
@@ -413,7 +408,7 @@ fn response_write(path_no_dir_str: &str,
         }
         "file" => {
             println!("response_write_file: {:?}", path);
-            file_to_bytes(&path, stream);
+            file_to_bytes(&path, &mut stream);
         }
 
         "404" => {
@@ -434,7 +429,7 @@ fn response_write(path_no_dir_str: &str,
 
 
 
-fn file_to_bytes(path: &Path, mut stream: TcpStream) {
+fn file_to_bytes(path: &Path, mut stream: &mut TcpStream) {
     let path_str = path.to_string_lossy().into_owned();
     let mut file = File::open(path).unwrap();
     let mut buffer = [0u8; BUFFER_SIZE];
@@ -467,7 +462,7 @@ fn file_to_bytes(path: &Path, mut stream: TcpStream) {
     println!("write_file: {:?} Result:{:?}", stream_len, rs);
 }
 
-fn res_lenth(dir: String,
+fn res_lenth(dir: &String,
              path_no_dir_str: &str,
              server_addr: &String,
              client_addr: &String,
@@ -490,7 +485,7 @@ fn file_lenth(path: &Path) -> Option<(u64, Option<String>)> {
     }
 }
 
-fn dir_lenth(dir: String,
+fn dir_lenth(dir: &String,
              path_no_dir_str: &str,
              server_addr: &String,
              client_addr: &String,
@@ -508,7 +503,7 @@ fn dir_lenth(dir: String,
     if path_no_dir_str != "/" {
         let path_parent =
             Path::new(path_no_dir_str).parent().unwrap().to_string_lossy().into_owned();
-        let path_parent = match quote_plus(path_parent.clone(), b"") {
+        let path_parent = match quote(path_parent.clone(), b"") {
             Ok(ok) => ok,
             Err(e) => {
                 std_err(&format!("url_encode_error: {}", e.description()),
@@ -535,7 +530,7 @@ fn dir_lenth(dir: String,
                     true => String::new() + path_no_dir_str + &entry_name,
                     false => String::new() + path_no_dir_str + "/" + &entry_name,
                 };
-                let path_http = match quote_plus(path_http.clone(), b"") {
+                let path_http = match quote(path_http.clone(), b"") {
                     Ok(ok) => ok,
                     Err(e) => {
                         std_err(&format!("url_encode_error: {}", e.description()),

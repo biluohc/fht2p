@@ -9,6 +9,9 @@ use server::fht2p;
 fn main() {
     match fht2p() {
         Ok(ok) => println!("{:?}", ok),
-        Err(e) => println!("{}", e),
+        Err(e) => {
+            println!("{}", e);
+            std::process::exit(1);
+        }
     };
 }
