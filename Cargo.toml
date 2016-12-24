@@ -8,3 +8,5 @@ authors = ["biluohc <biluohc@outlook.com>"]
 urlparse="*"
 #chrono = "0.2"   	 Path Modified_Date
 chrono = "*"
+#poolite             A lite thread pool library written for Rust.
+poolite = { git = "https://github.com/biluohc/poolite" }

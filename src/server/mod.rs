@@ -3,6 +3,7 @@ use urlparse::quote;
 use urlparse::unquote;
 
 extern crate chrono;
+extern crate poolite;
 
 use std::net::{TcpListener, TcpStream};
 use std::fs::{self, metadata, File};
@@ -18,7 +19,6 @@ use std::io;
 mod args; //命令行参数处理
 mod resource; //资源性字符串/u8数组
 mod path; // dir/file修改时间和大小
-mod pool; // 简单线程池实现
 pub mod htm;  //html拼接
 
 const BUFFER_SIZE: usize = 1024 * 1024 * 1; //字节1024*1024=>1m
@@ -46,7 +46,7 @@ fn listener(args: &args::Args) -> Result<(), io::Error> {
              htm::VERSION,
              addr,
              args.dir);
-    let pool = pool::Pool::new();
+    let pool = poolite::Pool::new();
     for stream in listener.incoming() {
         match stream {
             Ok(mut stream) => {
