@@ -9,10 +9,13 @@ pub static CNS: [(u32, &'static str); 3] =
 // http://tools.jb51.net/table/http_content_type  后缀-格式
 // https://www.sitepoint.com/web-foundations/mime-types-complete-list/
 // 常用的应该就这么多，再多应该移到配置文件。
-pub static ETS: [(&'static str, &'static str); 59] = [("*", "application/octet-stream"),
+pub static ETS: [(&'static str, &'static str); 62] = [("*", "application/octet-stream"),
                                                       ("txt", "text/plain;charset=utf-8"),
+                                                      ("md", "text/plain;charset=utf-8"),
                                                       ("lrc", "text/plain;charset=utf-8"),
                                                       ("c", "text/plain;charset=utf-8"),
+                                                      ("h", "text/plain;charset=utf-8"),
+                                                      ("sh", "text/plain;charset=utf-8"),
                                                       ("py", "text/plain;charset=utf-8"),
                                                       ("jl", "text/plain;charset=utf-8"),
                                                       ("toml", "text/plain;charset=utf-8"),
