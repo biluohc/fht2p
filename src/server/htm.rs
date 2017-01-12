@@ -3,8 +3,8 @@
 use std::fmt;
 
 pub const NAME: &'static str = "fht2p";
-pub const VERSION: f64 = 0.50;
-pub const PLATFORM: &'static str = "Linux/openSUSE";
+pub const VERSION: &'static str = "0.5.1";
+pub static mut PLATFORM: &'static str = "Unkown";
 
 #[derive(Debug)]
 pub struct H1 {
@@ -143,7 +143,9 @@ impl Address {
 }
 impl fmt::Display for Address {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, r#"<address><a href="https://github.com/biluohc/fht2p">{}</a>/{} ({}) Server at <a href="http://{}">{}</a></address>"#,NAME,VERSION,PLATFORM,self.addr,self.addr)
+        unsafe {
+            write!(f, r#"<address><a href="https://github.com/biluohc/fht2p">{}</a>/{} ({}) Server at <a href="http://{}">{}</a></address>"#,NAME,VERSION,PLATFORM,self.addr,self.addr)
+        }
     }
 }
 

@@ -1,11 +1,15 @@
 [package]
 name = "fht2p"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["biluohc <biluohc@outlook.com>"]
 
 [dependencies]
-#urlparse="0.73",chrono = "0.2"
 urlparse="*"
 chrono = "*"
-poolite = { git = "https://github.com/biluohc/poolite",branch = "master", version = "0.1.3" }
-stderr = { git = "https://github.com/biluohc/stderr", branch = "master", version = "0.2.1"}
+sys-info = "*"
+ctrlc="*"  
+
+stderr = { git = "https://github.com/biluohc/stderr", branch = "master", version = "0.3.0"}
+poolite = { git = "https://github.com/biluohc/poolite",branch = "master", version = "0.3.0" }
+#poolite = { path ="../poolite"}
+
