@@ -22,27 +22,25 @@ pub fn fht2p() -> Result<(), String> {
     let os_type = sys_info::os_type().unwrap_or("Unkown".to_string());
     let os_release = sys_info::os_release().unwrap_or("Unkown".to_string());
     unsafe {
-        match os_type == os_release && os_release == "Unkown".to_string() {
-            true => {
-                // default is "unkown".
-            }
-            false => {
-                let str_box = Box::new(format!("{}/{}", os_type, os_release));
-                let str_ptr = Box::into_raw(str_box);
-                htm::PLATFORM = *(str_ptr as *const &'static str);
-            }
-        };
+        if os_type == os_release && os_release == "Unkown" {
+            // default is "unkown".
+        } else {
+            let str_box = Box::new(format!("{}/{}", os_type, os_release));
+            let str_ptr = Box::into_raw(str_box);
+            htm::PLATFORM = *(str_ptr as *const &'static str);
+        }
+
     }
     // println!("{:?}", args);
     match args {
         Ok(ok) => {
             match listener(&ok) {
-                Ok(ok) => return Ok(ok),
-                Err(e) => return Err(format!("{}:{} : {}", ok.ip, ok.port, e.description())),
+                Ok(ok) => Ok(ok),
+                Err(e) => Err(format!("{}:{} : {}", ok.ip, ok.port, e.description())),
             }
         }
-        Err(e) => return Err(e),
-    };
+        Err(e) => Err(e),
+    }
 }
 fn listener(args: &args::Args) -> Result<(), io::Error> {
     let addr = format!("{}:{}", args.ip, args.port);

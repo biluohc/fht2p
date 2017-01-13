@@ -16,6 +16,10 @@ pub fn deal_args<'a>(args: &'a [String]) -> Result<Args<'a>, String> {
             help();
             return Err("".to_string());
         }
+        if arg == "-V" || arg == "--version" {
+            version();
+            return Err("".to_string());
+        }
         if arg.starts_with("-i") {
             if arg.len() > 2 {
                 ip = &arg[2..];
@@ -68,4 +72,8 @@ Author: biluohc@outlook.com
 Github: https://github.com/biluohc/fht2p
     "#;
     println!("Using: {}", explain);
+}
+
+fn version() {
+    println!("{} {}", htm::NAME, htm::VERSION);
 }

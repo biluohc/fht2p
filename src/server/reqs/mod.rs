@@ -265,17 +265,17 @@ fn to_response(server_addr: String,
 
             match path_no_dir_str {
                 resource::FAVICON_ICO_PATH => {
-                    content_type = extname_type.get("ico").unwrap().to_string();
+                    content_type = extname_type["ico"].to_string();
                     code = 200;
                     response_type = "static";
                 }
                 resource::CSS_PATH => {
-                    content_type = extname_type.get("css").unwrap().to_string();
+                    content_type = extname_type["css"].to_string();
                     code = 200;
                     response_type = "static";
                 }
                 _ => {
-                    content_type = extname_type.get("html").unwrap().to_string();
+                    content_type = extname_type["html"].to_string();
                     code = 404;
                     response_type = "404";
                 }
@@ -304,7 +304,7 @@ fn to_response(server_addr: String,
                     code = 500;
                     html = Some(htm::s500(&client_addr, &server_addr));
                     content_lenth = html.as_ref().unwrap().len() as u64;
-                    content_type = extname_type.get("html").unwrap().to_string();
+                    content_type = extname_type["html"].to_string();
                 }
             }
         }
@@ -312,12 +312,12 @@ fn to_response(server_addr: String,
         "404" => {
             html = Some(htm::s404(&client_addr, &server_addr));
             content_lenth = html.as_ref().unwrap().len() as u64;
-            content_type = extname_type.get("html").unwrap().to_string();
+            content_type = extname_type["html"].to_string();
         }
         "500" => {
             html = Some(htm::s500(&client_addr, &server_addr));
             content_lenth = html.as_ref().unwrap().len() as u64;
-            content_type = extname_type.get("html").unwrap().to_string();
+            content_type = extname_type["html"].to_string();
         }
         _ => panic!("match response_type failed !"),
     };
@@ -509,13 +509,12 @@ fn dir_lenth(dir: &String,
                 //          path_no_dir_str,
                 //          &entry_name,
                 //          path_http);
-                match entry.is_dir() {
-                    true => 
-                            // "/" 区分目录与文件(视觉)
-                              ul.push(htm::Li::new(path_http,entry_name+"/",date,size)),
-
-                    false =>  ul.push(htm::Li::new(path_http,entry_name,date,size)),
-                };
+                if entry.is_dir() {
+                    // "/" 区分目录与文件(视觉)
+                    ul.push(htm::Li::new(path_http, entry_name + "/", date, size))
+                } else {
+                    ul.push(htm::Li::new(path_http, entry_name, date, size))
+                }
             }
             let addr = htm::Address::new(server_addr);
             let html = htm::Html::new(title,

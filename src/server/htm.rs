@@ -3,7 +3,7 @@
 use std::fmt;
 
 pub const NAME: &'static str = "fht2p";
-pub const VERSION: &'static str = "0.5.1";
+pub const VERSION: &'static str = "0.5.2";
 pub static mut PLATFORM: &'static str = "Unkown";
 
 #[derive(Debug)]
@@ -106,10 +106,7 @@ impl fmt::Display for Ul {
             }
             str
         };
-        let namestr = |name: Option<usize>| {
-            let bs = blanks(blank_len_0 - name.unwrap());
-            bs
-        };
+        let namestr = |name: Option<usize>| blanks(blank_len_0 - name.unwrap());
         // 加上"<ul>" chrome系不认无序列表，不加火狐不认，艹 。
         ui += &(String::new() + "<pre>" + "Name" + &namestr(Some("Name".len())) +
                 "Last modified" + &blanks(blank_len_1) + "Size<hr><ul>");
