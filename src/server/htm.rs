@@ -1,10 +1,6 @@
 #![allow(dead_code)]
-
 use std::fmt;
-
-pub const NAME: &'static str = "fht2p";
-pub const VERSION: &'static str = "0.5.2";
-pub static mut PLATFORM: &'static str = "Unkown";
+use super::consts::*;
 
 #[derive(Debug)]
 pub struct H1 {
@@ -140,9 +136,15 @@ impl Address {
 }
 impl fmt::Display for Address {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        unsafe {
-            write!(f, r#"<address><a href="https://github.com/biluohc/fht2p">{}</a>/{} ({}) Server at <a href="http://{}">{}</a></address>"#,NAME,VERSION,PLATFORM,self.addr,self.addr)
-        }
+        use std::env;
+        let sys = unsafe {
+            match SYS {
+                "Unknown" => env::consts::ARCH,
+                _ => SYS,
+            }
+        };
+        let os = &format!("{}/{}", env::consts::OS, sys);
+        write!(f, r#"<address><a href="https://github.com/biluohc/fht2p">{}</a>/{} ({}) Server at <a href="http://{}">{}</a></address>"#,NAME,VERSION,os,self.addr,self.addr)
     }
 }
 

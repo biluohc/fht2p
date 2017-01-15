@@ -1,4 +1,4 @@
-FAVICON ICON "src/server/config/default/favicon.ico"  
+FAVICON ICON "config/default/favicon.ico"  
 
 // rustup install nightly-msvc    安装工具链(stable-gnu,beta-gnu..)
 // rustup default nightly-msvc    切换工具链

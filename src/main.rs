@@ -1,9 +1,9 @@
 #![feature(link_args)]
+#![allow(dead_code)]
+
 extern crate urlparse;
-use urlparse::quote;
-use urlparse::unquote;
 extern crate  chrono;
-extern crate sys_info;
+extern crate ini;
 
 extern crate poolite;
 #[macro_use]
@@ -42,9 +42,4 @@ fn main() {
     while waiting.load(Ordering::SeqCst) {
         sleep(Duration::from_millis(100)); // 100 ms
     }
-
-    #[cfg(windows)]
-    #[path = "win_ico.rs"]
-    mod win_ico;
-    // exe的图标。非Windows平台不需要rc资源。
 }

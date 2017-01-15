@@ -1,7 +1,7 @@
-use std::time;
+use std::fmt::{self, Formatter};
 use std::{io, fs};
 use std::error;
-use std::fmt::{self, Formatter};
+use std::time;
 
 extern crate  chrono;
 use chrono::{Local, DateTime, Duration};

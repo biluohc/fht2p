@@ -9,10 +9,13 @@ use std::path::Path;
 use std::io;
 
 use super::*;
+use urlparse::quote;
+use urlparse::unquote;
 
 mod get;
-pub fn for_listener(listener: TcpListener, dir: String) {
+pub fn for_listener(listener: TcpListener, config: Arc<ArcConfig>) {
     let pool = poolite::Pool::new().stack_size(3 * 1024 * 1024).run();
+    let dir = config.route.get("/").unwrap();
     for stream in listener.incoming() {
         match stream {
             Ok(mut stream) => {
@@ -221,7 +224,6 @@ struct Response {
     content_lenth: u64,
 }
 
-
 // 主要根据request.line.path处理文件/目录，制作响应。
 // 以后也可以用URL参数提供排序功能（名字，修改时间，文件大小），排序交给js（和服务器无关）。
 fn to_response(server_addr: String,
@@ -229,8 +231,8 @@ fn to_response(server_addr: String,
                dir: &String,
                request: Request,
                mut stream: &mut TcpStream) {
-    let code_name: HashMap<u32, &'static str> = resource::CNS.into_iter().map(|xy| *xy).collect();
-    let extname_type: HashMap<&'static str, &'static str> = resource::ETS.into_iter()
+    let code_name: HashMap<u32, &'static str> = CNS.into_iter().map(|xy| *xy).collect();
+    let extname_type: HashMap<&'static str, &'static str> = ETS.into_iter()
         .map(|xy| *xy)
         .collect();
     let dir_len = dir.len();
@@ -264,12 +266,12 @@ fn to_response(server_addr: String,
         false => {
 
             match path_no_dir_str {
-                resource::FAVICON_ICO_PATH => {
+                FAVICON_ICO_PATH => {
                     content_type = extname_type["ico"].to_string();
                     code = 200;
                     response_type = "static";
                 }
-                resource::CSS_PATH => {
+                CSS_PATH => {
                     content_type = extname_type["css"].to_string();
                     code = 200;
                     response_type = "static";
@@ -288,8 +290,8 @@ fn to_response(server_addr: String,
     match response_type {
         "static" => {
             match path_no_dir_str {
-                resource::FAVICON_ICO_PATH => content_lenth = resource::FAVICON_ICO.len() as u64,
-                resource::CSS_PATH => content_lenth = resource::CSS.len() as u64,
+                FAVICON_ICO_PATH => content_lenth = FAVICON_ICO.len() as u64,
+                CSS_PATH => content_lenth = CSS.len() as u64,
                 _ => std_err(&request.line.path, "match response_type failed !"),
             }
         }
@@ -359,11 +361,11 @@ fn response_write(path_no_dir_str: &str,
         "static" => {
             println!("response_write_static {}", path_no_dir_str);
             match path_no_dir_str {
-                resource::FAVICON_ICO_PATH => {
-                    let _ = stream.write(resource::FAVICON_ICO);
+                FAVICON_ICO_PATH => {
+                    let _ = stream.write(FAVICON_ICO);
                 }
-                resource::CSS_PATH => {
-                    let _ = stream.write(resource::CSS.as_bytes());
+                CSS_PATH => {
+                    let _ = stream.write(CSS.as_bytes());
                 }
                 _ => {}
             }

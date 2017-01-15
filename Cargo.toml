@@ -1,12 +1,12 @@
 [package]
 name = "fht2p"
-version = "0.5.2"
+version = "0.5.3"
 authors = ["biluohc <biluohc@outlook.com>"]
 
 [dependencies]
+rust-ini="*"
 urlparse="*"
 chrono = "*"
-sys-info = "*"
 ctrlc="*"  
 
 stderr = { git = "https://github.com/biluohc/stderr", branch = "master", version = "0.3.0"}
