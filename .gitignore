@@ -1,2 +1,6 @@
+app/target
+
+*Cargo.lock
+*.bk
 target
-favicon.o
+

@@ -3,17 +3,22 @@
 ## Support Unix-like and windows 7+.
 
 ## Usage  
-```shell
-    git clone https://github.com/biluohc/fht2p --depth 1
-    cd fht2p 
-    cargo  build   --release
+###  Unix-like
+```sh
+    cargo install --git https://github.com/biluohc/fht2p
 
     # running fht2p --help(-h) to get help.
+
+    fht2p --help
+```
+### Windows 
+```sh
+    git clone https://github.com/biluohc/fht2p --depth 1 
+    cd fht2p 
+    cargo build --release
+
     target/release/fht2p --help
 ```
-### If on windows,you should running `windres favicon.rc favicon.o`  before run `cargo  build   --release`.
-
-### 
 * 0.0.0.0 is default listenning address.
 * 8080 is default port.
 * keep-alive is default close.

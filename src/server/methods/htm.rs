@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 use std::fmt;
-use super::consts::*;
+// use super::consts::*;
+use super::*;
+use super::rc_stream::{RcStream, Request};
+// use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct H1 {
@@ -110,9 +113,9 @@ impl fmt::Display for Ul {
         for x in &self.lis {
             // r#"<li><a href="{}">{}</a>            {}      {}</li>"#,
             // link: String, name: String, date: String, size: String
-            ui += &(String::new() + r#"<li><a href="# + &x.link + r#">"# + &x.name + "</a>" +
-                    &namestr(li_name_lens_iter.next()) +
-                    &x.date + &blanks(blank_len_1) + &x.size + "</li>");
+            ui += &(String::new() + r#"<li><a href=""# + &x.link + r#"">"# + &x.name +
+                    "</a>" + &namestr(li_name_lens_iter.next()) + &x.date +
+                    &blanks(blank_len_1) + &x.size + "</li>");
         }
         // </pre><hr>
         ui += &(String::new() + "</ul></pre><hr>");
@@ -130,8 +133,8 @@ pub struct Address {
 }
 
 impl Address {
-    pub fn new(addr: &str) -> Address {
-        Address { addr: addr.to_string() }
+    pub fn new(addr: String) -> Address {
+        Address { addr: addr }
     }
 }
 impl fmt::Display for Address {
@@ -144,7 +147,7 @@ impl fmt::Display for Address {
             }
         };
         let os = &format!("{}/{}", env::consts::OS, sys);
-        write!(f, r#"<address><a href="https://github.com/biluohc/fht2p">{}</a>/{} ({}) Server at <a href="http://{}">{}</a></address>"#,NAME,VERSION,os,self.addr,self.addr)
+        write!(f, r#"<address><a href="{}">{}</a>/{} ({}) Server at <a href="http://{}">{}</a></address>"#,URL, NAME,VERSION,os,self.addr,self.addr)
     }
 }
 
@@ -187,21 +190,12 @@ impl fmt::Display for Html {
     }
 }
 
-pub fn s404(client: &str, server: &str) -> String {
-    let title = String::from("404 Not Found");
-    let addr = Address::new(server);
+pub fn other_status_code_html(rc_s: Rc<RcStream>, req: &Request) -> String {
+    let code_name = (*rc_s.arc().cns().get(req.status()).unwrap()).to_owned();
+    let title = format!("{}  {}", req.status(), code_name);
+    let addr = Address::new(rc_s.server_addr().to_owned());
     let html = Html::new(title.clone(),
-                         H1::new(title, client.to_string()),
-                         None,
-                         addr);
-    format!("{}", html)
-}
-
-pub fn s500(client: &str, server: &str) -> String {
-    let title = String::from("500 Internal Server Error");
-    let addr = Address::new(server);
-    let html = Html::new(title.clone(),
-                         H1::new(title, client.to_string()),
+                         H1::new(title, rc_s.client_addr().to_owned()),
                          None,
                          addr);
     format!("{}", html)
@@ -237,8 +231,7 @@ fn main() {
                     "2015-12-15 20:33:42".to_string(),
                     "90.94 M".to_string()));
 
-    let addr = Address::new("127.0.0.1:8080");
+    let addr = Address::new("127.0.0.1:8080".to_owned());
     let html = Html::new(title.clone(), H1::new(title, client), Some(ul), addr);
     println!("{}", html);
-
 }

@@ -35,10 +35,10 @@ pub fn fms(path: &str) -> (String, String) {
 }
 
 fn size_human(size: &u64) -> String {
-    let mut tmp = size.clone();
+    let mut tmp = *size;
     let mut count = 0;
     loop {
-        tmp = tmp / 1024;
+        tmp /= 1024;
         if tmp == 0 {
             break;
         }
@@ -61,7 +61,7 @@ fn size_human(size: &u64) -> String {
         _ => {
             let mut tmp = *size as f64;
             for _ in 0..count {
-                tmp = tmp / 1024f64;
+                tmp /= 1024f64;
             }
             format!("{:.2} {}", tmp, unit)
         }

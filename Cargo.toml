@@ -1,15 +1,18 @@
 [package]
 name = "fht2p"
-version = "0.5.3"
-authors = ["biluohc <biluohc@outlook.com>"]
+version = "0.6.0"
+authors = ["biluohc <biluohc@qq.com>"]
+build = "build.rs"
 
 [dependencies]
-rust-ini="*"
+tini= { git = " https://github.com/pinecrew/tini" }
 urlparse="*"
 chrono = "*"
 ctrlc="*"  
 
-stderr = { git = "https://github.com/biluohc/stderr", branch = "master", version = "0.3.0"}
-poolite = { git = "https://github.com/biluohc/poolite",branch = "master", version = "0.3.0" }
-#poolite = { path ="../poolite"}
+app = { path = "app" }
+stderr = { git = "https://github.com/biluohc/stderr", branch = "master", version = "0.6.1"}
+poolite = { git = "https://github.com/biluohc/poolite",branch = "master", version = "0.5.1" }
+# stderr= { path = "../stderr" }
+# poolite = { path ="../poolite" }
 
