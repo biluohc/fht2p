@@ -147,13 +147,7 @@ pub struct Response {
 // content_type: String,
 // content_lenth: u64,
 impl Response {
-    pub fn new(protocol: String,
-               version: String,
-               code: u32,
-               name: String,
-               header: HashMap<String, String>,
-               content: Content)
-               -> Self {
+    pub fn new(protocol: String, version: String, code: u32, name: String, header: HashMap<String, String>, content: Content) -> Self {
         Response {
             status: Status {
                 protocol: protocol,

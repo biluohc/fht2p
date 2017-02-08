@@ -107,14 +107,12 @@ impl fmt::Display for Ul {
         };
         let namestr = |name: Option<usize>| blanks(blank_len_0 - name.unwrap());
         // 加上"<ul>" chrome系不认无序列表，不加火狐不认，艹 。
-        ui += &(String::new() + "<pre>" + "Name" + &namestr(Some("Name".len())) +
-                "Last modified" + &blanks(blank_len_1) + "Size<hr><ul>");
+        ui += &(String::new() + "<pre>" + "Name" + &namestr(Some("Name".len())) + "Last modified" + &blanks(blank_len_1) + "Size<hr><ul>");
         let mut li_name_lens_iter = li_name_lens.into_iter();
         for x in &self.lis {
             // r#"<li><a href="{}">{}</a>            {}      {}</li>"#,
             // link: String, name: String, date: String, size: String
-            ui += &(String::new() + r#"<li><a href=""# + &x.link + r#"">"# + &x.name +
-                    "</a>" + &namestr(li_name_lens_iter.next()) + &x.date +
+            ui += &(String::new() + r#"<li><a href=""# + &x.link + r#"">"# + &x.name + "</a>" + &namestr(li_name_lens_iter.next()) + &x.date +
                     &blanks(blank_len_1) + &x.size + "</li>");
         }
         // </pre><hr>
@@ -171,7 +169,7 @@ impl Html {
 }
 impl fmt::Display for Html {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let html0=r#"<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=UTF-8"><title>"#;
+        let html0 = r#"<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=UTF-8"><title>"#;
         let html1=r#"</title><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico"><link rel="stylesheet" type="text/css" href="/style.css"></head><body>"#;
         let html3 = "</body></html>";
         let ul = match self.ul.as_ref() {
@@ -209,8 +207,7 @@ fn main() {
                     "../ Parent Directory".to_string(),
                     "2016-12-11 11:46:07".to_string(),
                     "80".to_string()));
-    ul.push(Li::new("/.Trash-1000/files/cn_windows_8.1_pro_vl_with_update_x86_dvd_6050910.iso"
-                        .to_string(),
+    ul.push(Li::new("/.Trash-1000/files/cn_windows_8.1_pro_vl_with_update_x86_dvd_6050910.iso".to_string(),
                     "cn_windows_8.1_pro_vl_with_update_x86_dvd_6050910.iso".to_string(),
                     "2015-09-08 17:32:19".to_string(),
                     "2.98 G".to_string()));
@@ -222,7 +219,8 @@ fn main() {
                     "少司命 - 烟笼长安 by 尉迟嘉馨 to 小烟.f4v".to_string(),
                     "2015-03-20 23:58:42".to_string(),
                     "33.86 M".to_string()));
-    ul.push(Li::new("/i~~mkv/周深_卡布 - 你曾這樣問過_【さくら_あなたに出会えてよかった_清明櫻花祭_中文填詞】.MP4".to_string(),
+    ul.push(Li::new("/i~~mkv/周深_卡布 - 你曾這樣問過_【さくら_あなたに出会えてよかった_清明櫻花祭_中文填詞】.MP4"
+                        .to_string(),
                     "周深_卡布 - 你曾這樣問過_【さくら_あなたに出会えてよかった_清明櫻花祭_中文填詞】.MP4".to_string(),
                     "2016-04-23 21:39:22".to_string(),
                     "72.03 M".to_string()));

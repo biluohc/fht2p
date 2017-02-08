@@ -26,7 +26,7 @@ pub fn get(rc_s: Rc<RcStream>, mut stream: &mut TcpStream, mut req: Request) {
     let status_code = req.status;
     // 打印GET方法的日志
     // 127.0.0.1--[2017-0129 21:11:59] 200 "GET /cargo/ HTTP/1.1" @ " "
-    println!(r#"{}--[{}] {} "{} {} {}/{}" -> "{}""#,
+    println!(r#"{}**[{}] {} "{} {} {}/{}" -> "{}""#,
              rc_s.client_addr(),
              rc_s.time().as_str(),
              status_code,
@@ -37,18 +37,12 @@ pub fn get(rc_s: Rc<RcStream>, mut stream: &mut TcpStream, mut req: Request) {
              req.path_rp);
     let resp = match path.exists() {
         // 正常的文件目录
-        true if (status_code == 200 || status_code == 304) && path.is_dir() => {
-            dir_to_resp(rc_s.clone(), &req, path, map)
-        }
-        true if (status_code == 200 || status_code == 304) && path.is_file() => {
-            file_to_resp(rc_s.clone(), &req, path, map)
-        }
+        true if (status_code == 200 || status_code == 304) && path.is_dir() => dir_to_resp(rc_s.clone(), &req, path, map),
+        true if (status_code == 200 || status_code == 304) && path.is_file() => file_to_resp(rc_s.clone(), &req, path, map),
         // 403的文件目录
         true if status_code == 403 => other_status_code_to_resp(rc_s.clone(), &req, map),
         // 静态文件
-        false if status_code == 200 || status_code == 304 => {
-            sfs_to_resp(rc_s.clone(), &req, path, map)
-        }
+        false if status_code == 200 || status_code == 304 => sfs_to_resp(rc_s.clone(), &req, path, map),
         // 404的url，文件目录，（注意如果url直接当路径访问，有可能存在.)
         _ if status_code == 404 => other_status_code_to_resp(rc_s.clone(), &req, map),
         // 其它的以后再处理。
@@ -68,11 +62,7 @@ fn path_is_403(path: &Path) -> bool {
         true
     }
 }
-fn file_to_resp(rc_s: Rc<RcStream>,
-                req: &Request,
-                path: &Path,
-                mut map: HashMap<String, String>)
-                -> Response {
+fn file_to_resp(rc_s: Rc<RcStream>, req: &Request, path: &Path, mut map: HashMap<String, String>) -> Response {
     dbstln!("{}@{} file_to_resp(): {:?}",
             module_path!(),
             rc_s.time().as_str(),
@@ -111,11 +101,7 @@ fn file_content_type(rc_s: Rc<RcStream>, path: &Path) -> String {
     }
 }
 
-fn sfs_to_resp(rc_s: Rc<RcStream>,
-               req: &Request,
-               path: &Path,
-               mut map: HashMap<String, String>)
-               -> Response {
+fn sfs_to_resp(rc_s: Rc<RcStream>, req: &Request, path: &Path, mut map: HashMap<String, String>) -> Response {
     dbstln!("{}@{} sfs_to_resp(): {:?}",
             module_path!(),
             rc_s.time().as_str(),
@@ -142,10 +128,7 @@ fn sfs_to_resp(rc_s: Rc<RcStream>,
                   content)
 }
 
-fn other_status_code_to_resp(rc_s: Rc<RcStream>,
-                             req: &Request,
-                             mut map: HashMap<String, String>)
-                             -> Response {
+fn other_status_code_to_resp(rc_s: Rc<RcStream>, req: &Request, mut map: HashMap<String, String>) -> Response {
     dbstln!("{}@{} other_status_code_to_resp(): {:?}",
             module_path!(),
             rc_s.time().as_str(),
@@ -163,11 +146,7 @@ fn other_status_code_to_resp(rc_s: Rc<RcStream>,
                   content)
 }
 
-fn dir_to_resp(rc_s: Rc<RcStream>,
-               req: &Request,
-               path: &Path,
-               mut map: HashMap<String, String>)
-               -> Response {
+fn dir_to_resp(rc_s: Rc<RcStream>, req: &Request, path: &Path, mut map: HashMap<String, String>) -> Response {
     dbstln!("{}@{} dir_to_resp(): {:?}",
             module_path!(),
             rc_s.time().as_str(),

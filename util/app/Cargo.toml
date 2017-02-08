@@ -4,4 +4,4 @@ version = "0.1.0"
 authors = ["biluohc <biluohc@qq.com>"]
 
 [dependencies]
-stderr="*"
+stderr ="^0.7.0"

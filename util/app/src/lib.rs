@@ -1,3 +1,4 @@
+#![allow(stable_features)]
 #![feature(repeat_str)]
 #![allow(dead_code)]
 use std::collections::{HashSet, HashMap};

@@ -1,18 +1,34 @@
 [package]
 name = "fht2p"
-version = "0.6.0"
+version = "0.6.1"
 authors = ["biluohc <biluohc@qq.com>"]
 build = "build.rs"
 
-[dependencies]
-tini= { git = " https://github.com/pinecrew/tini" }
-urlparse="*"
-chrono = "*"
-ctrlc="*"  
+[profile.dev]      #    cargo build 
+opt-level = 0     
+debug = true      
+panic = 'unwind'
 
-app = { path = "app" }
-stderr = { git = "https://github.com/biluohc/stderr", branch = "master", version = "0.6.1"}
-poolite = { git = "https://github.com/biluohc/poolite",branch = "master", version = "0.5.1" }
+[profile.release]  #    cargo build --release
+opt-level = 3      #    cargo build --release -vv
+debug = false
+# debug = true 
+panic = 'abort'    #    panic 时不展开栈
+# panic = 'unwind'
+
+[dependencies]
+app = { path = "util/app" }
+html5 = { path ="util/html5" }
+
+tini= { git = " https://github.com/pinecrew/tini", branch = "master", version = "^0.2.0" }
+urlparse = "^0.7.3"
+chrono = "^0.3.0"
+ctrlc= "^3.0.0"  
+
+stderr ="^0.7.0" # 要和 poolite 所用的同一个版本，否则loger不能正常工作。
+
+# stderr = { git = "https://github.com/biluohc/stderr", branch = "master", version = "^0.7.0"}
+poolite = { git = "https://github.com/biluohc/poolite",branch = "master", version = "^0.5.3" }
 # stderr= { path = "../stderr" }
 # poolite = { path ="../poolite" }
 

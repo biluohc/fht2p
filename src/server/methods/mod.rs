@@ -56,19 +56,28 @@ fn match_client(config: Arc<ArcConfig>, stream: TcpStream) {
 }
 fn deal_client(config: Arc<ArcConfig>, mut stream: TcpStream) -> Result<(), io::Error> {
     // client and server addr.
-    let (server_addr, client_addr) = (format!("{}", stream.local_addr()?),
-                                      format!("{}", stream.peer_addr()?));
+    let (server_addr, client_addr) = (format!("{}", stream.local_addr()?), format!("{}", stream.peer_addr()?));
     let time_out = Duration::new(TIME_OUT, 0);
     stream.set_read_timeout(Some(time_out))?;
     stream.set_write_timeout(Some(time_out))?;
     let rc_stream = Rc::from(RcStream::new(config, server_addr, client_addr));
 
+    // println!("二分法 {:?}@{:?} {:?}@{:?}",
+    //          rc_stream.time().as_str(),
+    //          rc_stream.client_addr(),
+    //          module_path!(),
+    //          line!());
     loop {
         let rc_s = rc_stream.clone();
         let request_read = read_request(&mut stream)?;
         // 大小为0的请求？？？请求行都为空
+        // 然后loop continue,高并发时 cpu 100%，醉了。
         if request_read.is_empty() {
-            continue;
+            if rc_s.keep_alive() && !rc_s.time_out() {
+                continue;
+            } else {
+                break;
+            }
         }
         let req = to_request(request_read, rc_s.clone());
 
@@ -200,9 +209,7 @@ fn to_request(vec: Vec<u8>, rc_s: Rc<RcStream>) -> Request {
                  status)
 }
 
-fn url_to_vp_rp(rc_s: Rc<RcStream>,
-                url: &str,
-                mut vp_rp_full_match: &mut Option<(String, String)>) {
+fn url_to_vp_rp(rc_s: Rc<RcStream>, url: &str, mut vp_rp_full_match: &mut Option<(String, String)>) {
     // 不解码已经存在。
     for (vp, rp) in rc_s.arc().route().iter() {
         if url == *vp {
@@ -213,8 +220,7 @@ fn url_to_vp_rp(rc_s: Rc<RcStream>,
         if url.starts_with(vp) {
             let url_path = Path::new(rp).join(Path::new(&url[vp.len()..]));
             if url_path.exists() {
-                *vp_rp_full_match = Some((url.to_string(),
-                                          url_path.to_string_lossy().into_owned()));
+                *vp_rp_full_match = Some((url.to_string(), url_path.to_string_lossy().into_owned()));
                 break;
             }
         }
@@ -238,8 +244,7 @@ fn url_to_vp_rp(rc_s: Rc<RcStream>,
                             Path::new(rp).join(Path::new(&decoded_url[vp.len()..])));
                     let url_path = Path::new(rp).join(Path::new(&decoded_url[vp.len()..]));
                     if url_path.exists() {
-                        *vp_rp_full_match = Some((decoded_url,
-                                                  url_path.to_string_lossy().into_owned()));
+                        *vp_rp_full_match = Some((decoded_url, url_path.to_string_lossy().into_owned()));
                         break;
                     }
                 }

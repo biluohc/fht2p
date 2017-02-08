@@ -23,26 +23,19 @@ use server::fht2p;
 
 fn main() {
     // 初始化--log debug
-    // println!("before: {:?}-->{:?}", Loger::get(), Loger::status());
+    dbstln!("before: {:?}-->{:?}", Loger::get(), Loger::status());
     init!();
-    // println!("After: {:?}-->{:?}", Loger::get(), Loger::status());
-    match fht2p() {
-        Ok(..) => {}
-        Err(e) => {
-            match e.as_ref() {
-                "" => return,
-                _ => {
-                    errln!("{}", e);
-                    process::exit(1);
-                }
-            }
-        }
+    dbstln!("After: {:?}-->{:?}", Loger::get(), Loger::status());
+
+    if let Err(e) = fht2p() {
+        assert_eq!("", e.trim());
+        errln!("{}", e);
+        process::exit(1);
     };
 
     let waiting = Arc::new(AtomicBool::new(true));
     let wait = waiting.clone();
-    ctrlc::set_handler_with_polling_rate(move || { wait.store(false, Ordering::SeqCst); },
-                                         Duration::from_millis(100));
+    ctrlc::set_handler(move || { wait.store(false, Ordering::SeqCst); }).expect("Setting Ctrl-C handler fails");
     while waiting.load(Ordering::SeqCst) {
         sleep(Duration::from_millis(100)); // 100 ms
     }

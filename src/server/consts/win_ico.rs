@@ -1,2 +1,2 @@
-#[link_args="favicon.o"]
+#[link_args = "favicon.o"]
 extern "C" {}

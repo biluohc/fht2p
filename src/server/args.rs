@@ -154,8 +154,7 @@ fn get_config_path() -> Option<String> {
                 .into_owned())
         }
         // 当前目录 dir/fht2p.ini
-        _ if std::env::current_dir().is_ok() &&
-             std::env::current_dir().unwrap().join(CONFIG_DEFAULT_PATH).exists() => {
+        _ if std::env::current_dir().is_ok() && std::env::current_dir().unwrap().join(CONFIG_DEFAULT_PATH).exists() => {
             Some(std::env::current_dir()
                 .unwrap()
                 .join(CONFIG_DEFAULT_PATH)

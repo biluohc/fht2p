@@ -3,17 +3,18 @@
 ## Support Unix-like and windows 7+.
 
 ## Usage  
-###  Unix-like
 ```sh
-    cargo install --git https://github.com/biluohc/fht2p
+    cargo install --git https://github.com/biluohc/fht2p  fht2p
 
     # running fht2p --help(-h) to get help.
 
     fht2p --help
 ```
-### Windows 
+### Or
 ```sh
     git clone https://github.com/biluohc/fht2p --depth 1 
+    # cargo  install --path fht2p/ fht2p
+    
     cd fht2p 
     cargo build --release
 

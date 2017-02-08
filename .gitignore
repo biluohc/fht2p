@@ -1,6 +1,5 @@
-app/target
-
+*.o
 *Cargo.lock
 *.bk
-target
-
+*target
+*main.html

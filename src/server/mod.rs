@@ -5,8 +5,7 @@ use std::thread;
 use std::io;
 
 use super::*;
-use poolite::Pool;
-use poolite::IntoIOResult;
+use poolite::{Pool, IntoIOResult};
 
 mod args; //命令行参数处理
 use self::args::Config;
@@ -48,11 +47,10 @@ fn listener(config: &Config, port: &u32, arc_config: Arc<ArcConfig>) -> Result<(
              config.route);
     println!("You can visit http://127.0.0.1:{}", port);
 
-    let pool = Pool::new().min(0)
-        .load_limit(Pool::num_cpus() * Pool::num_cpus())
+    let pool = Pool::new().load_limit(Pool::num_cpus() * Pool::num_cpus())
         .run()
         .into_iorst()?;
-    thread::Builder::new().spawn(move || { methods::for_listener(tcp_listener, arc_config,pool); })?;
+    thread::Builder::new().spawn(move || { methods::for_listener(tcp_listener, arc_config, pool); })?;
     Ok(())
 }
 

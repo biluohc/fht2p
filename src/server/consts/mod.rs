@@ -1,6 +1,6 @@
 // crate's info
 pub const NAME: &'static str = "fht2p";
-pub const VERSION: &'static str = "0.6.0";
+pub const VERSION: &'static str = "0.6.1";
 pub const AUTHOR: &'static str = "Biluohc";
 pub const EMAIL: &'static str = "biluohc@qq.com";
 pub const ABOUT: &'static str = "A HTTP Server for Static File written with Rust";
@@ -19,10 +19,10 @@ pub const JS_PATH: &'static str = "/app.js";
 
 // config file
 pub const CONFIG_DEFAULT_PATH: &'static str = "fht2p.ini";
-pub const CONFIG_DEFAULT: &'static str = include_str!("../../../fht2p.ini");
+pub const CONFIG_DEFAULT: &'static str = include_str!("../../../config/fht2p.ini");
 
 pub const BUFFER_SIZE: usize = 1024 * 1024 * 1; //字节1024*1024=>1m
-pub const TIME_OUT: u64 = 5; // secs
+pub const TIME_OUT: u64 = 5; // 5 secs 以后放到选项/配置
 // set_nonblocking 不能使用,因为读取文件会阻塞，只能set_write/read_timeout() 来断开一直阻塞的连接。
 
 #[cfg(windows)]
