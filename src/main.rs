@@ -28,7 +28,7 @@ fn main() {
     dbstln!("After: {:?}-->{:?}", Loger::get(), Loger::status());
 
     if let Err(e) = fht2p() {
-        assert_eq!("", e.trim());
+        assert_ne!("", e.trim());
         errln!("{}", e);
         process::exit(1);
     };
