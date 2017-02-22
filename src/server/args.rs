@@ -21,17 +21,13 @@ pub fn get_config() -> Result<Config, String> {
             .short("cp")
             .long("cp")
             .help("Print the default config file"))
-        .opt(Opt::new("log")
-            .long("log")
-            .short("log")
-            .help("Print log for debug"))
-        .opt(Opt::new("ip").short("i").long("ip").help("Sets listenning ip"))
-        .opt(Opt::new("port").short("p").long("port").help("Sets listenning port"))
-        .opt(Opt::new("keep_alive")
+        .flag(Flag::new("keep_alive")
             .short("ka")
             .long("keep-alive")
-            .valid_values(vec!["true", "false"].into_iter())
-            .help("Whether use keep-alive"))
+            .help("use keep-alive"))
+        .opt(Opt::new("log").long("log").short("log").help("Print log for debug"))
+        .opt(Opt::new("ip").short("i").long("ip").help("Sets listenning ip"))
+        .opt(Opt::new("port").short("p").long("port").help("Sets listenning port"))
         .opt(Opt::new("config").short("cf").long("config").help("Sets a custom config file"))
         .args_name("PATHS")
         .args_default("./")
@@ -207,15 +203,14 @@ impl<'app> AppToIni for App<'app> {
 }
 
 // 参数转换为Route
-fn args_paths_to_route(map: HashMap<usize, String>) -> HashMap<String, String> {
+fn args_paths_to_route(map: Vec<String>) -> HashMap<String, String> {
     let mut route: HashMap<String, String> = HashMap::new();
-    let root = map[&0].to_string(); //根目录。
+    let root = map[0].to_string(); //根目录。
     route.insert("/".to_owned(), root);
-    for (k, v) in &map {
-        if *k == 0 {
-            continue;
+    if map.len() > 1 {
+        for v in &map[1..] {
+            route.insert(route_name(v), v.to_string());
         }
-        route.insert(route_name(v), v.to_string());
     }
     return route;
     fn route_name(msg: &str) -> String {

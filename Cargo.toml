@@ -26,9 +26,9 @@ ctrlc= "^3.0.0"
 
 stderr ="^0.7.0" # 要和 poolite 所用的同一个版本，否则loger不能正常工作。
 
-app = { git = "https://github.com/biluohc/app-rs", branch="master", version ="^0.1.0" }
+app = { git = "https://github.com/biluohc/app-rs", branch="master", version ="0.1.1" }
 # stderr = { git = "https://github.com/biluohc/stderr", branch = "master", version = "^0.7.0"}
-poolite = { git = "https://github.com/biluohc/poolite",branch = "master", version = "^0.5.3" }
+poolite = { git = "https://github.com/biluohc/poolite",branch = "master", version = "^0.5.5" }
 # stderr= { path = "../stderr" }
 # poolite = { path ="../poolite" }
 
