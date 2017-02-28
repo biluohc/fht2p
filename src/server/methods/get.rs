@@ -1,7 +1,10 @@
 use super::*;
-use super::htm::*;
+// use super::htm::*;
+use time::{Duration, now};
+use html5::{HTML, TagSingle, TagDouble};
 use std::io::BufReader;
 use std::fs::{self, File};
+use super::Date;
 
 pub fn get(rc_s: Rc<RcStream>, mut stream: &mut TcpStream, mut req: Request) {
     let mut map: HashMap<String, String> = HashMap::new();
@@ -15,7 +18,7 @@ pub fn get(rc_s: Rc<RcStream>, mut stream: &mut TcpStream, mut req: Request) {
     let path = req.path_rp().to_string();
     let path = Path::new(&path);
     // 路径是断开的链接或不是一般文件/目录(套接字等)或权限不足，文件系统IO错误？
-    if path.exists() && path_is_403(&path) {
+    if path.exists() && path_is_403(path) {
         req.status_set(403);
     }
     // 路径不存在且不是static_files.
@@ -28,7 +31,7 @@ pub fn get(rc_s: Rc<RcStream>, mut stream: &mut TcpStream, mut req: Request) {
     // 127.0.0.1--[2017-0129 21:11:59] 200 "GET /cargo/ HTTP/1.1" @ " "
     println!(r#"{}**[{}] {} "{} {} {}/{}" -> "{}""#,
              rc_s.client_addr(),
-             rc_s.time().as_str(),
+             rc_s.time().ls(),
              status_code,
              req.method(),
              req.path_raw(),
@@ -65,7 +68,7 @@ fn path_is_403(path: &Path) -> bool {
 fn file_to_resp(rc_s: Rc<RcStream>, req: &Request, path: &Path, mut map: HashMap<String, String>) -> Response {
     dbstln!("{}@{} file_to_resp(): {:?}",
             module_path!(),
-            rc_s.time().as_str(),
+            rc_s.time().ls(),
             path);
     let ct = file_content_type(rc_s.clone(), path);
     let content = Content::File(File::open(path).unwrap());
@@ -104,7 +107,7 @@ fn file_content_type(rc_s: Rc<RcStream>, path: &Path) -> String {
 fn sfs_to_resp(rc_s: Rc<RcStream>, req: &Request, path: &Path, mut map: HashMap<String, String>) -> Response {
     dbstln!("{}@{} sfs_to_resp(): {:?}",
             module_path!(),
-            rc_s.time().as_str(),
+            rc_s.time().ls(),
             path);
     let exname = path.extension().unwrap().to_str().unwrap();
     let doc = rc_s.arc().ents_doc(exname);
@@ -131,9 +134,17 @@ fn sfs_to_resp(rc_s: Rc<RcStream>, req: &Request, path: &Path, mut map: HashMap<
 fn other_status_code_to_resp(rc_s: Rc<RcStream>, req: &Request, mut map: HashMap<String, String>) -> Response {
     dbstln!("{}@{} other_status_code_to_resp(): {:?}",
             module_path!(),
-            rc_s.time().as_str(),
+            rc_s.time().ls(),
             req.status);
-    let content = Content::Str(other_status_code_html(rc_s.clone(), req));
+    let code_name = (*rc_s.arc().cns().get(req.status()).unwrap()).to_owned();
+    let title = format!("{}  {}", req.status(), code_name);
+    let h1 = TagDouble::new("h1")
+        .push(req.path_raw.clone() +" --> "+&title )
+        .push(TagDouble::new("span").add_attr("id", "client").push(rc_s.client_addr()));
+    let head = htm::head().push(TagDouble::new("title").push(title));        
+    let address = htm::address(rc_s.server_addr());
+    let html = HTML::new().push(head).push(TagDouble::new("body").push(h1).push(address));
+    let content = Content::Str(html.to_bytes());
     let ct = rc_s.arc().ents_doc("html");
     map.insert("Content-Length".to_owned(), format!("{}", content.len()));
     map.insert("Content-Type".to_owned(), ct.to_owned());
@@ -149,7 +160,7 @@ fn other_status_code_to_resp(rc_s: Rc<RcStream>, req: &Request, mut map: HashMap
 fn dir_to_resp(rc_s: Rc<RcStream>, req: &Request, path: &Path, mut map: HashMap<String, String>) -> Response {
     dbstln!("{}@{} dir_to_resp(): {:?}",
             module_path!(),
-            rc_s.time().as_str(),
+            rc_s.time().ls(),
             path);
     let content = Content::Str(dir_to_string(rc_s.clone(), req, path));
     let ct = rc_s.arc().ents_doc("html");
@@ -164,13 +175,24 @@ fn dir_to_resp(rc_s: Rc<RcStream>, req: &Request, path: &Path, mut map: HashMap<
                   content)
 }
 
-fn dir_to_string(rc_s: Rc<RcStream>, req: &Request, path: &Path) -> String {
+fn dir_to_string(rc_s: Rc<RcStream>, req: &Request, path: &Path) -> Vec<u8> {
     // 如果是route,不提供父目录。
     dbstln!("{:?}", req);
     let path_is_route = rc_s.arc().route_rpset().contains(req.path_rp());
     let title = req.path_vp().to_string();
-    let h1 = title.clone();
-    let mut ul = htm::Ul::new();
+    let head = htm::head().push(TagDouble::new("title").push(title.as_str()));
+    // <span id ="client">127.0.0.1:52622</span></h1>
+    let h1 = TagDouble::new("h1")
+        .push(title )
+        .push(TagDouble::new("span").add_attr("id", "client").push(rc_s.client_addr()))
+        .push(TagSingle::new("p"));
+    let mut table = TagDouble::new("table")
+        .add_attr("id", "table")
+        .push(TagDouble::new("thead").push(TagDouble::new("tr").add_attr("style","border-bottom: 0.1px solid #000080;")
+            .push(TagDouble::new("th").push(TagDouble::new("button").add_attr("onclick", "sort_by(0)").push("Name")))
+            .push(TagDouble::new("th").push(TagDouble::new("button").add_attr("onclick", "sort_by(1)").push("Last_modified")))
+            .push(TagDouble::new("th").push(TagDouble::new("button").add_attr("onclick", "sort_by(2)").push("Size")))));
+    let mut tbody = TagDouble::new("tbody");
     if !path_is_route {
         let path = Path::new(req.path_rp());
         let path_parent = path.parent()
@@ -178,25 +200,28 @@ fn dir_to_string(rc_s: Rc<RcStream>, req: &Request, path: &Path) -> String {
             .unwrap_or(req.path_vp.to_string());
         dbstln!("path: {}: path_parent: {}", req.path_vp, path_parent);
 
-        let (date, size) = path::fms(&path_parent);
-        ul.push(htm::Li::new("../".to_owned(),
-                             "../ Parent Directory".to_string(),
-                             date,
-                             size));
+        let mut tr = TagDouble::new("tr")
+            .push(TagDouble::new("td").add_attr("class", "dir").push(TagDouble::new("a").add_attr("href", "../").push("../ Parent Directory")));
+        if let Some((s, tm)) = psm_to_stm(&path_parent) {
+            tr = tr.push(TagDouble::new("td").add_attr("data".to_owned(), format!("{}", tm.local().rfc822())).push(tm.ls()));
+            tr = tr.push(TagDouble::new("td").add_attr("data".to_owned(), format!("{}", s)).push(format!("{}", s)));
+        } else {
+            tr = tr.push(TagDouble::new("td").add_attr("data", "--- ---").push("--- ---"));
+            tr = tr.push(TagDouble::new("td").add_attr("data", "--").push("--"));
+        }
+        tbody = tbody.push(tr);
     }
     let dir_entrys = fs::read_dir(path).unwrap();
     for entry in dir_entrys {
         let entry = entry.unwrap().path();
         let entry_name = entry.file_name().unwrap().to_string_lossy().into_owned();
         let entry_path = String::new() + req.path_rp() + "/" + &entry_name;
-        let (date, size) = path::fms(&entry_path);
-
         let path_encoded = match quote(entry_name.clone(), b"") {
             Ok(ok) => ok,
             Err(_) => {
                 errstln!("{}@{}_Entry_encoding_error:\n{:?}",
                          module_path!(),
-                         rc_s.time().as_str(),
+                         rc_s.time().ls(),
                          &path);
                 entry_name.clone()
             }
@@ -205,21 +230,52 @@ fn dir_to_string(rc_s: Rc<RcStream>, req: &Request, path: &Path) -> String {
         if !Path::new(&entry_path).exists() {
             panic!("{}@{}_path_拼接_error:\n{:?}\n",
                    module_path!(),
-                   rc_s.time().as_str(),
+                   rc_s.time().ls(),
                    &entry_path);
         }
-        if Path::new(&entry_path).is_dir() {
-            // "/" 区分目录与文件(视觉),并且如果没有它，浏览器不会自动拼路径，这上面坑了好多时间。
-            // 仔细对比响应，python3 -m http.server 8000，fuckerfuckf.
-            ul.push(htm::Li::new(path_encoded + "/", entry_name + "/", date, size))
-        } else {
-            ul.push(htm::Li::new(path_encoded, entry_name, date, size))
+        // "/" 区分目录与文件(视觉),并且如果没有它，浏览器不会自动拼路径，这上面坑了好多时间。
+        // 仔细对比响应，python3 -m http.server 8000，fuckerfuckf.
+        let mut tr = TagDouble::new("tr");
+        let (tms_js, tms, ss_js, ss) = {
+            if let Some((s, tm)) = psm_to_stm(&entry_path) {
+                if Path::new(&entry_path).is_dir() {
+                    tr = tr.push(TagDouble::new("td")
+                        .add_attr("class", "dir")
+                        .push(TagDouble::new("a").add_attr("href", path_encoded + "/").push(entry_name + "/")));
+                } else {
+                    tr = tr.push(TagDouble::new("td")
+                        .add_attr("class", "file")
+                        .push(TagDouble::new("a").add_attr("href", path_encoded).push(entry_name)));
+                }
+                (format!("{}", tm.local().rfc822()),tm.ls().to_owned(), format!("{}", s), format!("{}", s))
+            } else {
+                if Path::new(&entry_path).is_dir() {
+                    tr = tr.push(TagDouble::new("td")
+                        .add_attr("class", "dir")
+                        .push(TagDouble::new("a").add_attr("href", path_encoded + "/").push(entry_name + "/")));
+                } else {
+                    tr = tr.push(TagDouble::new("td")
+                        .add_attr("class", "file")
+                        .push(TagDouble::new("a").add_attr("href", path_encoded).push(entry_name)));
+                }
+                ("--- --".to_owned(),  "--- --".to_owned(), "--".to_owned(), "--".to_owned())
+            }
+        };
+        tr = tr.push(TagDouble::new("td").add_attr("data", tms_js).push(tms));
+        tr = tr.push(TagDouble::new("td").add_attr("data", ss_js).push(ss));
+        tbody = tbody.push(tr);
+    }
+    table = table.push(tbody);
+    let address = htm::address(rc_s.server_addr());
+    let html = HTML::new().push(head).push(TagDouble::new("body").push(h1).push(table).push(TagSingle::new("hr")).push(address));
+    html.to_bytes()
+}
+
+fn psm_to_stm(path: &str) -> Option<(u64, Date)> {
+    if let Ok((s, m)) = path::pathsm(path) {
+        if let Ok(o) = Duration::from_std(m) {
+            return Some((s, Date::new(now() - o)));
         }
     }
-    let addr = htm::Address::new(rc_s.server_addr().to_string());
-    let html = htm::Html::new(title,
-                              htm::H1::new(h1, rc_s.client_addr().to_string()),
-                              Some(ul),
-                              addr);
-    format!("{}", html)
+    None
 }

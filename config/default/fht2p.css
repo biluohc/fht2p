@@ -11,7 +11,6 @@ body {
 
 h1 {
     font-size: x-large;
-    font: bold;
     text-align: left;
 }
 
@@ -21,11 +20,6 @@ h1 {
 #client {
     text-align: right;
     color: #FF6600;
-}
-
-input {
-    font: medium;
-    color: #333333;
 }
 
 a {
@@ -38,6 +32,34 @@ a:hover {
     color: #CC0000;
 }
 
+
+/*http://blog.chinaunix.net/uid-22414998-id-2876249.html*/
+
+table {
+    border-collapse: collapse;
+    border-bottom: 0.1px solid #000080;
+}
+
+table thead th {
+    font-size: small;
+    border-bottom: 0.1px solid #000080;
+    background-color: white;
+}
+
+hr {
+    border-bottom: 0.1px solid #000080;
+}
+
 address {
     font-size: x-large;
+}
+
+
+/*.dir,
+.symlink,
+.file
+*/
+
+.dir {
+    font-size: large;
 }

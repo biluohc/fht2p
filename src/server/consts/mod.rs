@@ -1,21 +1,19 @@
 // crate's info
 pub const NAME: &'static str = "fht2p";
-pub const VERSION: &'static str = "0.6.1";
+pub const VERSION: &'static str = "0.6.2";
 pub const AUTHOR: &'static str = "Biluohc";
 pub const EMAIL: &'static str = "biluohc@qq.com";
 pub const ABOUT: &'static str = "A HTTP Server for Static File written with Rust";
 pub const URL_NAME: &'static str = "Repository";
 pub const URL: &'static str = "https://github.com/biluohc/fht2p";
-//  system's info
-pub static mut SYS: &'static str = "Unknown";
 
 // resource files
 pub static FAVICON_ICO: &'static [u8; 4286] = include_bytes!("../../../config/default/favicon.ico");
 pub const FAVICON_ICO_PATH: &'static str = "/favicon.ico";
-pub static CSS: &'static str = include_str!("../../../config/default/style.css");
-pub const CSS_PATH: &'static str = "/style.css";
-pub static JS: &'static str = include_str!("../../../config/default/app.js");
-pub const JS_PATH: &'static str = "/app.js";
+pub static CSS: &'static str = include_str!("../../../config/default/fht2p.css");
+pub const CSS_PATH: &'static str = "/fht2p.css";
+pub static JS: &'static str = include_str!("../../../config/default/fht2p.js");
+pub const JS_PATH: &'static str = "/fht2p.js";
 
 // config file
 pub const CONFIG_DEFAULT_PATH: &'static str = "fht2p.ini";

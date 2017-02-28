@@ -1,50 +1,60 @@
-use chrono::*;
+extern crate time;
+use time::*;
 
-#[derive(Debug,Clone,PartialEq)]
+#[derive(Debug,Clone)]
 pub struct Date {
-    local: DateTime<Local>,
+    local: Tm,
     ls: String,
-    utc: DateTime<UTC>,
+    utc: Tm,
     us: String,
 }
-
 impl Date {
-    pub fn now() -> Date {
-        // 有点不同也无所谓。
-        let local = Local::now();
-        let utc = UTC::now();
-        Date {
+    pub fn now() -> Self {
+        Self::new(now())
+    }
+    pub fn new(tm: Tm) -> Self {
+        let local = tm.to_local();
+        Self {
             local: local,
-            ls: local.format("%Y-%m%d %H:%M:%S").to_string(),
-            utc: utc,
-            us: utc.format("%a, %e %b %Y %H:%M:%S GMT").to_string(),
+            // "%Y-%m%d %H:%M:%S" <=> 2017-0225 00:22:30
+            ls: format!("{:04}-{:02}{:02} {:02}:{:02}:{:02}",
+                        local.tm_year + 1900,
+                        local.tm_mon + 1,
+                        local.tm_mday,
+                        local.tm_hour,
+                        local.tm_min,
+                        local.tm_sec),
+            //  utc: "Thu, 22 Mar 2012 14:53:18 GMT"
+            utc: tm.to_utc(),
+            us: format!("{}", tm.to_utc().rfc822()),
         }
     }
     #[inline]
-    pub fn as_str(&self) -> &str {
-        self.ls.as_ref()
+    pub fn local(&self) -> &Tm {
+        &self.local
     }
     #[inline]
-    pub fn to_http(&self) -> &str {
-        self.us.as_ref()
+    pub fn ls(&self) -> &str {
+        self.ls.as_str()
     }
-}
-impl ToString for Date {
     #[inline]
-    fn to_string(&self) -> String {
-        self.ls.clone()
+    pub fn utc(&self) -> &Tm {
+        &self.utc
+    }
+    #[inline]
+    pub fn us(&self) -> &str {
+        self.us.as_str()
     }
 }
 
+// stat  .gitignore
 #[test]
 fn main() {
-    errln!("#[test]: Date::new()");
-    let date = Date::new();
-    errln!("Local: {:?}\nLocal: {}", date.local, date.to_str());
-    errln!("UTC: {}", date.utc.format("%Y-%m%d %H:%M:%S"));
-    errln!("UTC: {:?}\n{}", date.utc, date.to_http());
-    // 因为时区原因，不相等。
-    // assert_eq!(date.to_string(),
-    //            date.utc.format("%Y-%m%d %H:%M:%S").to_string());
-    assert!(date.to_string() != date.utc.format("%Y-%m%d %H:%M:%S").to_string());
+    use std::fs::File;
+    let f = ".gitignore";
+    let std_du = File::open(f).unwrap().metadata().unwrap().modified().unwrap().elapsed().unwrap();
+    println!("{:?}", std_du);
+    let time_du = Duration::from_std(std_du).unwrap();
+    println!("{}", Date::new(now() - time_du).ls());
+    println!("{}", Date::new(now() - time_du).us());
 }

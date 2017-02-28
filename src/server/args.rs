@@ -191,7 +191,7 @@ impl<'app> AppToIni for App<'app> {
             .unwrap_or(format!("{}", config_default.keep_alive));
         conf = conf.item("ip", &ip);
         conf = conf.item("port", &port);
-        conf = conf.item("keep-alive", &format!("{}", keep_alive));
+        conf = conf.item("keep-alive", &keep_alive);
         // Route
         conf = conf.section("Route");
         let route = args_paths_to_route(self.get_args().unwrap());

@@ -1,6 +1,6 @@
 use std::net::{TcpListener, TcpStream};
 // use std::fs::{self, metadata, File};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::result::Result;
 use std::time::Duration;
 use std::io::prelude::*; // src/server/methods/get.rs:101::file.read_line()
@@ -12,10 +12,7 @@ use std::rc::Rc;
 use super::*;
 use self::consts::{NAME, VERSION};
 
-use urlparse::urlparse;
-use urlparse::GetQuery;
-use urlparse::quote;
-use urlparse::unquote;
+use urlparse::{quote, unquote};
 use poolite::Pool;
 
 mod path; // dir/file修改时间和大小
@@ -85,9 +82,9 @@ fn deal_client(config: Arc<ArcConfig>, mut stream: TcpStream) -> Result<(), io::
         match req.method().as_str() {
             "GET" => get(rc_s.clone(), &mut stream, req),
             // post
-            name => errstln!("{} don't use the method: {}", NAME, name),
+            name => errln!("{} don't use the method: {}", NAME, name),
         };
-        dbstln!("\n"); //分开各个请求，否则--log debug没法看。
+        dbstln!("\n"); //分开各个请求，否则--log ''没法看。
         if !rc_s.keep_alive() || rc_s.time_out() {
             break;
         }
@@ -122,7 +119,7 @@ fn to_request(vec: Vec<u8>, rc_s: Rc<RcStream>) -> Request {
     let req_str = String::from_utf8_lossy(&vec[..]).into_owned();
     dbstln!("\n{}@{} req_raw:\n{:?}",
             module_path!(),
-            rc_s.time().as_str(),
+            rc_s.time().ls(),
             req_str);
     let mut req_str = req_str.lines();
     let line = req_str.next().unwrap();
@@ -133,7 +130,7 @@ fn to_request(vec: Vec<u8>, rc_s: Rc<RcStream>) -> Request {
 
     let mut header = HashMap::new();
     for ln in req_str {
-        if let Some(s) = ln.find(":") {
+        if let Some(s) = ln.find(':') {
             if ln.len() >= s + 3 {
                 header.insert(ln[..s].to_string(), ln[s + 2..].to_string());
             }
@@ -141,25 +138,13 @@ fn to_request(vec: Vec<u8>, rc_s: Rc<RcStream>) -> Request {
     }
     dbstln!("{}@{} header_HashMap:\n{:?}",
             module_path!(),
-            rc_s.time().as_str(),
+            rc_s.time().ls(),
             header);
     let url_raw = line[1].to_string();
     dbstln!("{}@{} url_raw: {:?}",
             module_path!(),
-            rc_s.time().as_str(),
+            rc_s.time().ls(),
             &line[1]);
-    // 以后移到Arc_Config里。
-    let query_values = ["N0", "N1", "M0", "M1", "S0", "S1"];
-    let query_values_set: HashSet<&'static str> = query_values.iter().map(|x| *x).collect();
-
-    let mut query_s = "N0".to_owned(); // 初始化，避免一堆else.
-    if let Some(query) = urlparse(&url_raw).get_parsed_query() {
-        if let Some(s) = query.get_first_from_str("S") {
-            if query_values_set.contains(s.as_str()) {
-                query_s = s
-            }
-        }
-    }
     let mut url = String::new();
     let mut last_char = '.'; // 非/即可。
     for c in url_raw.chars() {
@@ -172,7 +157,7 @@ fn to_request(vec: Vec<u8>, rc_s: Rc<RcStream>) -> Request {
     }
     dbstln!("{}@{} url_sub_'/': {:?}",
             module_path!(),
-            rc_s.time().as_str(),
+            rc_s.time().ls(),
             &url);
     // 如果路径本身就存在，就不二次解码,(三次编码则会产生多余"/"等字符,不可能是真实路径。浏览器对URL只编码一次。
     // Option<(String, String)>  完全匹配才赋值，is_none() 用于是否继续寻找。
@@ -203,7 +188,6 @@ fn to_request(vec: Vec<u8>, rc_s: Rc<RcStream>) -> Request {
                  pv.remove(0),
                  header,
                  url_raw,
-                 query_s,
                  vp,
                  rp,
                  status)
@@ -238,7 +222,7 @@ fn url_to_vp_rp(rc_s: Rc<RcStream>, url: &str, mut vp_rp_full_match: &mut Option
                     dbstln!("{}@{}_url_sub_'/'_decoded: '{}' start_with(rp): \
                                 {:?}\nrp.join(decoded_url): {:?}",
                             module_path!(),
-                            rc_s.time().as_str(),
+                            rc_s.time().ls(),
                             &decoded_url,
                             vp,
                             Path::new(rp).join(Path::new(&decoded_url[vp.len()..])));

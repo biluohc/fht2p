@@ -1,30 +1,67 @@
 extern crate html5;
-use html5::{TagSingle, TagDouble, Html};
+use html5::{HTML, TagSingle, TagDouble};
 
 #[macro_use]
 extern crate stderr;
 
-use std::io::Write;
 use std::path::Path;
-use std::fs::{self, File};
+use std::fs;
+
 const PATH: &'static str = ".";
 
 #[test]
 fn main() {
-    let mut html = Html::new();
+    let mut html = HTML::new();
     errln!("{:?}", html);
-    html = html.add_tagd(Html::head().add_tagd(TagDouble::new("title").add_content("颜")));
+    html = html.push(HTML::head()
+        .push(TagSingle::new("link").add_attrs(vec![("rel", "stylesheet"), ("type", "text/css"), ("href", "/style.css")].iter()))
+        .push(TagDouble::new("script").add_attrs(vec![("type", "text/javascript"), ("src", "/app.js")].iter()))
+        .push(TagDouble::new("title").push("颜")));
     errln!("{:?}", html);
     html = dir_to_html(PATH, html);
 
-    let html = html.to_string();
-    errln!("Html:\n{}", html);
+    let html_fmt = html.to_string();
+    errln!("{}", html_fmt);
+    let mut html_write: Vec<u8> = Vec::new();
+    let mut html_write_all: Vec<u8> = Vec::new();
+    let w = html.write(&mut html_write);
+    let all = html.write_all(&mut html_write_all);
+    errln!("len()/fmt()/write()/write_all(): {}/{}/{:?}/{:?}",
+           html.len(),
+           html_fmt.len(),
+           w,
+           all);
+    assert_eq!(html.len() == html_fmt.len(), html.len() == w.unwrap());
 
-    let mut file = File::create("main.html").unwrap();
-    file.write_all(html.as_bytes()).unwrap();
-    file.flush().unwrap();
+    errln!("fmt==w/fmt==all/w==all: {}/{}/{}",
+           html_fmt.as_bytes() == html_write.as_slice(),
+           html_fmt.as_bytes() == html_write_all.as_slice(),
+           html_write == html_write_all);
+    assert_eq!(html_fmt.as_bytes() == html_write.as_slice(),
+               html_fmt.as_bytes() == html_write_all.as_slice());
+    assert_eq!(html_fmt.as_bytes() == html_write.as_slice(),
+               html_write == html_write_all);
+
+    // diff test
+    // {
+    //     use std::io::Write;
+    //     use std::fs::File;
+    //     let mut file = File::create("test_fmt.html").unwrap();
+    //     let fmt = file.write(html_fmt.as_bytes());
+    //     file.flush().unwrap();
+    //     let mut file = File::create("test_write.html").unwrap();
+    //     let fw = html.write(&mut file);
+    //     file.flush().unwrap();
+    //     let mut file = File::create("test_write_all.html").unwrap();
+    //     let fall = html.write_all(&mut file);
+    //     file.flush().unwrap();
+    //     errln!("fmt()/fw(html.write)/fall(html.write_all): {:?}/{:?}/{:?}",
+    //            fmt,
+    //            fw,
+    //            fall);
+    // }
 }
-fn dir_to_html(path: &str, html: Html) -> Html {
+fn dir_to_html(path: &str, html: HTML) -> HTML {
     let mut ul = TagDouble::new("ul");
     let dir_entrys = fs::read_dir(path).unwrap();
     for entry in dir_entrys {
@@ -34,42 +71,41 @@ fn dir_to_html(path: &str, html: Html) -> Html {
         let (date, size) = fms(&entry_path);
         if Path::new(&entry_path).is_dir() {
             // "/" 区分目录与文件(视觉),并且如果没有它，浏览器不会自动拼路径，这上面坑了好多时间。
-            // 仔细对比响应，python3 -m http.server 8000，fuckerfuckf.
             // <li><a href="_i%7E%7Emkv_.html">_i~~mkv_.html</a>      2017-02-16 12:38:02      26.44 K</li>
-            ul = ul.add_tagd(TagDouble::new("li")
-                .add_tagd(TagDouble::new("a")
-                    .add_attr("href", &format!("{}/", entry_path))
-                    .add_content(&format!("{}/", entry_name)))
-                .add_content(&format!("  {}      {}", date, size)));
+            ul = ul.push(TagDouble::new("li")
+                .push(TagDouble::new("a")
+                    .add_attr("href", format!("{}/", entry_path))
+                    .push(format!("{}/", entry_name)))
+                .push(format!("  {}      {}", date, size)));
         } else {
-            ul = ul.add_tagd(TagDouble::new("li")
-                .add_tagd(TagDouble::new("a")
-                    .add_attr("href", &entry_path)
-                    .add_content(&entry_name))
-                .add_content(&format!("  {}      {}", date, size)));
+            ul = ul.push(TagDouble::new("li")
+                .push(TagDouble::new("a")
+                    .add_attr("href", entry_path)
+                    .push(entry_name))
+                .push(format!("  {}      {}", date, size)));
         }
     }
 
     let body = TagDouble::new("body")
-        .add_tagd(TagDouble::new("pre").add_tagd(TagDouble::new("h1")
-            .add_content(&format!("{}/", PATH))
-            .add_tagd(TagDouble::new("span")
-                .add_content("127.0.0.1:58488")
+        .push(TagDouble::new("pre").push(TagDouble::new("h1")
+            .push(format!("{}/", PATH))
+            .push(TagDouble::new("span")
+                .push("127.0.0.1:58488")
                 .add_attr("id", "client"))))
-        .add_tagd(TagDouble::new("pre")
-            .add_content("Name    Last_modified      Size")
-            .add_tags(TagSingle::new("hr"))
-            .add_tagd(ul))
-        .add_tags(TagSingle::new("hr"))
-        .add_tagd(TagDouble::new("address")
-            .add_tagd(TagDouble::new("a")
+        .push(TagDouble::new("pre")
+            .push("Name    Last_modified      Size")
+            .push(TagSingle::new("hr"))
+            .push(ul))
+        .push(TagSingle::new("hr"))
+        .push(TagDouble::new("address")
+            .push(TagDouble::new("a")
                 .add_attr("href", "https://github.com/biluohc/fht2p")
-                .add_content("fht2p"))
-            .add_content("/0.6.1 (linux/x86_64) Server at")
-            .add_tagd(TagDouble::new("a")
+                .push("fht2p"))
+            .push("/0.6.1 (linux/x86_64) Server at")
+            .push(TagDouble::new("a")
                 .add_attr("href", "http://127.0.0.1:8080")
-                .add_content("127.0.0.1:8080")));
-    html.add_tagd(body)
+                .push("127.0.0.1:8080")));
+    html.push(body)
 }
 
 fn fms(path: &str) -> (String, String) {

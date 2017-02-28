@@ -68,7 +68,6 @@ pub struct Request {
     pub header: HashMap<String, String>,
 
     pub path_raw: String, // 原始未解码,未补全的path.
-    pub querys: String, // URL参数,"N0,N1,M0,M1,S0,S1",从path_org 解码得到。
     pub path_vp: String, // 补全了，解码了的虚拟路径。
     pub path_rp: String, // 对应的真实路径。如果没有就是String::new()
     pub status: u32, // 状态码，默认200.
@@ -79,7 +78,6 @@ impl Request {
                version: String,
                header: HashMap<String, String>,
                path_raw: String,
-               querys: String,
                path_vp: String,
                path_rp: String,
                status: u32)
@@ -92,7 +90,6 @@ impl Request {
             },
             header: header,
             path_raw: path_raw,
-            querys: querys,
             path_vp: path_vp,
             path_rp: path_rp,
             status: status,
@@ -109,9 +106,6 @@ impl Request {
     }
     pub fn path_raw(&self) -> &String {
         &self.path_raw
-    }
-    pub fn querys(&self) -> &String {
-        &self.querys
     }
     pub fn path_vp(&self) -> &String {
         &self.path_vp
@@ -185,7 +179,7 @@ impl Response {
 
 #[derive(Debug)]
 pub enum Content {
-    Str(String), // dir,oher status->String
+    Str(Vec<u8>), // dir,oher status->String->Vec<u8>
     File(fs::File), // file 变为reader<file>
     Sf(&'static [u8]), // static file->&[u8]
 }
@@ -225,7 +219,7 @@ impl Content {
 fn write_content_result(content: Content, mut stream: &mut TcpStream) -> Result<(), io::Error> {
     match content {
         Content::Str(x) => {
-            let _ = stream.write(x.as_bytes())?;
+            let _ = stream.write(&x)?;
         }
         Content::File(mut y) => {
             file_write_to_tcpstream(&mut y, &mut stream)?;

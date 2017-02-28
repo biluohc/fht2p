@@ -2,10 +2,11 @@
 #![allow(dead_code)]
 
 extern crate urlparse;
-extern crate chrono;
+extern crate time;
 extern crate tini;
 
 extern crate app;
+extern crate html5;
 extern crate poolite;
 #[macro_use]
 extern crate stderr;
