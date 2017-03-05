@@ -16,4 +16,3 @@ pub fn address(server_addr: &str) -> TagDouble {
     .push(TagDouble::new("a").add_attr("href",format!("http://{}",server_addr)).push(server_addr))
     .push(TagDouble::new("script").add_attrs(vec![("type", "text/javascript"), ("src", JS_PATH)].iter()))
 }
-

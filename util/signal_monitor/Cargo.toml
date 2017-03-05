@@ -1,0 +1,8 @@
+[package]
+name = "signal_monitor"
+version = "0.1.0"
+authors = ["biluohc <biluohc@qq.com>"]
+
+[dependencies]
+sig = "^1.0.0"
+libc = "^0.2.20"

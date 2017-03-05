@@ -30,7 +30,7 @@ pub fn for_listener(listener: TcpListener, config: Arc<ArcConfig>, pool: Pool) {
                 let config = config.clone();
                 // 一个进程一个堆，一个线程一个栈。
                 // 栈大小，linux主默认8m，副线程和win一样 2m(这里给rust坑死了,一直stackover。以后要注意默认值)。
-                pool.spawn(Box::new(move || match_client(config, stream)));
+                pool.push(move || match_client(config, stream));
             }
             Err(e) => {
                 errstln!("{:?}", e);

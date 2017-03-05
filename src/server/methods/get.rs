@@ -139,9 +139,9 @@ fn other_status_code_to_resp(rc_s: Rc<RcStream>, req: &Request, mut map: HashMap
     let code_name = (*rc_s.arc().cns().get(req.status()).unwrap()).to_owned();
     let title = format!("{}  {}", req.status(), code_name);
     let h1 = TagDouble::new("h1")
-        .push(req.path_raw.clone() +" --> "+&title )
+        .push(req.path_raw.clone() + " --> " + &title)
         .push(TagDouble::new("span").add_attr("id", "client").push(rc_s.client_addr()));
-    let head = htm::head().push(TagDouble::new("title").push(title));        
+    let head = htm::head().push(TagDouble::new("title").push(title));
     let address = htm::address(rc_s.server_addr());
     let html = HTML::new().push(head).push(TagDouble::new("body").push(h1).push(address));
     let content = Content::Str(html.to_bytes());
@@ -183,12 +183,13 @@ fn dir_to_string(rc_s: Rc<RcStream>, req: &Request, path: &Path) -> Vec<u8> {
     let head = htm::head().push(TagDouble::new("title").push(title.as_str()));
     // <span id ="client">127.0.0.1:52622</span></h1>
     let h1 = TagDouble::new("h1")
-        .push(title )
+        .push(title)
         .push(TagDouble::new("span").add_attr("id", "client").push(rc_s.client_addr()))
         .push(TagSingle::new("p"));
     let mut table = TagDouble::new("table")
         .add_attr("id", "table")
-        .push(TagDouble::new("thead").push(TagDouble::new("tr").add_attr("style","border-bottom: 0.1px solid #000080;")
+        .push(TagDouble::new("thead").push(TagDouble::new("tr")
+            .add_attr("style", "border-bottom: 0.1px solid #000080;")
             .push(TagDouble::new("th").push(TagDouble::new("button").add_attr("onclick", "sort_by(0)").push("Name")))
             .push(TagDouble::new("th").push(TagDouble::new("button").add_attr("onclick", "sort_by(1)").push("Last_modified")))
             .push(TagDouble::new("th").push(TagDouble::new("button").add_attr("onclick", "sort_by(2)").push("Size")))));
@@ -247,7 +248,7 @@ fn dir_to_string(rc_s: Rc<RcStream>, req: &Request, path: &Path) -> Vec<u8> {
                         .add_attr("class", "file")
                         .push(TagDouble::new("a").add_attr("href", path_encoded).push(entry_name)));
                 }
-                (format!("{}", tm.local().rfc822()),tm.ls().to_owned(), format!("{}", s), format!("{}", s))
+                (format!("{}", tm.local().rfc822()), tm.ls().to_owned(), format!("{}", s), format!("{}", s))
             } else {
                 if Path::new(&entry_path).is_dir() {
                     tr = tr.push(TagDouble::new("td")
@@ -258,7 +259,7 @@ fn dir_to_string(rc_s: Rc<RcStream>, req: &Request, path: &Path) -> Vec<u8> {
                         .add_attr("class", "file")
                         .push(TagDouble::new("a").add_attr("href", path_encoded).push(entry_name)));
                 }
-                ("--- --".to_owned(),  "--- --".to_owned(), "--".to_owned(), "--".to_owned())
+                ("--- --".to_owned(), "--- --".to_owned(), "--".to_owned(), "--".to_owned())
             }
         };
         tr = tr.push(TagDouble::new("td").add_attr("data", tms_js).push(tms));
