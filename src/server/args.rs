@@ -17,14 +17,8 @@ pub fn get_config() -> Result<Config, String> {
         .author(AUTHOR, EMAIL)
         .address(URL_NAME, URL)
         .about(ABOUT)
-        .flag(Flag::new("cp")
-            .short("cp")
-            .long("cp")
-            .help("Print the default config file"))
-        .flag(Flag::new("keep_alive")
-            .short("ka")
-            .long("keep-alive")
-            .help("use keep-alive"))
+        .flag(Flag::new("cp").short("cp").long("cp").help("Print the default config file"))
+        .flag(Flag::new("keep_alive").short("ka").long("keep-alive").help("use keep-alive"))
         .opt(Opt::new("log").long("log").short("log").help("Print log for debug"))
         .opt(Opt::new("ip").short("i").long("ip").help("Sets listenning ip"))
         .opt(Opt::new("port").short("p").long("port").help("Sets listenning port"))
@@ -124,38 +118,38 @@ fn get_config_path() -> Option<String> {
     match std::env::home_dir() {
         // 家目录 ～/.config/fht2p/fht2p.ini
         Some(ref home) if home.as_path()
-            .join(".config/fht2p")
-            .join(CONFIG_DEFAULT_PATH)
-            .exists() => {
+                              .join(".config/fht2p")
+                              .join(CONFIG_DEFAULT_PATH)
+                              .exists() => {
             Some(home.as_path()
-                .join(".config/fht2p")
-                .join(CONFIG_DEFAULT_PATH)
-                .to_string_lossy()
-                .into_owned())
+                     .join(".config/fht2p")
+                     .join(CONFIG_DEFAULT_PATH)
+                     .to_string_lossy()
+                     .into_owned())
         }
         // 可执行文件所在目录 path/fht2p.ini
         _ if std::env::current_exe().is_ok() &&
              std::env::current_exe()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .join(CONFIG_DEFAULT_PATH)
-            .exists() => {
+                 .unwrap()
+                 .parent()
+                 .unwrap()
+                 .join(CONFIG_DEFAULT_PATH)
+                 .exists() => {
             Some(std::env::current_exe()
-                .unwrap()
-                .parent()
-                .unwrap()
-                .join(CONFIG_DEFAULT_PATH)
-                .to_string_lossy()
-                .into_owned())
+                     .unwrap()
+                     .parent()
+                     .unwrap()
+                     .join(CONFIG_DEFAULT_PATH)
+                     .to_string_lossy()
+                     .into_owned())
         }
         // 当前目录 dir/fht2p.ini
         _ if std::env::current_dir().is_ok() && std::env::current_dir().unwrap().join(CONFIG_DEFAULT_PATH).exists() => {
             Some(std::env::current_dir()
-                .unwrap()
-                .join(CONFIG_DEFAULT_PATH)
-                .to_string_lossy()
-                .into_owned())
+                     .unwrap()
+                     .join(CONFIG_DEFAULT_PATH)
+                     .to_string_lossy()
+                     .into_owned())
         }
         _ => None,
     }
@@ -187,8 +181,7 @@ impl<'app> AppToIni for App<'app> {
             str
         };
         let port = self.get_opt("port").unwrap_or(vec_to_str(config_default.port));
-        let keep_alive = self.get_opt("keep_alive")
-            .unwrap_or(format!("{}", config_default.keep_alive));
+        let keep_alive = self.get_opt("keep_alive").unwrap_or(format!("{}", config_default.keep_alive));
         conf = conf.item("ip", &ip);
         conf = conf.item("port", &port);
         conf = conf.item("keep-alive", &keep_alive);

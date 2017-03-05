@@ -93,12 +93,8 @@ impl ArcConfig {
     fn get(mut route: HashMap<String, String>, keep_alive: bool) -> ArcConfig {
         let mut cns: HashMap<u32, &'static str> = CNS.into_iter().cloned().collect();
         // let mut cns: HashMap<u32, &'static str> = CNS.into_iter().map(|xy| *xy).collect();
-        let mut ents_bin: HashMap<&'static str, &'static str> = ETS_BIN.into_iter()
-            .cloned()
-            .collect();
-        let mut ents_doc: HashMap<&'static str, &'static str> = ETS_DOC.into_iter()
-            .cloned()
-            .collect();
+        let mut ents_bin: HashMap<&'static str, &'static str> = ETS_BIN.into_iter().cloned().collect();
+        let mut ents_doc: HashMap<&'static str, &'static str> = ETS_DOC.into_iter().cloned().collect();
         // 暂时保留CSS让编译可以过。
         let mut sfs: HashMap<&'static str, &'static [u8]> = HashMap::with_capacity(3);
         sfs.insert(FAVICON_ICO_PATH, &FAVICON_ICO[..]);
@@ -126,7 +122,11 @@ impl ArcConfig {
     }
     #[inline]
     fn ents_bin(&self, exname: &str) -> String {
-        self.ents_bin.get(exname).unwrap_or(&self.ents_bin["*"]).to_owned().to_owned()
+        self.ents_bin
+            .get(exname)
+            .unwrap_or(&self.ents_bin["*"])
+            .to_owned()
+            .to_owned()
     }
     #[inline]
     fn ents_doc(&self, exname: &str) -> String {

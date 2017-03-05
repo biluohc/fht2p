@@ -2,57 +2,64 @@ extern crate sig;
 use sig::set_signal_handler;
 
 extern crate libc;
-use libc::c_int;
+#[allow(unused_imports)]
+use libc::{c_int, c_uint};
 
 use std::thread::sleep;
 use std::time::Duration;
 
-static mut SIGS_STATUS: [bool; 64] = [false; 64];
+#[cfg(unix)]
+static SIGNAL_NUM: c_int = 2;
+#[cfg(windows)]
+static SIGNAL_NUM: c_int = 0;
+
+static mut SIG_STATUS: bool = false;
+
 /// Watching the Signal
-pub fn watch(num: usize) {
-    idx_test(num);
+pub fn watch() {
     unsafe {
-        set_signal_handler(num as c_int, handler);
+        let _ = set_signal_handler(SIGNAL_NUM, handler);
     }
 }
 /// Will get `true` if the Signal being watching and it occurs
-pub fn get(num: usize) -> bool {
-    idx_test(num);
-    unsafe { SIGS_STATUS[num - 1] }
+pub fn get() -> bool {
+    unsafe { SIG_STATUS }
 }
 /// Update the value of Signal to `false`
-pub fn clean(num: usize) {
-    idx_test(num);
+pub fn clean() {
     unsafe {
-        SIGS_STATUS[num - 1] = false;
+        SIG_STATUS = false;
     }
 }
 /// Watching and waiting the Signal(100ms)
-pub fn join(num: usize) {
-    join_ms(num, 100);
+pub fn join() {
+    join_ms(100);
 }
 
 /// Watching and waiting the Signal with time(ms)
-pub fn join_ms(num: usize, ms: u64) {
-    watch(num);
-    while !get(num) {
+pub fn join_ms(ms: u64) {
+    watch();
+    while !get() {
         sleep(Duration::from_millis(ms));
     }
 }
-fn idx_valid(num: usize) -> bool {
-    num > 0 && unsafe { num + 1 <= SIGS_STATUS.len() }
-}
-fn idx_test(num: usize) {
-    if !idx_valid(num) {
-        panic!("Signal idx is invalid: {} of '{}~{}'",
-               num,
-               1,
-               unsafe { SIGS_STATUS.len() });
+
+#[cfg(unix)]
+extern "C" fn handler(_: c_int) {
+    unsafe {
+        SIG_STATUS = true;
     }
 }
 
-extern "C" fn handler(msg: c_int) {
-    unsafe {
-        SIGS_STATUS[msg as usize - 1] = true;
+#[cfg(windows)]
+extern "system" fn handler(msg: c_uint) -> c_int {
+    if msg as c_int == SIGNAL_NUM {
+        unsafe {
+            SIG_STATUS = true;
+        }
+        1
+    } else {
+        0
     }
 }
+

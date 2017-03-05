@@ -75,7 +75,11 @@ fn file_to_resp(rc_s: Rc<RcStream>, req: &Request, path: &Path, mut map: HashMap
     map.insert("Content-Type".to_owned(), ct);
     map.insert("Content-Length".to_owned(), format!("{}", content.len()));
 
-    let code_name = (*rc_s.arc().cns().get(req.status()).unwrap()).to_owned();
+    let code_name = (*rc_s.arc()
+                          .cns()
+                          .get(req.status())
+                          .unwrap())
+            .to_owned();
     Response::new(req.protocol(),
                   req.version(),
                   *req.status(),
@@ -109,7 +113,10 @@ fn sfs_to_resp(rc_s: Rc<RcStream>, req: &Request, path: &Path, mut map: HashMap<
             module_path!(),
             rc_s.time().ls(),
             path);
-    let exname = path.extension().unwrap().to_str().unwrap();
+    let exname = path.extension()
+        .unwrap()
+        .to_str()
+        .unwrap();
     let doc = rc_s.arc().ents_doc(exname);
     let ct = if doc.as_str() != "text/plain; charset=utf-8" {
         doc
@@ -117,12 +124,19 @@ fn sfs_to_resp(rc_s: Rc<RcStream>, req: &Request, path: &Path, mut map: HashMap<
         rc_s.arc().ents_bin(exname)
     };
 
-    let content = Content::Sf(*rc_s.arc().sfs().get(req.path_rp().as_str()).unwrap());
+    let content = Content::Sf(*rc_s.arc()
+                                   .sfs()
+                                   .get(req.path_rp().as_str())
+                                   .unwrap());
 
     map.insert("Content-Type".to_owned(), ct.to_owned());
     map.insert("Content-Length".to_owned(), format!("{}", content.len()));
 
-    let code_name = rc_s.arc().cns().get(req.status()).unwrap().to_owned();
+    let code_name = rc_s.arc()
+        .cns()
+        .get(req.status())
+        .unwrap()
+        .to_owned();
     Response::new(req.protocol(),
                   req.version(),
                   *req.status(),
@@ -136,11 +150,13 @@ fn other_status_code_to_resp(rc_s: Rc<RcStream>, req: &Request, mut map: HashMap
             module_path!(),
             rc_s.time().ls(),
             req.status);
-    let code_name = (*rc_s.arc().cns().get(req.status()).unwrap()).to_owned();
+    let code_name = (*rc_s.arc()
+                          .cns()
+                          .get(req.status())
+                          .unwrap())
+            .to_owned();
     let title = format!("{}  {}", req.status(), code_name);
-    let h1 = TagDouble::new("h1")
-        .push(req.path_raw.clone() + " --> " + &title)
-        .push(TagDouble::new("span").add_attr("id", "client").push(rc_s.client_addr()));
+    let h1 = TagDouble::new("h1").push(req.path_raw.clone() + " --> " + &title).push(TagDouble::new("span").add_attr("id", "client").push(rc_s.client_addr()));
     let head = htm::head().push(TagDouble::new("title").push(title));
     let address = htm::address(rc_s.server_addr());
     let html = HTML::new().push(head).push(TagDouble::new("body").push(h1).push(address));
@@ -148,7 +164,11 @@ fn other_status_code_to_resp(rc_s: Rc<RcStream>, req: &Request, mut map: HashMap
     let ct = rc_s.arc().ents_doc("html");
     map.insert("Content-Length".to_owned(), format!("{}", content.len()));
     map.insert("Content-Type".to_owned(), ct.to_owned());
-    let code_name = (*rc_s.arc().cns().get(req.status()).unwrap()).to_owned();
+    let code_name = (*rc_s.arc()
+                          .cns()
+                          .get(req.status())
+                          .unwrap())
+            .to_owned();
     Response::new(req.protocol(),
                   req.version(),
                   *req.status(),
@@ -166,7 +186,11 @@ fn dir_to_resp(rc_s: Rc<RcStream>, req: &Request, path: &Path, mut map: HashMap<
     let ct = rc_s.arc().ents_doc("html");
     map.insert("Content-Length".to_owned(), format!("{}", content.len()));
     map.insert("Content-Type".to_owned(), ct.to_owned());
-    let code_name = (*rc_s.arc().cns().get(req.status()).unwrap()).to_owned();
+    let code_name = (*rc_s.arc()
+                          .cns()
+                          .get(req.status())
+                          .unwrap())
+            .to_owned();
     Response::new(req.protocol(),
                   req.version(),
                   *req.status(),
@@ -182,27 +206,31 @@ fn dir_to_string(rc_s: Rc<RcStream>, req: &Request, path: &Path) -> Vec<u8> {
     let title = req.path_vp().to_string();
     let head = htm::head().push(TagDouble::new("title").push(title.as_str()));
     // <span id ="client">127.0.0.1:52622</span></h1>
-    let h1 = TagDouble::new("h1")
-        .push(title)
-        .push(TagDouble::new("span").add_attr("id", "client").push(rc_s.client_addr()))
-        .push(TagSingle::new("p"));
-    let mut table = TagDouble::new("table")
-        .add_attr("id", "table")
-        .push(TagDouble::new("thead").push(TagDouble::new("tr")
-            .add_attr("style", "border-bottom: 0.1px solid #000080;")
-            .push(TagDouble::new("th").push(TagDouble::new("button").add_attr("onclick", "sort_by(0)").push("Name")))
-            .push(TagDouble::new("th").push(TagDouble::new("button").add_attr("onclick", "sort_by(1)").push("Last_modified")))
-            .push(TagDouble::new("th").push(TagDouble::new("button").add_attr("onclick", "sort_by(2)").push("Size")))));
+    let h1 = TagDouble::new("h1").push(title).push(TagDouble::new("span").add_attr("id", "client").push(rc_s.client_addr())).push(TagSingle::new("p"));
+    let mut table = TagDouble::new("table").add_attr("id", "table").push(TagDouble::new("thead")
+                                                                             .push(TagDouble::new("tr")
+                                                                                       .add_attr("style", "border-bottom: 0.1px solid #000080;")
+                                                                                       .push(TagDouble::new("th").push(TagDouble::new("button")
+                                                                                                                           .add_attr("onclick",
+                                                                                                                                     "sort_by(0)")
+                                                                                                                           .push("Name")))
+                                                                                       .push(TagDouble::new("th").push(TagDouble::new("button")
+                                                                                                                           .add_attr("onclick",
+                                                                                                                                     "sort_by(1)")
+                                                                                                                           .push("Last_modified")))
+                                                                                       .push(TagDouble::new("th").push(TagDouble::new("button")
+                                                                                                                           .add_attr("onclick",
+                                                                                                                                     "sort_by(2)")
+                                                                                                                           .push("Size")))));
     let mut tbody = TagDouble::new("tbody");
     if !path_is_route {
         let path = Path::new(req.path_rp());
-        let path_parent = path.parent()
-            .map(|s| s.to_string_lossy().into_owned())
-            .unwrap_or(req.path_vp.to_string());
+        let path_parent = path.parent().map(|s| s.to_string_lossy().into_owned()).unwrap_or(req.path_vp.to_string());
         dbstln!("path: {}: path_parent: {}", req.path_vp, path_parent);
 
-        let mut tr = TagDouble::new("tr")
-            .push(TagDouble::new("td").add_attr("class", "dir").push(TagDouble::new("a").add_attr("href", "../").push("../ Parent Directory")));
+        let mut tr = TagDouble::new("tr").push(TagDouble::new("td")
+                                                   .add_attr("class", "dir")
+                                                   .push(TagDouble::new("a").add_attr("href", "../").push("../ Parent Directory")));
         if let Some((s, tm)) = psm_to_stm(&path_parent) {
             tr = tr.push(TagDouble::new("td").add_attr("data".to_owned(), format!("{}", tm.local().rfc822())).push(tm.ls()));
             tr = tr.push(TagDouble::new("td").add_attr("data".to_owned(), format!("{}", s)).push(format!("{}", s)));
@@ -215,7 +243,10 @@ fn dir_to_string(rc_s: Rc<RcStream>, req: &Request, path: &Path) -> Vec<u8> {
     let dir_entrys = fs::read_dir(path).unwrap();
     for entry in dir_entrys {
         let entry = entry.unwrap().path();
-        let entry_name = entry.file_name().unwrap().to_string_lossy().into_owned();
+        let entry_name = entry.file_name()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
         let entry_path = String::new() + req.path_rp() + "/" + &entry_name;
         let path_encoded = match quote(entry_name.clone(), b"") {
             Ok(ok) => ok,
@@ -240,24 +271,18 @@ fn dir_to_string(rc_s: Rc<RcStream>, req: &Request, path: &Path) -> Vec<u8> {
         let (tms_js, tms, ss_js, ss) = {
             if let Some((s, tm)) = psm_to_stm(&entry_path) {
                 if Path::new(&entry_path).is_dir() {
-                    tr = tr.push(TagDouble::new("td")
-                        .add_attr("class", "dir")
-                        .push(TagDouble::new("a").add_attr("href", path_encoded + "/").push(entry_name + "/")));
+                    tr = tr.push(TagDouble::new("td").add_attr("class", "dir").push(TagDouble::new("a").add_attr("href", path_encoded + "/").push(entry_name +
+                                                                                                                                                  "/")));
                 } else {
-                    tr = tr.push(TagDouble::new("td")
-                        .add_attr("class", "file")
-                        .push(TagDouble::new("a").add_attr("href", path_encoded).push(entry_name)));
+                    tr = tr.push(TagDouble::new("td").add_attr("class", "file").push(TagDouble::new("a").add_attr("href", path_encoded).push(entry_name)));
                 }
                 (format!("{}", tm.local().rfc822()), tm.ls().to_owned(), format!("{}", s), format!("{}", s))
             } else {
                 if Path::new(&entry_path).is_dir() {
-                    tr = tr.push(TagDouble::new("td")
-                        .add_attr("class", "dir")
-                        .push(TagDouble::new("a").add_attr("href", path_encoded + "/").push(entry_name + "/")));
+                    tr = tr.push(TagDouble::new("td").add_attr("class", "dir").push(TagDouble::new("a").add_attr("href", path_encoded + "/").push(entry_name +
+                                                                                                                                                  "/")));
                 } else {
-                    tr = tr.push(TagDouble::new("td")
-                        .add_attr("class", "file")
-                        .push(TagDouble::new("a").add_attr("href", path_encoded).push(entry_name)));
+                    tr = tr.push(TagDouble::new("td").add_attr("class", "file").push(TagDouble::new("a").add_attr("href", path_encoded).push(entry_name)));
                 }
                 ("--- --".to_owned(), "--- --".to_owned(), "--".to_owned(), "--".to_owned())
             }
@@ -268,7 +293,11 @@ fn dir_to_string(rc_s: Rc<RcStream>, req: &Request, path: &Path) -> Vec<u8> {
     }
     table = table.push(tbody);
     let address = htm::address(rc_s.server_addr());
-    let html = HTML::new().push(head).push(TagDouble::new("body").push(h1).push(table).push(TagSingle::new("hr")).push(address));
+    let html = HTML::new().push(head).push(TagDouble::new("body")
+                                               .push(h1)
+                                               .push(table)
+                                               .push(TagSingle::new("hr"))
+                                               .push(address));
     html.to_bytes()
 }
 

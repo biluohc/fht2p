@@ -52,7 +52,14 @@ impl Date {
 fn main() {
     use std::fs::File;
     let f = ".gitignore";
-    let std_du = File::open(f).unwrap().metadata().unwrap().modified().unwrap().elapsed().unwrap();
+    let std_du = File::open(f)
+        .unwrap()
+        .metadata()
+        .unwrap()
+        .modified()
+        .unwrap()
+        .elapsed()
+        .unwrap();
     println!("{:?}", std_du);
     let time_du = Duration::from_std(std_du).unwrap();
     println!("{}", Date::new(now() - time_du).ls());
