@@ -140,11 +140,11 @@ function size_human(cell) {
     for (var i = 1; i < table.rows.length; i++) {
         var td = table.rows[i].cells[cell];
         // alert(parseInt(td.getAttribute("data")));
-        var data = td.getAttribute("data");
-        var size = parseInt(data);
+        var size_text = td.getAttribute("data");
+        var size = parseInt(size_text);
         var size = size_humaner(size);
         if (size.match("NaN")) {
-            continue;
+            size = size_text;
         }
         td.innerHTML = spaceholder(5) + size;
     }
@@ -167,11 +167,11 @@ function date_human(cell) {
     for (var i = 1; i < table.rows.length; i++) {
         var td = table.rows[i].cells[cell];
         // alert(td.getAttribute("data"));
-        var data = td.getAttribute("data");
-        var date = new Date(data);
+        var data_text = td.getAttribute("data");
+        var date = new Date(data_text);
         var date = date_humaner(date);
         if (date.match("NaN")) {
-            continue;
+            date = data_text;
         }
         td.innerHTML = spaceholder(10) + date;
     }

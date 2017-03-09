@@ -17,13 +17,14 @@ impl Date {
         Self {
             local: local,
             // "%Y-%m%d %H:%M:%S" <=> 2017-0225 00:22:30
-            ls: format!("{:04}-{:02}{:02} {:02}:{:02}:{:02}",
-                        local.tm_year + 1900,
-                        local.tm_mon + 1,
-                        local.tm_mday,
-                        local.tm_hour,
-                        local.tm_min,
-                        local.tm_sec),
+            // ls: format!("{:04}-{:02}{:02} {:02}:{:02}:{:02}",
+            //             local.tm_year + 1900,
+            //             local.tm_mon + 1,
+            //             local.tm_mday,
+            //             local.tm_hour,
+            //             local.tm_min,
+            //             local.tm_sec),
+            ls : format!("{}",local.rfc822()),
             //  utc: "Thu, 22 Mar 2012 14:53:18 GMT"
             utc: tm.to_utc(),
             us: format!("{}", tm.to_utc().rfc822()),

@@ -6,8 +6,8 @@ use std::time::Duration;
 use std::io::prelude::*; // src/server/methods/get.rs:101::file.read_line()
 use std::error::Error;
 use std::path::Path;
-use std::io;
 use std::rc::Rc;
+use std::io;
 
 use super::*;
 use self::consts::{NAME, VERSION};
@@ -18,7 +18,7 @@ use poolite::Pool;
 mod path; // dir/file修改时间和大小
 mod htm; //html拼接
 mod get;
-use self::get::get;
+use self::get::{get, header, other_status_code_to_resp};
 mod rc_stream;
 use self::rc_stream::{RcStream, Request, Response, Content};
 use self::date::Date;
@@ -76,15 +76,32 @@ fn deal_client(config: Arc<ArcConfig>, mut stream: TcpStream) -> Result<(), io::
                 break;
             }
         }
-        let req = to_request(request_read, rc_s.clone());
+        let mut req = to_request(request_read, rc_s.clone());
 
         // write response.
-        match req.method().as_str() {
-            "GET" => get(rc_s.clone(), &mut stream, req),
+        let resp = match req.method().as_str() {
+            "GET" | "HEAD" => get(rc_s.clone(), &mut req),
             // post
-            name => errln!("{} don't use the method: {}", NAME, name),
+            _ => {
+                req.status_set(405);
+                let map = header(rc_s.clone());
+                other_status_code_to_resp(rc_s.clone(), &req, map)
+            }
         };
-        dbstln!("\n"); //分开各个请求，否则--log ''没法看。
+        // 打印日志
+        // 127.0.0.1--[2017-0129 21:11:59] 200 "GET /cargo/ HTTP/1.1" @ " "
+        println!(r#"{}**[{}] {} "{} {} {}/{}" -> "{}""#,
+                 rc_s.client_addr(),
+                 rc_s.time().ls().trim(),
+                 req.status,
+                 req.method(),
+                 req.path_raw(),
+                 req.protocol(),
+                 req.version(),
+                 req.path_rp);
+
+        resp.write_response(&mut stream, &req);
+        dbstln!(); //分开各个请求，否则--log ''没法看。
         if !rc_s.keep_alive() || rc_s.time_out() {
             break;
         }

@@ -153,8 +153,8 @@ impl Response {
             content: content,
         }
     }
-    pub fn write_response(self, mut stream: &mut TcpStream) {
-        fn write_response(msg: Response, mut stream: &mut TcpStream) -> Result<(), io::Error> {
+    pub fn write_response(self, mut stream: &mut TcpStream, req: &Request) {
+        fn write_response(msg: Response, req: &Request, mut stream: &mut TcpStream) -> Result<(), io::Error> {
             write!(&mut stream,
                    "{}/{} {} {}\r\n",
                    msg.status.protocol,
@@ -165,10 +165,13 @@ impl Response {
                 write!(&mut stream, "{}: {}\r\n", k, v)?;
             }
             write!(&mut stream, "\r\n")?;
+            if req.method() == "HEAD" {
+                return Ok(());
+            }
             msg.content.write_content(&mut stream);
             Ok(())
         }
-        if let Err(e) = write_response(self, &mut stream) {
+        if let Err(e) = write_response(self, req, &mut stream) {
             dbstln!("{}_Warning@{}::write_response(): {}",
                     NAME,
                     module_path!(),

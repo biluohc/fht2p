@@ -6,7 +6,7 @@ use std::io::BufReader;
 use std::fs::{self, File};
 use super::Date;
 
-pub fn get(rc_s: Rc<RcStream>, mut stream: &mut TcpStream, mut req: Request) {
+pub fn header(rc_s: Rc<RcStream>) -> HashMap<String, String> {
     let mut map: HashMap<String, String> = HashMap::new();
     map.insert("Server".to_owned(), format!("{}/{}", NAME, VERSION));
     if rc_s.keep_alive() {
@@ -14,7 +14,11 @@ pub fn get(rc_s: Rc<RcStream>, mut stream: &mut TcpStream, mut req: Request) {
     } else {
         map.insert("Connection".to_owned(), "close".to_owned());
     }
+    map
+}
 
+pub fn get(rc_s: Rc<RcStream>, mut req: &mut Request) -> Response {
+    let map = header(rc_s.clone());
     let path = req.path_rp().to_string();
     let path = Path::new(&path);
     // 路径是断开的链接或不是一般文件/目录(套接字等)或权限不足，文件系统IO错误？
@@ -25,34 +29,21 @@ pub fn get(rc_s: Rc<RcStream>, mut stream: &mut TcpStream, mut req: Request) {
     if !path.exists() && !rc_s.arc().sfs().contains_key(req.path_rp().as_str()) {
         req.status_set(404);
     }
-
     let status_code = req.status;
-    // 打印GET方法的日志
-    // 127.0.0.1--[2017-0129 21:11:59] 200 "GET /cargo/ HTTP/1.1" @ " "
-    println!(r#"{}**[{}] {} "{} {} {}/{}" -> "{}""#,
-             rc_s.client_addr(),
-             rc_s.time().ls(),
-             status_code,
-             req.method(),
-             req.path_raw(),
-             req.protocol(),
-             req.version(),
-             req.path_rp);
-    let resp = match path.exists() {
+
+    match path.exists() {
         // 正常的文件目录
-        true if (status_code == 200 || status_code == 304) && path.is_dir() => dir_to_resp(rc_s.clone(), &req, path, map),
-        true if (status_code == 200 || status_code == 304) && path.is_file() => file_to_resp(rc_s.clone(), &req, path, map),
+        true if (status_code == 200 || status_code == 304) && path.is_dir() => dir_to_resp(rc_s.clone(), req, path, map),
+        true if (status_code == 200 || status_code == 304) && path.is_file() => file_to_resp(rc_s.clone(), req, path, map),
         // 403的文件目录
-        true if status_code == 403 => other_status_code_to_resp(rc_s.clone(), &req, map),
+        true if status_code == 403 => other_status_code_to_resp(rc_s.clone(), req, map),
         // 静态文件
-        false if status_code == 200 || status_code == 304 => sfs_to_resp(rc_s.clone(), &req, path, map),
+        false if status_code == 200 || status_code == 304 => sfs_to_resp(rc_s.clone(), req, path, map),
         // 404的url，文件目录，（注意如果url直接当路径访问，有可能存在.)
-        _ if status_code == 404 => other_status_code_to_resp(rc_s.clone(), &req, map),
+        _ if status_code == 404 => other_status_code_to_resp(rc_s.clone(), req, map),
         // 其它的以后再处理。
         _ => unreachable!(),
-    };
-    resp.write_response(&mut stream);
-    dbstln!();
+    }
 }
 
 fn path_is_403(path: &Path) -> bool {
@@ -145,7 +136,7 @@ fn sfs_to_resp(rc_s: Rc<RcStream>, req: &Request, path: &Path, mut map: HashMap<
                   content)
 }
 
-fn other_status_code_to_resp(rc_s: Rc<RcStream>, req: &Request, mut map: HashMap<String, String>) -> Response {
+pub fn other_status_code_to_resp(rc_s: Rc<RcStream>, req: &Request, mut map: HashMap<String, String>) -> Response {
     dbstln!("{}@{} other_status_code_to_resp(): {:?}",
             module_path!(),
             rc_s.time().ls(),
@@ -207,21 +198,13 @@ fn dir_to_string(rc_s: Rc<RcStream>, req: &Request, path: &Path) -> Vec<u8> {
     let head = htm::head().push(TagDouble::new("title").push(title.as_str()));
     // <span id ="client">127.0.0.1:52622</span></h1>
     let h1 = TagDouble::new("h1").push(title).push(TagDouble::new("span").add_attr("id", "client").push(rc_s.client_addr())).push(TagSingle::new("p"));
-    let mut table = TagDouble::new("table").add_attr("id", "table").push(TagDouble::new("thead")
-                                                                             .push(TagDouble::new("tr")
-                                                                                       .add_attr("style", "border-bottom: 0.1px solid #000080;")
-                                                                                       .push(TagDouble::new("th").push(TagDouble::new("button")
-                                                                                                                           .add_attr("onclick",
-                                                                                                                                     "sort_by(0)")
-                                                                                                                           .push("Name")))
-                                                                                       .push(TagDouble::new("th").push(TagDouble::new("button")
-                                                                                                                           .add_attr("onclick",
-                                                                                                                                     "sort_by(1)")
-                                                                                                                           .push("Last_modified")))
-                                                                                       .push(TagDouble::new("th").push(TagDouble::new("button")
-                                                                                                                           .add_attr("onclick",
-                                                                                                                                     "sort_by(2)")
-                                                                                                                           .push("Size")))));
+    let mut table = TagDouble::new("table")
+        .add_attr("id", "table")
+        .push(TagDouble::new("thead").push(TagDouble::new("tr")
+            .add_attr("style", "border-bottom: 0.1px solid #000080;")
+            .push(TagDouble::new("th").push(TagDouble::new("button").add_attr("onclick", "sort_by(0)").push("Name")))
+            .push(TagDouble::new("th").push(TagDouble::new("button").add_attr("onclick", "sort_by(1)").push("Last_modified")))
+            .push(TagDouble::new("th").push(TagDouble::new("button").add_attr("onclick", "sort_by(2)").push("Size")))));
     let mut tbody = TagDouble::new("tbody");
     if !path_is_route {
         let path = Path::new(req.path_rp());
@@ -259,12 +242,14 @@ fn dir_to_string(rc_s: Rc<RcStream>, req: &Request, path: &Path) -> Vec<u8> {
             }
         };
 
-        if !Path::new(&entry_path).exists() {
-            panic!("{}@{}_path_拼接_error:\n{:?}\n",
-                   module_path!(),
-                   rc_s.time().ls(),
-                   &entry_path);
-        }
+        // 比如当前目录下有断开的链接时会陷入。
+        // if !Path::new(&entry_path).exists() {
+        //     panic!("{}@{}_path_拼接_error:\n{:?}\n",
+        //            module_path!(),
+        //            rc_s.time().ls(),
+        //            &entry_path);
+        // }
+
         // "/" 区分目录与文件(视觉),并且如果没有它，浏览器不会自动拼路径，这上面坑了好多时间。
         // 仔细对比响应，python3 -m http.server 8000，fuckerfuckf.
         let mut tr = TagDouble::new("tr");
