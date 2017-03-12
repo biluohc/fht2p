@@ -162,17 +162,8 @@ fn to_request(vec: Vec<u8>, rc_s: Rc<RcStream>) -> Request {
             module_path!(),
             rc_s.time().ls(),
             &line[1]);
-    let mut url = String::new();
-    let mut last_char = '.'; // 非/即可。
-    for c in url_raw.chars() {
-        // 消去多余的 "/"
-        if c == '/' && last_char == '/' {
-            continue;
-        }
-        url.push(c);
-        last_char = c;
-    }
-    dbstln!("{}@{} url_sub_'/': {:?}",
+    let url = url_handle_pre(&url_raw);
+    dbstln!("{}@{} url_handle_pre(): {:?}",
             module_path!(),
             rc_s.time().ls(),
             &url);
@@ -219,7 +210,18 @@ fn url_to_vp_rp(rc_s: Rc<RcStream>, url: &str, mut vp_rp_full_match: &mut Option
             break;
         }
         if url.starts_with(vp) {
+            // Path::new("aa/bb/ccc").join("/")="/";
+            // Path::new("aa/bb/ccc").join("/home")="/home";
+            // vp如果是目录，则vp必然以/结尾，加上前面的url预处理，那么不可能切片以/开始还存在。
+            // let mut idx = vp.len();
+            // if url[vp.len()..].starts_with("/") {
+            //     idx += 1;
+            // }
+            if url[vp.len()..].starts_with("/") {
+                break;
+            }
             let url_path = Path::new(rp).join(Path::new(&url[vp.len()..]));
+
             if url_path.exists() {
                 *vp_rp_full_match = Some((url.to_string(), url_path.to_string_lossy().into_owned()));
                 break;
@@ -236,6 +238,9 @@ fn url_to_vp_rp(rc_s: Rc<RcStream>, url: &str, mut vp_rp_full_match: &mut Option
                     break;
                 }
                 if decoded_url.starts_with(vp) {
+                    if decoded_url[vp.len()..].starts_with("/") {
+                        break;
+                    }
                     dbstln!("{}@{}_url_sub_'/'_decoded: '{}' start_with(rp): \
                                 {:?}\nrp.join(decoded_url): {:?}",
                             module_path!(),
@@ -257,4 +262,38 @@ fn url_to_vp_rp(rc_s: Rc<RcStream>, url: &str, mut vp_rp_full_match: &mut Option
                 module_path!(),
                 url);
     }
+}
+
+/// 除去 `../` 和多余的 `/`,虽然对 `..//home/` 的处理不正确，但也够用了。
+fn url_handle_pre(msg: &str) -> String {
+    use std::ffi::OsStr;
+    use std::path::Path;
+    let mut cpts: Vec<&OsStr> = Vec::new();
+    //.components()迭代出的组件会自动消去多余的/,除了/开始的保留首位的/。
+    for c in Path::new(msg).components() {
+        let c = c.as_os_str();
+        // println!("{:?}", c);
+        if c == OsStr::new("..") {
+            cpts.pop();
+        } else {
+            cpts.push(c);
+        }
+    }
+    let mut raw = String::new();
+    // 迭代器处理不为/开始的添加两次/
+    let cpts = if cpts[0] == OsStr::new("/") {
+        let mut cp = cpts.into_iter();
+        raw.push('/');
+        cp.next();
+        cp
+    } else {
+        cpts.into_iter()
+    };
+    raw = cpts.zip(vec![OsStr::new("/")].into_iter().cycle()).fold(raw,
+                                                                   |acc, (x, y)| acc + x.to_str().unwrap() + y.to_str().unwrap());
+    // 去除没有的/
+    if !msg.ends_with('/') {
+        raw.pop();
+    }
+    raw
 }
