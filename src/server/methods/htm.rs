@@ -4,7 +4,10 @@ use std::env;
 
 // <head><meta charset=UTF-8"><title>/cargo/doc/date/</title><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico"><link rel="stylesheet" type="text/css" href="/style.css"></head>
 pub fn head() -> TagDouble {
-    HTML::head().push(TagSingle::new("link").add_attrs(vec![("rel", "stylesheet"), ("type", "text/css"), ("href", CSS_PATH)].iter()))
+    HTML::head().push(TagSingle::new("link").add_attrs(vec![("rel", "stylesheet"),
+                                                            ("type", "text/css"),
+                                                            ("href", CSS_PATH)]
+                                                               .iter()))
 }
 
 // <address><a href="https://github.com/biluohc/fht2p">fht2p</a>/0.6.1 (linux/x86_64) Server at <a href="http://127.0.0.1:8080">127.0.0.1:8080</a></address>

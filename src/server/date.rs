@@ -24,7 +24,7 @@ impl Date {
             //             local.tm_hour,
             //             local.tm_min,
             //             local.tm_sec),
-            ls : format!("{}",local.rfc822()),
+            ls: format!("{}", local.rfc822()),
             //  utc: "Thu, 22 Mar 2012 14:53:18 GMT"
             utc: tm.to_utc(),
             us: format!("{}", tm.to_utc().rfc822()),

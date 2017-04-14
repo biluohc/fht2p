@@ -9,7 +9,7 @@ use super::*;
 use poolite::{Pool, IntoIOResult};
 
 mod args; //命令行参数处理
-use self::args::Config;
+use self::args::{Config, Server};
 mod consts; //资源性字符串/u8数组
 use self::consts::*; //const 变量
 // mod path; // dir/file修改时间和大小
@@ -19,39 +19,49 @@ mod date;
 use self::date::Date;
 
 pub fn fht2p() -> Result<(), String> {
-    let config = args::get_config()?;
+    let config = args::parse();
     dbln!("{:?}", config); //debug for getting's Config
     let config_ = config.clone();
-    let arc_config = ArcConfig::get(config_.route, config_.keep_alive);
+    let arc_config = ArcConfig::get(config_.routes, config_.keep_alive);
     let arc_config = Arc::from(arc_config);
-    let (mut count, port_num) = (0, config.port.len());
-    for port in &config.port {
-        match listener(&config, port, arc_config.clone()) {
-            Ok(ok) => return Ok(ok),
+    for idx in 0..config.servers.len() {
+        match listener(&config.servers[idx], &config, arc_config.clone()) {
+            Ok(_) => break,
             Err(e) => {
-                if count == port_num - 1 {
-                    return Err(format!("{}:{:?} : {}", config.ip, config.port, e.description()));
+                if idx == config.servers.len() - 1 {
+                    return Err(format!("{}:{:?} : {}",
+                                       config.servers[idx].ip,
+                                       config.servers[idx].port,
+                                       e.description()));
                 }
             }
-        };
-        count += 1;
+        }
     }
     Ok(())
 }
-fn listener(config: &Config, port: &u32, arc_config: Arc<ArcConfig>) -> Result<(), io::Error> {
-    let addr = format!("{}:{}", config.ip, port);
-    let tcp_listener = TcpListener::bind(&addr[..])?;
-    println!("{}/{} Serving at {} for {:?}",
+fn listener(server: &Server, config: &Config, arc_config: Arc<ArcConfig>) -> Result<(), io::Error> {
+    let printf = |map| {
+        let mut str = String::new();
+        for (k, v) in map {
+            str.push_str(&format!("   {:?} -> {:?}\n", k, v));
+        }
+        str
+    };
+    let tcp_listener = TcpListener::bind(std::net::SocketAddr::new(server.ip, server.port))?;
+    println!("{}/{} Serving at {}:{} for:\n{}",
              NAME,
              VERSION,
-             addr,
-             config.route);
-    println!("You can visit http://127.0.0.1:{}", port);
+             server.ip,
+             server.port,
+             printf(&config.routes).trim_right());
+    println!("You can visit http://{}:{}", server.ip, server.port);
 
-    let pool = Pool::new().load_limit(Pool::num_cpus() * Pool::num_cpus())
+    let pool = Pool::new()
+        .load_limit(Pool::num_cpus() * Pool::num_cpus())
         .run()
         .into_iorst()?;
-    thread::Builder::new().spawn(move || { methods::for_listener(tcp_listener, arc_config, pool); })?;
+    thread::Builder::new()
+        .spawn(move || { methods::for_listener(&tcp_listener, arc_config, &pool); })?;
     Ok(())
 }
 

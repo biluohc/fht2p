@@ -23,7 +23,7 @@ mod rc_stream;
 use self::rc_stream::{RcStream, Request, Response, Content};
 use self::date::Date;
 
-pub fn for_listener(listener: TcpListener, config: Arc<ArcConfig>, pool: Pool) {
+pub fn for_listener(listener: &TcpListener, config: Arc<ArcConfig>, pool: &Pool) {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
@@ -76,7 +76,7 @@ fn deal_client(config: Arc<ArcConfig>, mut stream: TcpStream) -> Result<(), io::
                 break;
             }
         }
-        let mut req = to_request(request_read, rc_s.clone());
+        let mut req = to_request(&request_read[..], rc_s.clone());
 
         // write response.
         let resp = match req.method().as_str() {
@@ -131,7 +131,7 @@ fn read_request(stream: &mut TcpStream) -> std::io::Result<Vec<u8>> {
     Ok(req)
 }
 
-fn to_request(vec: Vec<u8>, rc_s: Rc<RcStream>) -> Request {
+fn to_request(vec: &[u8], rc_s: Rc<RcStream>) -> Request {
     // "GET /favicon.ico HTTP/1.1\r\nHost: 127.0.0.1:8080\r\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:50.0) Gecko/20100101 Firefox/50.0\r\nAccept: */*\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\nCookie: _ga=GA1.1.1204164507.1467299031\r\nConnection: keep-alive\r\n\r\n"
     let req_str = String::from_utf8_lossy(&vec[..]).into_owned();
     dbstln!("\n{}@{} req_raw:\n{:?}",
@@ -217,7 +217,7 @@ fn url_to_vp_rp(rc_s: Rc<RcStream>, url: &str, mut vp_rp_full_match: &mut Option
             // if url[vp.len()..].starts_with("/") {
             //     idx += 1;
             // }
-            if url[vp.len()..].starts_with("/") {
+            if url[vp.len()..].starts_with('/') {
                 break;
             }
             let url_path = Path::new(rp).join(Path::new(&url[vp.len()..]));
@@ -238,7 +238,7 @@ fn url_to_vp_rp(rc_s: Rc<RcStream>, url: &str, mut vp_rp_full_match: &mut Option
                     break;
                 }
                 if decoded_url.starts_with(vp) {
-                    if decoded_url[vp.len()..].starts_with("/") {
+                    if decoded_url[vp.len()..].starts_with('/') {
                         break;
                     }
                     dbstln!("{}@{}_url_sub_'/'_decoded: '{}' start_with(rp): \
@@ -289,8 +289,9 @@ fn url_handle_pre(msg: &str) -> String {
     } else {
         cpts.into_iter()
     };
-    raw = cpts.zip(vec![OsStr::new("/")].into_iter().cycle()).fold(raw,
-                                                                   |acc, (x, y)| acc + x.to_str().unwrap() + y.to_str().unwrap());
+    raw = cpts.zip(vec![OsStr::new("/")].into_iter().cycle())
+        .fold(raw,
+              |acc, (x, y)| acc + x.to_str().unwrap() + y.to_str().unwrap());
     // 去除没有的/
     if !msg.ends_with('/') {
         raw.pop();

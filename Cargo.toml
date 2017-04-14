@@ -1,6 +1,6 @@
 [package]
 name = "fht2p"
-version = "0.6.3"
+version = "0.7.0"
 authors = ["biluohc <biluohc@qq.com>"]
 build = "build.rs"
 
@@ -25,10 +25,12 @@ urlparse = "^0.7.3"
 time = "^0.1"
 
 stderr ="0.7.0" # 要和 poolite 所用的同一个版本，否则loger不能正常工作。
-
-app = { git = "https://github.com/biluohc/app-rs", rev = "b187e2b" }	# 0.1.1
-# stderr = { git = "https://github.com/biluohc/stderr", branch = "master", version = "^0.7.0"}
-poolite = { git = "https://github.com/biluohc/poolite",branch = "master", version = "0.6.1" }
-# stderr= { path = "../stderr" }
+poolite = "0.6.1"
+app = "0.5.5"
+# stderr = { git = "https://github.com/biluohc/stderr", branch = "master", version = "0.7.0"}
+# poolite = { git = "https://github.com/biluohc/poolite",branch = "master", version = "0.6.1" }
+# app = { git = "https://github.com/biluohc/app-rs", branch = "master", version = "0.5.5" }
+# stderr = { path = "../stderr" }
 # poolite = { path ="../poolite" }
+# app = { path = "../app" }
 
