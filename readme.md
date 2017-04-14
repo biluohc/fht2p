@@ -20,6 +20,12 @@
 
     ./target/release/fht2p --help
 ```
+
+## Binary
+
+* [The Release Page](https://github.com/biluohc/fht2p/releases)  
+
+## Ps
 * 0.0.0.0 is default listenning address.
 * 8080 is default port.
 * keep-alive is default close.
