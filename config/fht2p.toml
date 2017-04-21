@@ -1,0 +1,28 @@
+[fht2p]
+name = "fht2p"
+version = "0.7.0"
+author = "Wspsxing <biluohc@qq.com>"
+desc =  "HTTP Server for Static File written with Rust"
+address= "https://github.com/biluohc/fht2p"
+encoding = "utf8"
+
+[setting]
+# whether use keep-alive
+keep_alive = false
+
+# 0.0.0.0 is default listenning address, 8080 is default port.
+# fht2p will try to use the next one when the current one can not use, pramgram will exit if all failed.
+servers = ["0.0.0.0:8080","0.0.0.0:8000","127.0.0.1:80"]
+
+# ./ is default "/" of,"/" must exist.
+ [[routes]]
+img ="/"
+rel = "./"
+
+#  [[routes]]
+# img ="/cargo/"
+# rel = "/home/viw/.cache/mozilla/cargo/"
+
+#  [[routes]]
+# img ="/i~~mkv/"
+# rel = "/home/viw/it雷雨/i~~mkv/"

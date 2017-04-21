@@ -1,10 +1,13 @@
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::collections::HashMap;
 use std::error::Error;
 use std::path::Path;
+use std::fs::File;
+use std::io::Read;
 use std::env;
 use std;
 
-use tini::Ini; // ini文件
+use toml;
 
 use super::consts::*; // 名字,版本,作者，简介，地址
 
@@ -12,7 +15,7 @@ use app::{App, Opt};
 
 pub fn parse() -> Config {
     let mut config = Config::default();
-    let mut server = config.servers.pop().unwrap();
+    let mut server = Server::default();
     let mut routes: Vec<String> = Vec::new();
     let mut cp = false;
     let mut c_path: Option<String> = None;
@@ -23,7 +26,7 @@ pub fn parse() -> Config {
             .version(VERSION)
             .author(AUTHOR, EMAIL)
             .addr(URL_NAME, URL)
-            .desc(ABOUT)
+            .desc(DESC)
             .opt(Opt::new("cp", &mut cp)
                      .short("cp")
                      .long("cp")
@@ -73,10 +76,12 @@ pub fn parse() -> Config {
                     .map_err(|e| helper.help_err_exit(e, 1))
                     .unwrap()
             }
-            None => Config::load_from_CONFIG(),
+            None => Config::load_from_STR(),
         }
     } else {
-        config.servers.push(server);
+        config
+            .servers
+            .push(SocketAddr::new(server.ip, server.port));
         if !routes.is_empty() {
             config.routes = args_paths_to_route(&routes[..])
                 .map_err(|e| helper.help_err_exit(e, 1))
@@ -86,7 +91,6 @@ pub fn parse() -> Config {
     }
 }
 
-use std::net::{IpAddr, Ipv4Addr};
 #[derive(Debug,Clone)]
 pub struct Server {
     pub ip: IpAddr,
@@ -105,10 +109,29 @@ impl Server {
         Server { ip: ip, port: port }
     }
 }
+// 关键是结构体的字段名，和toml的[name]对应
+#[derive(Debug,Deserialize)]
+struct Fht2p {
+    setting: Setting,
+    routes: Vec<Route>,
+}
+
+#[derive(Debug,Deserialize)]
+struct Setting {
+    keep_alive: bool,
+    servers: Vec<String>,
+}
+
+#[derive(Debug,Deserialize)]
+struct Route {
+    rel: String,
+    img: String,
+}
+
 #[derive(Debug,Clone)]
 pub struct Config {
     pub keep_alive: bool,
-    pub servers: Vec<Server>,
+    pub servers: Vec<SocketAddr>,
     pub routes: HashMap<String, String>,
 }
 impl Default for Config {
@@ -117,7 +140,7 @@ impl Default for Config {
         map.insert("/".to_owned(), "./".to_owned());
         Config {
             keep_alive: false,
-            servers: vec![Server::default()],
+            servers: vec![SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080)],
             routes: map,
         }
     }
@@ -125,67 +148,63 @@ impl Default for Config {
 
 impl Config {
     fn load_from_file(path: &str) -> Result<Self, String> {
-        let conf = Ini::from_file(path)
-            .map_err(|e| format!("config file('{}') is invalid: {}", path, e.description()))?;
-        Self::load_from_ini(path, conf)
+        let mut str = String::new();
+        let mut file = File::open(path)
+            .map_err(|e| format!("config file('{}') open fails: {}", path, e.description()))?;
+        file.read_to_string(&mut str)
+            .map_err(|e| format!("config file('{}') read fails: {}", path, e.description()))?;
+        Self::load_from_str(path, &str)
     }
-    fn load_from_ini(file_name: &str, conf: Ini) -> Result<Config, String> {
-        let mut config = Config::default();
+    fn load_from_str(file_name: &str, toml: &str) -> Result<Config, String> {
+        let mut config = Self::default();
         config.routes.clear();
         config.servers.clear();
 
-        config.keep_alive = conf.get("Setting", "keep-alive")
-            .ok_or_else(|| format!("'{}''s Setting's keep-alive is a invalid value", file_name))?;
-
-        for (key, val) in conf.iter_section("Servers")
-                .ok_or_else(|| format!("'{}''s Servers is a invalid value", file_name))? {
-            let k = key.parse::<IpAddr>()
-                .map_err(|_| {
-                             format!("'{}''s `{} = {}`'s ip is a invalid value",
-                                     key,
-                                     val,
-                                     file_name)
+        let toml: Fht2p = toml::from_str(toml)
+            .map_err(|e| format!("config file('{}') parse fails: {}", file_name, e))?;
+        config.keep_alive = toml.setting.keep_alive;
+        for server in toml.setting.servers {
+            let addr = server.parse::<SocketAddr>()
+                .map_err(|e| {
+                             format!("config file('{}')'s {} parse::<SocketAddr> fails: {}",
+                                     file_name,
+                                     server,
+                                     e.description())
                          })?;
-            let v = val.parse::<u16>()
-                .map_err(|_| {
-                             format!("'{}''s `{} = {}`'s port is a invalid value",
-                                     key,
-                                     val,
-                                     file_name)
-                         })?;
-            config.servers.push(Server::new(k, v));
+            config.servers.push(addr);
         }
 
-        let _: String = conf.get("Routes", "/")
-            .ok_or_else(|| format!("'{}''s 'Routes = /`'s port is a invalid value", file_name))?;
-
-        for (key, val) in conf.iter_section("Routes")
-                .ok_or_else(|| format!("'{}''s Routes is a invalid value", file_name))? {
-            if !Path::new(&val).exists() {
+        for route in &toml.routes {
+            if !Path::new(&route.rel).exists() {
                 errln!("Warning: '{}''s routes's `{}`'s `{}` is not exists",
                        file_name,
-                       key,
-                       val);
+                       route.img,
+                       route.rel);
             }
-            if config.routes.insert(key.clone(), val.clone()).is_some() {
-                return Err(format!("'{}''s routes's {} already defined", file_name, key));
+            if config
+                   .routes
+                   .insert(route.img.clone(), route.rel.clone())
+                   .is_some() {
+                return Err(format!("'{}''s routes's {} already defined", file_name, route.img));
             }
+        }
+        if config.servers.is_empty() {
+                return Err(format!("'{}''s addrs is empty", file_name));            
+        }
+        if config.routes.is_empty() {
+                return Err(format!("'{}''s routes is empty", file_name));            
         }
         Ok(config)
     }
-    fn load_from_str(str_name: &str, str: &str) -> Result<Config, String> {
-        let conf = Ini::from_buffer(str);
-        Self::load_from_ini(str_name, conf)
-    }
     #[allow(non_snake_case)]
-    fn load_from_CONFIG() -> Self {
-        Config::load_from_str("CONFIG-Default", CONFIG_DEFAULT).unwrap()
+    fn load_from_STR() -> Self {
+        Config::load_from_str("CONFIG-STR", CONFIG_STR).unwrap()
     }
 }
 
 // 打印默认配置文件。
 fn config_print() {
-    println!("{}", CONFIG_DEFAULT);
+    println!("{}", CONFIG_STR);
     std::process::exit(0);
 }
 
@@ -194,11 +213,11 @@ fn get_config_path() -> Option<String> {
         // 家目录 ～/.config/fht2p/fht2p.ini
         Some(ref home) if home.as_path()
                               .join(".config/fht2p")
-                              .join(CONFIG_DEFAULT_PATH)
+                              .join(CONFIG_STR_PATH)
                               .exists() => {
             Some(home.as_path()
                      .join(".config/fht2p")
-                     .join(CONFIG_DEFAULT_PATH)
+                     .join(CONFIG_STR_PATH)
                      .to_string_lossy()
                      .into_owned())
         }
@@ -208,13 +227,13 @@ fn get_config_path() -> Option<String> {
                  .unwrap()
                  .parent()
                  .unwrap()
-                 .join(CONFIG_DEFAULT_PATH)
+                 .join(CONFIG_STR_PATH)
                  .exists() => {
             Some(std::env::current_exe()
                      .unwrap()
                      .parent()
                      .unwrap()
-                     .join(CONFIG_DEFAULT_PATH)
+                     .join(CONFIG_STR_PATH)
                      .to_string_lossy()
                      .into_owned())
         }
@@ -222,11 +241,11 @@ fn get_config_path() -> Option<String> {
         _ if std::env::current_dir().is_ok() &&
              std::env::current_dir()
                  .unwrap()
-                 .join(CONFIG_DEFAULT_PATH)
+                 .join(CONFIG_STR_PATH)
                  .exists() => {
             Some(std::env::current_dir()
                      .unwrap()
-                     .join(CONFIG_DEFAULT_PATH)
+                     .join(CONFIG_STR_PATH)
                      .to_string_lossy()
                      .into_owned())
         }
@@ -234,7 +253,7 @@ fn get_config_path() -> Option<String> {
     }
 }
 
-// 参数转换为Route
+// 参数转换为Route vir->rel
 fn args_paths_to_route(map: &[String]) -> Result<HashMap<String, String>, String> {
     let mut routes: HashMap<String, String> = HashMap::new();
     for (idx, rel) in map.iter().enumerate() {

@@ -20,9 +20,11 @@ panic = 'unwind'
 html5 = { path ="util/html5" }
 signal_monitor = { path = "util/signal_monitor" }
 
-tini= { git = " https://github.com/pinecrew/tini", branch = "master", version = "^0.2.0" }
 urlparse = "^0.7.3"
 time = "^0.1"
+toml = "^0.3.2"
+serde_derive = "^0.9.14"
+serde = "^0.9.14"
 
 stderr ="0.7.0" # 要和 poolite 所用的同一个版本，否则loger不能正常工作。
 poolite = "0.6.1"

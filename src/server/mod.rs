@@ -9,7 +9,7 @@ use super::*;
 use poolite::{Pool, IntoIOResult};
 
 mod args; //命令行参数处理
-use self::args::{Config, Server};
+use self::args::Config;
 mod consts; //资源性字符串/u8数组
 use self::consts::*; //const 变量
 // mod path; // dir/file修改时间和大小
@@ -29,17 +29,14 @@ pub fn fht2p() -> Result<(), String> {
             Ok(_) => break,
             Err(e) => {
                 if idx == config.servers.len() - 1 {
-                    return Err(format!("{}:{:?} : {}",
-                                       config.servers[idx].ip,
-                                       config.servers[idx].port,
-                                       e.description()));
+                    return Err(format!("{:?} : {}", config.servers[idx], e.description()));
                 }
             }
         }
     }
     Ok(())
 }
-fn listener(server: &Server, config: &Config, arc_config: Arc<ArcConfig>) -> Result<(), io::Error> {
+fn listener(server: &std::net::SocketAddr, config: &Config, arc_config: Arc<ArcConfig>) -> Result<(), io::Error> {
     let printf = |map| {
         let mut str = String::new();
         for (k, v) in map {
@@ -47,14 +44,13 @@ fn listener(server: &Server, config: &Config, arc_config: Arc<ArcConfig>) -> Res
         }
         str
     };
-    let tcp_listener = TcpListener::bind(std::net::SocketAddr::new(server.ip, server.port))?;
-    println!("{}/{} Serving at {}:{} for:\n{}",
+    let tcp_listener = TcpListener::bind(server)?;
+    println!("{}/{} Serving at {:?} for:\n{}",
              NAME,
              VERSION,
-             server.ip,
-             server.port,
+             server,
              printf(&config.routes).trim_right());
-    println!("You can visit http://{}:{}", server.ip, server.port);
+    println!("You can visit http://127.0.0.1:{}", server.port());
 
     let pool = Pool::new()
         .load_limit(Pool::num_cpus() * Pool::num_cpus())

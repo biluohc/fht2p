@@ -3,8 +3,8 @@ pub const NAME: &'static str = "fht2p";
 pub const VERSION: &'static str = "0.7.0";
 pub const AUTHOR: &'static str = "Wspsxing";
 pub const EMAIL: &'static str = "biluohc@qq.com";
-pub const ABOUT: &'static str = "A HTTP Server for Static File written with Rust";
-pub const URL_NAME: &'static str = "Repository";
+pub const DESC: &'static str = "A HTTP Server for Static File written with Rust";
+pub const URL_NAME: &'static str = "Github";
 pub const URL: &'static str = "https://github.com/biluohc/fht2p";
 
 // resource files
@@ -16,8 +16,8 @@ pub static JS: &'static str = include_str!("../../../config/default/fht2p.js");
 pub const JS_PATH: &'static str = "/fht2p.js";
 
 // config file
-pub const CONFIG_DEFAULT_PATH: &'static str = "fht2p.ini";
-pub const CONFIG_DEFAULT: &'static str = include_str!("../../../config/fht2p.ini");
+pub const CONFIG_STR_PATH: &'static str = "fht2p.toml";
+pub const CONFIG_STR: &'static str = include_str!("../../../config/fht2p.toml");
 
 pub const BUFFER_SIZE: usize = 1024 * 1024; //字节1024*1024=>1m
 pub const TIME_OUT: u64 = 5; // 5 secs 以后放到选项/配置
