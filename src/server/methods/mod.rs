@@ -59,11 +59,9 @@ fn deal_client(config: Arc<ArcConfig>, mut stream: TcpStream) -> Result<(), io::
     stream.set_write_timeout(Some(time_out))?;
     let rc_stream = Rc::from(RcStream::new(config, server_addr, client_addr));
 
-    // println!("二分法 {:?}@{:?} {:?}@{:?}",
+    // println!("binary_search {:?}@{:?}",
     //          rc_stream.time().as_str(),
-    //          rc_stream.client_addr(),
-    //          module_path!(),
-    //          line!());
+    //          rc_stream.client_addr());
     loop {
         let rc_s = rc_stream.clone();
         let request_read = read_request(&mut stream)?;
@@ -134,10 +132,7 @@ fn read_request(stream: &mut TcpStream) -> std::io::Result<Vec<u8>> {
 fn to_request(vec: &[u8], rc_s: Rc<RcStream>) -> Request {
     // "GET /favicon.ico HTTP/1.1\r\nHost: 127.0.0.1:8080\r\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:50.0) Gecko/20100101 Firefox/50.0\r\nAccept: */*\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\nCookie: _ga=GA1.1.1204164507.1467299031\r\nConnection: keep-alive\r\n\r\n"
     let req_str = String::from_utf8_lossy(&vec[..]).into_owned();
-    dbstln!("\n{}@{} req_raw:\n{:?}",
-            module_path!(),
-            rc_s.time().ls(),
-            req_str);
+    dbstln!("req_raw:\n{:?}", req_str);
     let mut req_str = req_str.lines();
     let line = req_str.next().unwrap();
     // 请求行
@@ -153,20 +148,11 @@ fn to_request(vec: &[u8], rc_s: Rc<RcStream>) -> Request {
             }
         }
     }
-    dbstln!("{}@{} header_HashMap:\n{:?}",
-            module_path!(),
-            rc_s.time().ls(),
-            header);
+    dbstln!("header_HashMap:\n{:?}", header);
     let url_raw = line[1].to_string();
-    dbstln!("{}@{} url_raw: {:?}",
-            module_path!(),
-            rc_s.time().ls(),
-            &line[1]);
+    dbstln!("url_raw: {:?}", &line[1]);
     let url = url_handle_pre(&url_raw);
-    dbstln!("{}@{} url_handle_pre(): {:?}",
-            module_path!(),
-            rc_s.time().ls(),
-            &url);
+    dbstln!("url_handle_pre(): {:?}", &url);
     // 如果路径本身就存在，就不二次解码,(三次编码则会产生多余"/"等字符,不可能是真实路径。浏览器对URL只编码一次。
     // Option<(String, String)>  完全匹配才赋值，is_none() 用于是否继续寻找。
     let mut vp_rp_full_match: Option<(String, String)> = None;
@@ -241,10 +227,8 @@ fn url_to_vp_rp(rc_s: Rc<RcStream>, url: &str, mut vp_rp_full_match: &mut Option
                     if decoded_url[vp.len()..].starts_with('/') {
                         break;
                     }
-                    dbstln!("{}@{}_url_sub_'/'_decoded: '{}' start_with(rp): \
+                    dbstln!("url_sub_'/'_decoded: '{}' start_with(rp): \
                                 {:?}\nrp.join(decoded_url): {:?}",
-                            module_path!(),
-                            rc_s.time().ls(),
                             &decoded_url,
                             vp,
                             Path::new(rp).join(Path::new(&decoded_url[vp.len()..])));
@@ -257,10 +241,7 @@ fn url_to_vp_rp(rc_s: Rc<RcStream>, url: &str, mut vp_rp_full_match: &mut Option
             }
         }
     } else {
-        dbstln!("{}_Warning@{}::url_to_vp_rp(): '{}' decode failed",
-                NAME,
-                module_path!(),
-                url);
+        dbstln!("{}_Warning@url_to_vp_rp(): '{}' decode failed", NAME, url);
     }
 }
 
@@ -295,6 +276,10 @@ fn url_handle_pre(msg: &str) -> String {
     // 去除没有的/
     if !msg.ends_with('/') {
         raw.pop();
+    }
+    //  win 上Path会自动加 "\\" ,然后尽数404
+    if cfg!(windows) {
+        raw = raw[1..].to_string();
     }
     raw
 }

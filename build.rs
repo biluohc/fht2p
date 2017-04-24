@@ -8,7 +8,8 @@ fn main() {
     // Cargo build --release -vv 可以看到println的内容。。
     if cfg!(target_os = "windows") {
         Command::new("windres")
-            .args(&["config/favicon.rc", "-o"])
+            .arg("config/favicon.rc")
+            .arg("-o")
             .arg(&format!("{}/favicon.o", out_dir))
             .status()
             .unwrap();

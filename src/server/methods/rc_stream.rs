@@ -172,10 +172,7 @@ impl Response {
             Ok(())
         }
         if let Err(e) = write_response(self, req, &mut stream) {
-            dbstln!("{}_Warning@{}::write_response(): {}",
-                    NAME,
-                    module_path!(),
-                    e.description());
+            dbstln!("{}_Warning@write_response(): {}", NAME, e.description());
         };
     }
 }
@@ -194,9 +191,8 @@ impl Content {
             match file.metadata() {
                 Ok(ok) => ok.len(),
                 Err(e) => {
-                    dbstln!("{}_Warning@{}::file_lenth(): {}@{:?}",
+                    dbstln!("{}_Warning@file_lenth(): {}@{:?}",
                             NAME,
-                            module_path!(),
                             e.description(),
                             file);
                     unreachable!();
@@ -211,10 +207,7 @@ impl Content {
     }
     pub fn write_content(self, mut stream: &mut TcpStream) {
         if let Err(e) = write_content_result(self, &mut stream) {
-            dbstln!("{}_Warning@{}::write_content(): {}",
-                    NAME,
-                    module_path!(),
-                    e.description());
+            dbstln!("{}_Warning@write_content(): {}", NAME, e.description());
         };
     }
 }

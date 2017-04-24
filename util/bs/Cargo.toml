@@ -1,7 +1,7 @@
 [package]
-name = "二分法叉虫子"
+name = "binary_search"
 version = "0.1.0"
 authors = ["biluohc <biluohc@qq.com>"]
 
 [dependencies]
-stderr ="^0.7.0"
+stderr ="0.7.1"

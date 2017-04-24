@@ -57,10 +57,7 @@ fn path_is_403(path: &Path) -> bool {
     }
 }
 fn file_to_resp(rc_s: Rc<RcStream>, req: &Request, path: &Path, mut map: HashMap<String, String>) -> Response {
-    dbstln!("{}@{} file_to_resp(): {:?}",
-            module_path!(),
-            rc_s.time().ls(),
-            path);
+    dbstln!("file_to_resp(): {:?}", path);
     let ct = file_content_type(rc_s.clone(), path);
     let content = Content::File(File::open(path).unwrap());
     map.insert("Content-Type".to_owned(), ct);
@@ -96,10 +93,7 @@ fn file_content_type(rc_s: Rc<RcStream>, path: &Path) -> String {
 }
 
 fn sfs_to_resp(rc_s: Rc<RcStream>, req: &Request, path: &Path, mut map: HashMap<String, String>) -> Response {
-    dbstln!("{}@{} sfs_to_resp(): {:?}",
-            module_path!(),
-            rc_s.time().ls(),
-            path);
+    dbstln!("sfs_to_resp(): {:?}", path);
     let exname = path.extension().unwrap().to_str().unwrap();
     let doc = rc_s.arc().ents_doc(exname);
     let ct = if doc.as_str() != "text/plain; charset=utf-8" {
@@ -123,10 +117,7 @@ fn sfs_to_resp(rc_s: Rc<RcStream>, req: &Request, path: &Path, mut map: HashMap<
 }
 
 pub fn other_status_code_to_resp(rc_s: Rc<RcStream>, req: &Request, mut map: HashMap<String, String>) -> Response {
-    dbstln!("{}@{} other_status_code_to_resp(): {:?}",
-            module_path!(),
-            rc_s.time().ls(),
-            req.status);
+    dbstln!("other_status_code_to_resp(): {:?}", req.status);
     let code_name = (*rc_s.arc().cns().get(req.status()).unwrap()).to_owned();
     let title = format!("{}  {}", req.status(), code_name);
     let h1 = TagDouble::new("h1")
@@ -153,10 +144,7 @@ pub fn other_status_code_to_resp(rc_s: Rc<RcStream>, req: &Request, mut map: Has
 }
 
 fn dir_to_resp(rc_s: Rc<RcStream>, req: &Request, path: &Path, mut map: HashMap<String, String>) -> Response {
-    dbstln!("{}@{} dir_to_resp(): {:?}",
-            module_path!(),
-            rc_s.time().ls(),
-            path);
+    dbstln!("dir_to_resp(): {:?}", path);
     let content = Content::Str(dir_to_string(rc_s.clone(), req, path));
     let ct = rc_s.arc().ents_doc("html");
     map.insert("Content-Length".to_owned(), format!("{}", content.len()));
@@ -236,20 +224,14 @@ fn dir_to_string(rc_s: Rc<RcStream>, req: &Request, path: &Path) -> Vec<u8> {
         let path_encoded = match quote(entry_name.clone(), b"") {
             Ok(ok) => ok,
             Err(_) => {
-                errstln!("{}@{}_Entry_encoding_error:\n{:?}",
-                         module_path!(),
-                         rc_s.time().ls(),
-                         &path);
+                errstln!("Entry_encoding_error:\n{:?}", &path);
                 entry_name.clone()
             }
         };
 
         // 比如当前目录下有断开的链接时会陷入。
         // if !Path::new(&entry_path).exists() {
-        //     panic!("{}@{}_path_拼接_error:\n{:?}\n",
-        //            module_path!(),
-        //            rc_s.time().ls(),
-        //            &entry_path);
+        //     panic!("path_拼接_error:\n{:?}\n", &entry_path);
         // }
 
         // "/" 区分目录与文件(视觉),并且如果没有它，浏览器不会自动拼路径，这上面坑了好多时间。
