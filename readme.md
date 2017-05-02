@@ -1,3 +1,5 @@
+[![Build status](https://travis-ci.org/biluohc/fht2p.svg?branch=master)](https://github.com/biluohc/fht2p)
+
 # A HTTP Server for Static File written with Rust.
 
 ## Support Unix-like and windows 7+.
