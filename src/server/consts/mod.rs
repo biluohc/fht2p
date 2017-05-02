@@ -1,9 +1,9 @@
 // crate's info
-pub const NAME: &'static str = "fht2p";
-pub const VERSION: &'static str = "0.7.0";
+pub const NAME: &'static str = env!("CARGO_PKG_NAME");
+pub const VERSION: &'static str =env!("CARGO_PKG_VERSION");
 pub const AUTHOR: &'static str = "Wspsxing";
 pub const EMAIL: &'static str = "biluohc@qq.com";
-pub const DESC: &'static str = "A HTTP Server for Static File written with Rust";
+pub const DESC: &'static str =env!("CARGO_PKG_DESCRIPTION");
 pub const URL_NAME: &'static str = "Github";
 pub const URL: &'static str = "https://github.com/biluohc/fht2p";
 

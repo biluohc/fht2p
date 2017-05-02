@@ -44,7 +44,7 @@ pub fn parse() -> Config {
             .opt(Opt::new("keep_alive", &mut config.keep_alive)
                      .short("k")
                      .long("keep-alive")
-                     .help("use keep-alive"))
+                     .help("Use keep-alive"))
             .opt(Opt::new("ip", &mut server.ip)
                      .short("i")
                      .long("ip")

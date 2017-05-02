@@ -1,7 +1,9 @@
 [package]
 name = "fht2p"
 version = "0.7.0"
-authors = ["biluohc <biluohc@qq.com>"]
+authors = ["Wspsxing <biluohc@qq.com>"]
+description = "A HTTP Server for Static File written with Rust"
+
 build = "build.rs"
 
 [profile.dev]      #    cargo build 
@@ -16,6 +18,7 @@ debug = true
 # panic = 'abort'
 panic = 'unwind'
 
+[workspace]
 [dependencies]
 html5 = { path ="util/html5" }
 signal_monitor = { path = "util/signal_monitor" }
