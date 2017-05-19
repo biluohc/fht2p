@@ -1,7 +1,0 @@
-[package]
-name = "binary_search"
-version = "0.1.0"
-authors = ["biluohc <biluohc@qq.com>"]
-
-[dependencies]
-stderr ="0.7.1"

@@ -1,7 +1,0 @@
-[package]
-name = "html5"
-version = "0.1.3"
-authors = ["biluohc <biluohc@qq.com>"]
-
-[dependencies]
-stderr="0.7.0"

@@ -9,10 +9,11 @@ use std;
 
 use toml;
 
-use super::consts::*; // 名字,版本,作者，简介，地址
+use super::statics::*; // 名字,版本,作者，简介，地址
 
 use app::{App, Opt};
 
+/// Get `Config` by `parse` `args`
 pub fn parse() -> Config {
     let mut config = Config::default();
     let mut server = Server::default();
@@ -79,9 +80,7 @@ pub fn parse() -> Config {
             None => Config::load_from_STR(),
         }
     } else {
-        config
-            .servers
-            .push(SocketAddr::new(server.ip, server.port));
+        config.servers.push(SocketAddr::new(server.ip, server.port));
         if !routes.is_empty() {
             config.routes = args_paths_to_route(&routes[..])
                 .map_err(|e| helper.help_err_exit(e, 1))
@@ -92,7 +91,7 @@ pub fn parse() -> Config {
 }
 
 #[derive(Debug,Clone)]
-pub struct Server {
+struct Server {
     pub ip: IpAddr,
     pub port: u16,
 }
@@ -128,6 +127,7 @@ struct Route {
     img: String,
 }
 
+/// `Config` for `main`
 #[derive(Debug,Clone)]
 pub struct Config {
     pub keep_alive: bool,
@@ -164,7 +164,8 @@ impl Config {
             .map_err(|e| format!("config file('{}') parse fails: {}", file_name, e))?;
         config.keep_alive = toml.setting.keep_alive;
         for server in toml.setting.servers {
-            let addr = server.parse::<SocketAddr>()
+            let addr = server
+                .parse::<SocketAddr>()
                 .map_err(|e| {
                              format!("config file('{}')'s {} parse::<SocketAddr> fails: {}",
                                      file_name,
@@ -189,10 +190,10 @@ impl Config {
             }
         }
         if config.servers.is_empty() {
-                return Err(format!("'{}''s addrs is empty", file_name));            
+            return Err(format!("'{}''s addrs is empty", file_name));
         }
         if config.routes.is_empty() {
-                return Err(format!("'{}''s routes is empty", file_name));            
+            return Err(format!("'{}''s routes is empty", file_name));
         }
         Ok(config)
     }
@@ -262,16 +263,20 @@ fn args_paths_to_route(map: &[String]) -> Result<HashMap<String, String>, String
         }
         if idx == 0 {
             routes.insert("/".to_owned(), rel.to_string());
-        } else if routes
-                      .insert(route_name(rel)?, rel.to_string())
-                      .is_some() {
+        } else if routes.insert(route_name(rel)?, rel.to_string()).is_some() {
             return Err(format!("{} already defined", route_name(rel).unwrap()));
         }
     }
     fn route_name(msg: &str) -> Result<String, String> {
         let path = Path::new(msg);
         path.file_name()
-            .map(|s| s.to_string_lossy().into_owned())
+            .map(|s| "/".to_owned() + s.to_str().unwrap())
+            .map(|mut s| {
+                     if Path::new(msg).is_dir() {
+                         s.push('/');
+                     }
+                     s
+                 })
             .ok_or_else(|| format!("Path '{}' dost not have name", msg))
     }
     Ok(routes)

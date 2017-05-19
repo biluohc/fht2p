@@ -1,56 +1,51 @@
 extern crate time;
 use time::*;
 
+/// `Date`: `Local` and `UTC` time
 #[derive(Debug,Clone)]
-pub struct Date {
+pub struct Time {
     local: Tm,
-    ls: String,
     utc: Tm,
-    us: String,
 }
-impl Date {
+impl Time {
     pub fn now() -> Self {
         Self::new(now())
     }
     pub fn new(tm: Tm) -> Self {
-        let local = tm.to_local();
         Self {
-            local: local,
-            // "%Y-%m%d %H:%M:%S" <=> 2017-0225 00:22:30
-            // ls: format!("{:04}-{:02}{:02} {:02}:{:02}:{:02}",
-            //             local.tm_year + 1900,
-            //             local.tm_mon + 1,
-            //             local.tm_mday,
-            //             local.tm_hour,
-            //             local.tm_min,
-            //             local.tm_sec),
-            ls: format!("{}", local.rfc822()),
+            local: tm,
             //  utc: "Thu, 22 Mar 2012 14:53:18 GMT"
             utc: tm.to_utc(),
-            us: format!("{}", tm.to_utc().rfc822()),
         }
     }
     #[inline]
     pub fn local(&self) -> &Tm {
         &self.local
     }
+    /// `%H:%M:%S`
     #[inline]
-    pub fn ls(&self) -> &str {
-        self.ls.as_str()
+    pub fn hms(&self) -> String {
+        format!("{:02}::{:02}::{:02}",
+                self.local.tm_hour,
+                self.local.tm_min,
+                self.local.tm_sec)
+    }
+    pub fn ls(&self) -> TmFmt {
+        self.local.rfc822()
     }
     #[inline]
     pub fn utc(&self) -> &Tm {
         &self.utc
     }
     #[inline]
-    pub fn us(&self) -> &str {
-        self.us.as_str()
+    pub fn us(&self) -> TmFmt {
+        self.utc.rfc822()
     }
 }
 
 // stat  .gitignore
 #[test]
-fn main() {
+fn test() {
     use std::fs::File;
     let f = ".gitignore";
     let std_du = File::open(f)

@@ -1,8 +1,13 @@
 [package]
 name = "fht2p"
-version = "0.7.0"
+version = "0.8.0"
 authors = ["Wspsxing <biluohc@qq.com>"]
 description = "A HTTP Server for Static File written with Rust"
+
+[[bin]]
+doc = false
+name = "fht2p"
+path = "src/main.rs"
 
 build = "build.rs"
 
@@ -14,15 +19,17 @@ panic = 'unwind'
 [profile.release]  #    cargo build --release
 opt-level = 3      #    cargo build --release -vv
 # debug = false
-debug = true 
+# debug = true 
 # panic = 'abort'
 panic = 'unwind'
 
 [workspace]
 [dependencies]
-html5 = { path ="util/html5" }
 signal_monitor = { path = "util/signal_monitor" }
 
+maud = "^0.16.2"
+maud_macros = "^0.16.3"
+lazy_static = "^0.2.8"
 urlparse = "^0.7.3"
 time = "^0.1"
 toml = "^0.3.2"
