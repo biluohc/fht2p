@@ -34,14 +34,19 @@ impl Client {
     pub fn resp(&self) -> &Response {
         &self.resp
     }
-    pub fn method_call(mut self, mut stream: &mut TcpStream) {
-        match self.req.line().method() {
-            "GET" | "HEAD" => self.resp.get(&self.req),
-            s => {
-                errln!("Method don't support: {:?}", s);
-                self.resp.code_set(405_u16);
-            }
-        };
+    pub fn method_call(mut self, mut stream: &mut TcpStream) -> io::Result<()> {
+        if *self.req.is_bad() {
+            self.resp.code_set(400_u16);
+        } else {
+            match self.req.line().method() {
+                "GET" | "HEAD" => {}
+                s => {
+                    errln!("Method don't support: {:?}", s);
+                    self.resp.code_set(405_u16);
+                }
+            };
+        }
+        self.resp.get(&self.req);
         // 127.0.0.1:50822**[Thu, 18 May 2017 17:10:31] 200 "GET /fht2p.css HTTP/1.1" -> "/fht2p.css"
         let path = if let Some(r) = self.req.route() {
             if *r.is_sfs() {
@@ -61,6 +66,6 @@ impl Client {
                  self.resp.line().protocol(),
                  self.resp.line().version(),
                  path);
-        self.resp.call(&mut stream, &self.req);
+        self.resp.write(&mut stream, &self.req)
     }
 }

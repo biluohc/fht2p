@@ -1,5 +1,3 @@
-use stderr::Loger;
-
 use super::*;
 use self::statics::*;
 /// `GET` and `HEAD` Methods
@@ -83,27 +81,21 @@ impl Response {
         get(self, req)
     }
 
-    pub fn call(self, mut stream: &mut TcpStream, req: &Request) {
-        fn write_response(resp: Response, req: &Request, mut stream: &mut TcpStream) -> io::Result<()> {
-            write!(&mut stream,
-                   "{}/{} {} {}\r\n",
-                   resp.line.protocol(),
-                   resp.line.version(),
-                   resp.line.code().code(),
-                   resp.line.code().desc())?;
-            for (k, v) in resp.header() {
-                write!(&mut stream, "{}: {}\r\n", k, v)?;
-            }
-            write!(&mut stream, "\r\n")?;
-            if req.line().method() == "HEAD" {
-                return Ok(());
-            }
-            resp.content.write(&mut stream)?;
-            Ok(())
+    pub fn write(self, mut stream: &mut TcpStream, req: &Request) -> io::Result<()> {
+        write!(&mut stream,
+               "{}/{} {} {}\r\n",
+               self.line.protocol(),
+               self.line.version(),
+               self.line.code().code(),
+               self.line.code().desc())?;
+        for (k, v) in self.header() {
+            write!(&mut stream, "{}: {}\r\n", k, v)?;
         }
-        if let Err(e) = write_response(self, req, &mut stream) {
-            dbstln!("{}_Warning@response_call(): {}", NAME, e.description());
-        };
+        write!(&mut stream, "\r\n")?;
+        if req.line().method() == "HEAD" {
+            return Ok(());
+        }
+        self.content.write(&mut stream)
     }
 }
 
@@ -111,8 +103,9 @@ impl Default for Response {
     fn default() -> Self {
         let mut header: Map<String, String> = Map::new();
         header.insert("Server".to_owned(), format!("{}/{}", NAME, VERSION));
-        if keep_alive() {
+        if let Some(s) = http_timeout_sec() {
             header.insert("Connection".to_owned(), "keep-alive".to_owned());
+            header.insert("keep-alive".to_owned(), format!("{}", s));
         } else {
             header.insert("Connection".to_owned(), "close".to_owned());
         }
@@ -141,16 +134,15 @@ impl Content {
     }
     pub fn len(&self) -> u64 {
         fn file_lenth(file: &File) -> u64 {
-            match file.metadata() {
-                Ok(ok) => ok.len(),
-                Err(e) => {
-                    dbstln!("{}_Warning@file_lenth(): {}@{:?}",
-                            NAME,
-                            e.description(),
-                            file);
-                    panic!();
-                }
-            }
+            file.metadata()
+                .map(|l| l.len())
+                .map_err(|e| {
+                             (errln!("{}_Warning@file_lenth(): {}@{:?}",
+                                     NAME,
+                                     e.description(),
+                                     file))
+                         })
+                .unwrap()
         }
         match *self {
             Content::Str(ref x) => x.len() as u64,

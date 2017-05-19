@@ -1,5 +1,5 @@
 #![feature(link_args)]
-#![allow(dead_code)]
+// #![allow(dead_code)]
 
 #![feature(plugin)]
 #![plugin(maud_macros)]
@@ -20,6 +20,8 @@ extern crate stderr;
 use stderr::Loger;
 
 use std::net::{TcpListener, TcpStream};
+use std::time::Duration;
+use std::thread::sleep;
 use std::error::Error;
 use std::thread;
 use std::io;
@@ -43,9 +45,10 @@ pub fn fun() -> Result<(), String> {
     let config = args::parse();
     Route::init(&config.routes);
     dbln!("{:?}\n", config);
+    redirect_root_set(config.redirect_root);
+    http_timeout_set(config.keep_alive);
     spawn(&config)
         .map_err(|e| format!("{:?}", e.description()))?;
-    // std::process::exit(0);
     Ok(())
 }
 
@@ -84,29 +87,50 @@ fn spawn(config: &Config) -> io::Result<()> {
 fn for_listener(tcp_listener: &TcpListener, pool: &Pool) {
     for stream in tcp_listener.incoming() {
         match stream {
-            Ok(stream) => {
+            Ok(mut stream) => {
                 // 一个进程一个堆，一个线程一个栈。
                 // 栈大小，linux主默认8m，副线程和win一样 2m(这里给rust坑死了,一直stackover。以后要注意默认值)。
-                pool.push(move || match_client(stream));
+                pool.push(move || match_client(&mut stream));
             }
             Err(e) => {
-                errstln!("{:?}", e);
                 // connection failed
+                errln!("{}_Warning@Result<TcpStream>: {}", NAME, e.description())
             }
         };
     }
 }
 
-fn match_client(mut stream: TcpStream) {
-    if let Err(e) = handle_client(&mut stream) {
-        errstln!("{}_Warning@TcpStream: {}", NAME, e.description())
+fn match_client(mut stream: &mut TcpStream) {
+    if let Err(e) = handle_client(stream) {
+        errln!("{}_Warning@TcpStream: {}", NAME, e.description())
     }
 }
 
 fn handle_client(mut stream: &mut TcpStream) -> io::Result<()> {
-    let req = Request::from_stream(&mut stream)?;
-    let client = req.into_client();
-    dbstln!("{:?}", client.req());
-    client.method_call(&mut stream);
+    let (client_addr, server_addr) = (stream.peer_addr()?, stream.local_addr()?);
+    stream.set_read_timeout(Some(*socket_timeout()))?;
+    stream.set_write_timeout(Some(*socket_timeout()))?;
+    stream.set_nodelay(true)?; // very important
+
+    loop {
+        let bytes = Request::read(stream)?;
+        if bytes.is_empty() {
+            if http_timeout().is_some() {
+                sleep(Duration::from_millis(1)); // aviod empty loop
+                continue;
+            } else {
+                break;
+            }
+        }
+
+        let req = Request::from_bytes(&bytes[..], client_addr, server_addr);
+        let client = req.into_client();
+        dbstln!("{:?}", client.req());
+        // return `error` from `socket`
+        client.method_call(&mut stream)?;
+        if http_timeout().is_none() {
+            break;
+        }
+    }
     Ok(())
 }

@@ -194,9 +194,9 @@ fn html() {
     let html = html!{
         (DOCTYPE)
         html {
-             (head("HEAD"))
+             (head(&"HEAD"))
             body {
-               (h1("H1", &"127.0.0.1:59594".parse().unwrap()))
+               (h1(&"H1", &"127.0.0.1:59594".parse().unwrap()))
             }
             (address(&"127.0.0.1:8080".parse().unwrap()))
             (script())

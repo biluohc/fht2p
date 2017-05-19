@@ -102,10 +102,19 @@ impl Route {
             let img = route.img();
             // +1 is for /dir -> /dir/index.htm[l]
             if path.len() + 1 >= img.len() {
-                // full match, ==
+                // full match,
                 if path == img {
+                    // "/" to "/index.htm[l]"
+                    if *redirect_root() && img == "/" {
+                        if let Some(s) = index_html(route.rel()) {
+                            let mut tmp = Self::new(path.to_string(), s);
+                            tmp.is_redirect = true;
+                            return Some(tmp);
+                        }
+                    }
                     return Some((*route).clone());
                 }
+
                 // index.html[l]
                 if img.ends_with('/') && img.starts_with(path) && path.len() + 1 == img.len() {
                     // println!("index_img/_path+1 {:?}-->{:?}",img,path);
@@ -241,35 +250,49 @@ fn test() {
     test_sfs_ne("/favicon.ico/");
 
     errln!();
-    test_("/", "tests/");
-    test_("/route/", "tests/index_for_route/");
-    test_("/route", "tests/index_for_route/index.html");
+    test_route("/", "tests/");
+    test_route("/route/", "tests/index_for_route/");
+    test_redirect("/route", "tests/index_for_route/index.html");
     test_("/route/lib.rs", "tests/index_for_route/lib.rs");
 
     errln!();
-    test_("/abc/", "tests/index_for_route/abc/");
-    test_("/abc", "tests/index_for_route/abc/index.html");
+    test_route("/abc/", "tests/index_for_route/abc/");
+    test_redirect("/abc", "tests/index_for_route/abc/index.html");
     test_("/abc/newfile", "tests/index_for_route/abc/newfile");
 
     errln!();
     test_("/route/abc/", "tests/index_for_route/abc/");
-    test_("/route/abc", "tests/index_for_route/abc/index.html");
+    test_redirect("/route/abc", "tests/index_for_route/abc/index.html");
     test_("/route/abc/newfile", "tests/index_for_route/abc/newfile");
 
     errln!();
-    test_("/xyz/", "tests/index_for_route/xyz/");
-    test_("/xyz", "tests/index_for_route/xyz/index.htm");
+    test_route("/xyz/", "tests/index_for_route/xyz/");
+    test_redirect("/xyz", "tests/index_for_route/xyz/index.htm");
     test_("/xyz/main.rs", "tests/index_for_route/xyz/main.rs");
 
     errln!();
     test_("/route/xyz/", "tests/index_for_route/xyz/");
-    test_("/route/xyz", "tests/index_for_route/xyz/index.htm");
+    test_redirect("/route/xyz", "tests/index_for_route/xyz/index.htm");
     test_("/route/xyz/main.rs", "tests/index_for_route/xyz/main.rs");
 
     fn test_(img: &str, rel: &str) {
         let route = Route::parse(img);
         errln!("{:?} -> {:?}", img, route);
         let route_ = Route::new(img, rel);
+        assert_eq!(route.unwrap(), route_);
+    }
+    fn test_route(img: &str, rel: &str) {
+        let route = Route::parse(img);
+        errln!("{:?} -> {:?}", img, route);
+        let mut route_ = Route::new(img, rel);
+        route_.is_route = true;
+        assert_eq!(route.unwrap(), route_);
+    }
+    fn test_redirect(img: &str, rel: &str) {
+        let route = Route::parse(img);
+        errln!("{:?} -> {:?}", img, route);
+        let mut route_ = Route::new(img, rel);
+        route_.is_redirect = true;
         assert_eq!(route.unwrap(), route_);
     }
     fn test_sfs(img: &str) {

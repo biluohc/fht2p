@@ -58,6 +58,6 @@ fn test() {
         .unwrap();
     println!("{:?}", std_du);
     let time_du = Duration::from_std(std_du).unwrap();
-    println!("{}", Date::new(now() - time_du).ls());
-    println!("{}", Date::new(now() - time_du).us());
+    println!("{}", Time::new(now() - time_du).ls());
+    println!("{}", Time::new(now() - time_du).us());
 }

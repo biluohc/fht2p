@@ -34,7 +34,7 @@ pub fn get(mut resp: &mut Response, req: &Request) {
         } else {
             path_type = PathType::Sfs;
         }
-    } else {
+    } else if resp.line().code().code() == 200_u16 {
         resp.code_set(404_u16);
     }
     match resp.code() {
@@ -46,7 +46,11 @@ pub fn get(mut resp: &mut Response, req: &Request) {
             let route = req.route().unwrap();
             if *route.is_redirect() {
                 let path = Path::new(route.rel()).file_name().unwrap();
-                let img = route.img().to_string() + "/" + &path.to_string_lossy().into_owned();
+                let img = if route.img().ends_with('/') {
+                    route.img().to_string() + &path.to_string_lossy().into_owned()
+                } else {
+                    route.img().to_string() + "/" + &path.to_string_lossy().into_owned()
+                };
                 resp.header_insert("Location", img);
             }
         }

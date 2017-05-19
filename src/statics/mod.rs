@@ -20,7 +20,6 @@ pub const CONFIG_STR_PATH: &'static str = "fht2p.toml";
 pub const CONFIG_STR: &'static str = include_str!("../../config/fht2p.toml");
 
 pub const BUFFER_SIZE: usize = 1024 * 1024; //字节1024*1024=>1m
-pub const TIME_OUT: u64 = 5; // 5 secs 以后放到选项/配置
 // set_nonblocking 不能使用,因为读取文件会阻塞，只能set_write/read_timeout() 来断开一直阻塞的连接。
 
 // exe的图标。非Windows平台不需要rc资源。
@@ -30,31 +29,66 @@ mod win_ico {
     extern "C" {}
 }
 
+use std::time::Duration;
 use super::Time;
-mod use_after_init;
-pub use self::use_after_init::UseAfterInit;
+
 mod route;
 pub use self::route::Route;
+mod use_after_init;
+pub use self::use_after_init::UseAfterInit;
 
-/// Default whether keep alive
-pub static mut KEEP_ALIVE: bool = false;
-/// Default time out(ms) for socket read
-pub static mut SOCKET_TIMEOUT: u64 = 30_000; //ms
-pub fn keep_alive() -> bool {
-    unsafe { KEEP_ALIVE }
+pub static mut REDIRECT_ROOT: bool = false;
+pub fn redirect_root() -> &'static bool {
+    unsafe { &REDIRECT_ROOT }
 }
-pub fn keep_alive_set(b: bool) {
-    unsafe {
-        KEEP_ALIVE = b;
-    }
+pub fn redirect_root_set(b: bool) {
+    unsafe { REDIRECT_ROOT = b }
 }
-pub fn socket_timeout() -> u64 {
-    unsafe { SOCKET_TIMEOUT }
+lazy_static!{
+    static ref SOCKET_TIME_OUT: UseAfterInit<Duration> = UseAfterInit::new(Duration::new(unsafe {SOCKET_TIME_OUT_MS},0));
+}
+/// `ms`
+pub static mut SOCKET_TIME_OUT_MS: u64 = 5000;
+
+pub fn socket_timeout_ms() -> &'static u64 {
+    unsafe { &SOCKET_TIME_OUT_MS }
+}
+pub fn socket_timeout() -> &'static Duration {
+    SOCKET_TIME_OUT.as_ref()
 }
 pub fn socket_timeout_set<T: Into<u64>>(time_out: T) {
-    unsafe { SOCKET_TIMEOUT = time_out.into() }
+    let time_out = time_out.into();
+    unsafe { SOCKET_TIME_OUT_MS = time_out }
+    let tmp = SOCKET_TIME_OUT.as_mut();
+    *tmp = Duration::new(*socket_timeout_ms(), 0)
 }
-
+/// `sec`
+pub static mut HTTP_TIME_OUT_SEC: u64 = 5;
+lazy_static ! {
+static ref HTTP_TIME_OUT: UseAfterInit<Option<Duration>> = 
+    // UseAfterInit::new(Some(Duration::new(unsafe{HTTP_TIME_OUT_SEC} * 1000, 0)));
+    UseAfterInit::new(None);
+}
+pub fn http_timeout_sec() -> Option<&'static u64> {
+    HTTP_TIME_OUT
+        .as_ref()
+        .map(|_| unsafe { &HTTP_TIME_OUT_SEC })
+}
+pub fn http_timeout() -> Option<&'static Duration> {
+    HTTP_TIME_OUT.as_ref().as_ref()
+}
+pub fn http_timeout_set<T: Into<u64>>(time_out: Option<T>) {
+    let tmp = HTTP_TIME_OUT.as_mut();
+    *tmp = time_out
+        .map(|t| t.into())
+        .map(|s| {
+                 unsafe {
+                     HTTP_TIME_OUT_SEC = s;
+                 }
+                 Some(Duration::new(s * 1000, 0))
+             })
+        .unwrap_or(None);
+}
 lazy_static! {
    static ref UPTIME:Time = Time::now(); 
 }

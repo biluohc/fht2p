@@ -2,13 +2,12 @@ use stderr::Loger;
 use urlparse::unquote;
 
 use super::*;
-use std::io::{BufRead, BufReader};
+use super::statics::BUFFER_SIZE;
+use std::io::{Read, BufReader};
 use std::net::SocketAddr;
-use std::mem;
 
-const LINE_SEP: u8 = b'\n';
 /// `GET /hello.txt HTTP/1.1`
-#[derive(Debug,Clone)]
+#[derive(Debug,Clone,Default)]
 pub struct RequestLine {
     pub method: String,
     /// 原始未解码,未补全的`path`
@@ -51,6 +50,7 @@ pub struct Request {
     pub client_addr: SocketAddr,
     pub server_addr: SocketAddr,
     pub time: Time,
+    pub is_bad: bool,
 }
 
 impl Request {
@@ -62,7 +62,16 @@ impl Request {
             client_addr: client_addr,
             server_addr: server_addr,
             time: now,
+            is_bad: false,
         }
+    }
+    pub fn bad(line: RequestLine, client_addr: SocketAddr, server_addr: SocketAddr, now: Time) -> Self {
+        let mut tmp = Self::new(line, Map::new(), None, client_addr, server_addr, now);
+        tmp.is_bad = true;
+        tmp
+    }
+    pub fn is_bad(&self) -> &bool {
+        &self.is_bad
     }
     pub fn line(&self) -> &RequestLine {
         &self.line
@@ -82,23 +91,57 @@ impl Request {
     pub fn time(&self) -> &Time {
         &self.time
     }
-    pub fn from_stream(stream: &mut TcpStream) -> io::Result<Self> {
+    /// Get `bytes`: `HTTP` `RequestLine` and `Header`
+    pub fn read(stream: &mut TcpStream) -> io::Result<Vec<u8>> {
+        let mut reader = BufReader::new(stream);
+        let mut req: Vec<u8> = vec![];
+        let mut counter = 0;
+        let mut buf = [0u8; 1];
+        loop {
+            let num = reader.read(&mut buf)?;
+            if num == 0 {
+                break;
+            }
+            let byte = buf[0];
+            req.push(byte);
+            if byte == b'\n' {
+                counter += 1;
+            } else if byte != b'\r' {
+                counter = 0;
+            }
+            if counter >= 2 {
+                break;
+            }
+        }
+        Ok(req)
+    }
+    pub fn read_to_end(stream: &mut TcpStream) -> io::Result<Vec<u8>> {
+        let mut reader = BufReader::with_capacity(BUFFER_SIZE, stream);
+        let mut req: Vec<u8> = vec![];
+        let mut buf = [0u8; BUFFER_SIZE];
+        loop {
+            let num = reader.read(&mut buf)?;
+            if num == 0 {
+                break;
+            }
+            req.extend_from_slice(&buf[..num]);
+        }
+        Ok(req)
+    }
+    pub fn from_bytes(bytes: &[u8], client_addr: SocketAddr, server_addr: SocketAddr) -> Self {
         let now = Time::now();
-        let (client_addr, server_addr) = (stream.peer_addr()?, stream.local_addr()?);
-
-        let mut stream = BufReader::new(stream);
-        let mut buf: Vec<u8> = Vec::new();
-
+        let str = String::from_utf8_lossy(&bytes[..]).into_owned();
         // GET /hello.txt HTTP/1.1
-        let _ = stream.read_until(LINE_SEP, &mut buf)?;
-        let line = String::from_utf8_lossy(&buf[..]).into_owned();
         // req_line
+        let mut lines = str.trim().lines();
+        let line = lines.next().unwrap();
         let req_line: Vec<&str> = line.split(' ')
             .filter(|s| !s.is_empty())
             .map(|x| x.trim())
             .collect();
         if req_line.len() != 3 {
-            panic!("invalid req_line: {:?}", line); // 400
+            errln!("Invalid ResquestLine: {:?}", req_line);
+            return Self::bad(RequestLine::default(), client_addr, server_addr, now);
         }
         // protocol_version
         let pv: Vec<&str> = req_line[2]
@@ -107,20 +150,21 @@ impl Request {
             .map(|x| x.trim())
             .collect();
         if pv.len() != 2 {
-            panic!("invalid req_pv: {:?}", pv); // 400
+            errln!("Invalid ResquestLine's Protocol-Version: {:?}", pv);
+            let resquest_line = RequestLine::new(req_line[0], req_line[1], "", "");
+            return Self::bad(resquest_line, client_addr, server_addr, now);
         }
-
         let mut header = Map::new();
-        loop {
-            mem::swap(&mut buf, &mut Vec::new());
-            stream.read_until(LINE_SEP, &mut buf)?;
-            let line = String::from_utf8_lossy(&buf[..]).into_owned();
-            if line.trim().is_empty() || !line.contains(':') {
-                break;
+        for line in lines {
+            if !line.contains(':') {
+                continue;
             }
             let sep_idx = line.find(':').unwrap();
             let (key, value) = line.split_at(sep_idx);
-            header.insert(key.trim().to_string(), value.trim().to_string());
+            if value.is_empty() {
+                continue;
+            }
+            header.insert(key.trim().to_string(), value[1..].trim().to_string());
         }
         dbstln!("header_Map:\n{:?}", header);
 
@@ -131,12 +175,12 @@ impl Request {
         if route.is_none() {
             route = Route::parse(unquote(&path_raw).unwrap());
         }
-        Ok(Request::new(RequestLine::new(req_line[0], path_raw, pv[0], pv[1]),
-                        header,
-                        route,
-                        client_addr,
-                        server_addr,
-                        now))
+        Request::new(RequestLine::new(req_line[0], path_raw, pv[0], pv[1]),
+                     header,
+                     route,
+                     client_addr,
+                     server_addr,
+                     now)
     }
     pub fn into_client(self) -> Client {
         Client {

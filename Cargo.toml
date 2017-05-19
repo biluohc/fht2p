@@ -25,7 +25,7 @@ panic = 'unwind'
 
 [workspace]
 [dependencies]
-signal_monitor = { path = "util/signal_monitor" }
+signal_monitor = { path = "util/signal_monitor", version = "0.1.0" }
 
 maud = "^0.16.2"
 maud_macros = "^0.16.3"

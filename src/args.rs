@@ -20,7 +20,6 @@ pub fn parse() -> Config {
     let mut routes: Vec<String> = Vec::new();
     let mut cp = false;
     let mut c_path: Option<String> = None;
-    let mut log = String::new();
 
     let helper = {
         App::new(NAME)
@@ -29,7 +28,7 @@ pub fn parse() -> Config {
             .addr(URL_NAME, URL)
             .desc(DESC)
             .opt(Opt::new("cp", &mut cp)
-                     .short("cp")
+                     .short("C")
                      .long("cp")
                      .help("Print the default config file"))
             .opt(Opt::new("config", &mut c_path)
@@ -37,15 +36,15 @@ pub fn parse() -> Config {
                      .short("c")
                      .long("config")
                      .help("Sets a custom config file"))
-            .opt(Opt::new("log", &mut log)
-                     .optional()
-                     .long("log")
-                     .short("log")
-                     .help("Print log for debug"))
-            .opt(Opt::new("keep_alive", &mut config.keep_alive)
+            .opt(Opt::new("root", &mut config.redirect_root)
+                     .short("r")
+                     .long("rr")
+                     .help("Redirect root('/') to '/index.htm[l]`"))
+            .opt(Opt::new("secs", &mut config.keep_alive)
                      .short("k")
-                     .long("keep-alive")
-                     .help("Use keep-alive"))
+                     .long("ka")
+                     .help("Time HTTP keep alive(default not use)")
+                     .optional())
             .opt(Opt::new("ip", &mut server.ip)
                      .short("i")
                      .long("ip")
@@ -97,10 +96,7 @@ struct Server {
 }
 impl Default for Server {
     fn default() -> Server {
-        Server {
-            ip: IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
-            port: 8080,
-        }
+        Self::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 8080)
     }
 }
 impl Server {
@@ -117,7 +113,8 @@ struct Fht2p {
 
 #[derive(Debug,Deserialize)]
 struct Setting {
-    keep_alive: bool,
+    redirect_root: bool,
+    keep_alive: Option<u64>,
     servers: Vec<String>,
 }
 
@@ -130,7 +127,8 @@ struct Route {
 /// `Config` for `main`
 #[derive(Debug,Clone)]
 pub struct Config {
-    pub keep_alive: bool,
+    pub redirect_root: bool,
+    pub keep_alive: Option<u64>,
     pub servers: Vec<SocketAddr>,
     pub routes: HashMap<String, String>,
 }
@@ -139,7 +137,8 @@ impl Default for Config {
         let mut map = HashMap::new();
         map.insert("/".to_owned(), "./".to_owned());
         Config {
-            keep_alive: false,
+            redirect_root: false,
+            keep_alive: None,
             servers: vec![SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080)],
             routes: map,
         }
@@ -162,6 +161,7 @@ impl Config {
 
         let toml: Fht2p = toml::from_str(toml)
             .map_err(|e| format!("config file('{}') parse fails: {}", file_name, e))?;
+        config.redirect_root = toml.setting.redirect_root;
         config.keep_alive = toml.setting.keep_alive;
         for server in toml.setting.servers {
             let addr = server
