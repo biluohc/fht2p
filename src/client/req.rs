@@ -94,7 +94,7 @@ impl Request {
     /// Get `bytes`: `HTTP` `RequestLine` and `Header`
     pub fn read(stream: &mut TcpStream) -> io::Result<Vec<u8>> {
         let mut reader = BufReader::new(stream);
-        let mut req: Vec<u8> = vec![];
+        let mut req: Vec<u8> = Vec::new();
         let mut counter = 0;
         let mut buf = [0u8; 1];
         loop {
@@ -117,7 +117,7 @@ impl Request {
     }
     pub fn read_to_end(stream: &mut TcpStream) -> io::Result<Vec<u8>> {
         let mut reader = BufReader::with_capacity(BUFFER_SIZE, stream);
-        let mut req: Vec<u8> = vec![];
+        let mut req: Vec<u8> = Vec::new();
         let mut buf = [0u8; BUFFER_SIZE];
         loop {
             let num = reader.read(&mut buf)?;
@@ -135,6 +135,7 @@ impl Request {
         // req_line
         let mut lines = str.trim().lines();
         let line = lines.next().unwrap();
+        dbln!("ResquestLine_RAW: {:?}",line);
         let req_line: Vec<&str> = line.split(' ')
             .filter(|s| !s.is_empty())
             .map(|x| x.trim())
@@ -150,26 +151,27 @@ impl Request {
             .map(|x| x.trim())
             .collect();
         if pv.len() != 2 {
-            errln!("Invalid ResquestLine's Protocol-Version: {:?}", pv);
+            errln!("Invalid ResquestLine's Protocol-Version: {:?}", req_line);
             let resquest_line = RequestLine::new(req_line[0], req_line[1], "", "");
             return Self::bad(resquest_line, client_addr, server_addr, now);
         }
         let mut header = Map::new();
         for line in lines {
             if !line.contains(':') {
+                errln!("Invalid Header: {:?}", line);
                 continue;
             }
             let sep_idx = line.find(':').unwrap();
             let (key, value) = line.split_at(sep_idx);
             if value.is_empty() {
+                errln!("Invalid Header_value: {:?}", line);                
                 continue;
             }
             header.insert(key.trim().to_string(), value[1..].trim().to_string());
         }
-        dbstln!("header_Map:\n{:?}", header);
+        dbstln!("Header_Map:\n{:?}", header);
 
         let path_raw = req_line[1];
-        dbstln!("path_raw: {:?}", path_raw);
         // 如果路径本身就存在，就不二次解码,(三次编码则会产生多余"/"等字符,不可能是真实路径。浏览器对URL只编码一次。
         let mut route = Route::parse(&path_raw);
         if route.is_none() {

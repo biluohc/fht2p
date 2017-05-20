@@ -9,7 +9,7 @@ pub mod path_info;
 pub mod html;
 use client::content_type::ContentType;
 
-use std::io::{self, Read, Write, BufReader, BufWriter};
+use std::io::{self, Write};
 use std::error::Error;
 use std::fs::File;
 use std::mem;
@@ -153,29 +153,18 @@ impl Content {
     pub fn write(self, mut stream: &mut TcpStream) -> io::Result<()> {
         match self {
             Content::Str(x) => {
-                let _ = stream.write(x.as_bytes())?;
+                stream.write_all(x.as_bytes())?;
             }
             Content::File(mut y) => {
-                file_write_to_tcpstream(&mut y, &mut stream)?;
+                    io::copy(&mut y, stream)?;
             }
             Content::Sf(z) => {
-                let _ = stream.write(z)?;
+                stream.write_all(z)?;
             }
         };
         stream.flush()?;
         Ok(())
     }
-}
-
-fn file_write_to_tcpstream(file: &mut File, stream: &mut TcpStream) -> io::Result<()> {
-    let mut stream = BufWriter::with_capacity(BUFFER_SIZE, stream);
-    let file = BufReader::with_capacity(BUFFER_SIZE, file);
-    for byte in file.bytes() {
-        let byte = byte?;
-        stream.write_all(&[byte])?;
-    }
-    stream.flush()?;
-    Ok(())
 }
 
 impl Default for Content {
