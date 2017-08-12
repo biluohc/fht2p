@@ -3,7 +3,6 @@ use super::ContentType;
 use super::path_info::*;
 use super::html::*;
 
-use stderr::Loger;
 use urlparse::quote;
 
 use std::fs::{self, File};

@@ -36,9 +36,9 @@ toml = "^0.3.2"
 serde_derive = "^0.9.14"
 serde = "^0.9.14"
 
-stderr ="0.7.1" # 要和 poolite 所用的同一个版本，否则loger不能正常工作。
-poolite = "0.6.2"
-app = "0.5.6"
+stderr ="0.8.0" # 要和 poolite 所用的同一个版本，否则loger不能正常工作。
+poolite = "0.6.3"
+app = "0.6.0"
 
 # stderr = { git = "https://github.com/biluohc/stderr", branch = "master", version = "0.7.0"}
 # poolite = { git = "https://github.com/biluohc/poolite",branch = "master", version = "0.6.1" }

@@ -17,7 +17,6 @@ use self::poolite::{Pool, IntoIOResult};
 extern crate app;
 #[macro_use]
 extern crate stderr;
-use stderr::Loger;
 
 use std::net::{TcpListener, TcpStream};
 use std::time::Duration;
@@ -36,12 +35,12 @@ mod time_;
 /// `Date`: `Local` and `UTC` time
 pub use time_::Time;
 /// `Resquest` and `Response`
-pub mod client;
-use client::*;
+pub mod server;
+use server::*;
 
 /// `main` without wait
 pub fn fun() -> Result<(), String> {
-    init!(); // 初始化--log debug
+    logger_init!();
     let config = args::parse();
     Route::init(&config.routes);
     dbln!("{:?}\n", config);

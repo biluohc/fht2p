@@ -10,7 +10,7 @@
 
     # running fht2p --help(-h) to get help.
 
-    fht2p --help
+    fht2p -h
 ```
 ### Or
 ```sh
@@ -27,8 +27,30 @@
 
 * [The Release Page](https://github.com/biluohc/fht2p/releases)  
 
-## Ps
-* 0.0.0.0 is default listenning address.
-* 8080 is default port.
-* keep-alive is default close.
-* ./ is default dir.
+## Help
+```sh
+fht2p 0.8.0
+A HTTP Server for Static File written with Rust
+
+AUTHOR:
+   Wspsxing <biluohc@qq.com>
+
+ADDRESS:
+   Github: https://github.com/biluohc/fht2p
+
+USAGE:
+   fht2p [options] [<PATH>...]
+
+OPTIONS:
+   -h, --help                            Show the help message
+   -V, --version                         Show the version message
+   -c, --config <config>(optional)       Sets a custom config file
+   -C, --cp                              Print the default config file
+   -i, --ip <ip>[0.0.0.0]                Sets listenning ip
+   -p, --port <port>[8080]               Sets listenning port
+   -r, --rr                              Redirect root('/') to `/index.htm[l]`
+   -k, --ka <secs>(optional)             Time HTTP keep alive(default not use)
+
+ARGS:
+   <PATH>["./"]     Sets the path to share
+```

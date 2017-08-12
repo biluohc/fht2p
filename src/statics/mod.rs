@@ -31,11 +31,9 @@ mod win_ico {
 
 use std::time::Duration;
 use super::Time;
-
+use stderr::StaticMut;
 mod route;
 pub use self::route::Route;
-mod use_after_init;
-pub use self::use_after_init::UseAfterInit;
 
 pub static mut REDIRECT_ROOT: bool = false;
 pub fn redirect_root() -> &'static bool {
@@ -45,7 +43,7 @@ pub fn redirect_root_set(b: bool) {
     unsafe { REDIRECT_ROOT = b }
 }
 lazy_static!{
-    static ref SOCKET_TIME_OUT: UseAfterInit<Duration> = UseAfterInit::new(Duration::new(unsafe {SOCKET_TIME_OUT_MS},0));
+    static ref SOCKET_TIME_OUT: StaticMut<Duration> = StaticMut::new(Duration::new(unsafe {SOCKET_TIME_OUT_MS},0));
 }
 /// `ms`
 pub static mut SOCKET_TIME_OUT_MS: u64 = 5000;
@@ -65,9 +63,9 @@ pub fn socket_timeout_set<T: Into<u64>>(time_out: T) {
 /// `sec`
 pub static mut HTTP_TIME_OUT_SEC: u64 = 5;
 lazy_static ! {
-static ref HTTP_TIME_OUT: UseAfterInit<Option<Duration>> = 
-    // UseAfterInit::new(Some(Duration::new(unsafe{HTTP_TIME_OUT_SEC} * 1000, 0)));
-    UseAfterInit::new(None);
+static ref HTTP_TIME_OUT: StaticMut<Option<Duration>> = 
+    // StaticMut::new(Some(Duration::new(unsafe{HTTP_TIME_OUT_SEC} * 1000, 0)));
+    StaticMut::new(None);
 }
 pub fn http_timeout_sec() -> Option<&'static u64> {
     HTTP_TIME_OUT

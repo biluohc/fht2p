@@ -1,4 +1,3 @@
-use stderr::Loger;
 use urlparse::unquote;
 
 use super::*;
@@ -135,7 +134,7 @@ impl Request {
         // req_line
         let mut lines = str.trim().lines();
         let line = lines.next().unwrap();
-        dbln!("ResquestLine_RAW: {:?}",line);
+        dbln!("ResquestLine_RAW: {:?}", line);
         let req_line: Vec<&str> = line.split(' ')
             .filter(|s| !s.is_empty())
             .map(|x| x.trim())
@@ -164,7 +163,7 @@ impl Request {
             let sep_idx = line.find(':').unwrap();
             let (key, value) = line.split_at(sep_idx);
             if value.is_empty() {
-                errln!("Invalid Header_value: {:?}", line);                
+                errln!("Invalid Header_value: {:?}", line);
                 continue;
             }
             header.insert(key.trim().to_string(), value[1..].trim().to_string());

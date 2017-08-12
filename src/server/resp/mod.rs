@@ -7,7 +7,7 @@ use self::get::*;
 pub mod path_info;
 /// `HTML` depends on `Maud`
 pub mod html;
-use client::content_type::ContentType;
+use server::content_type::ContentType;
 
 use std::io::{self, Write};
 use std::error::Error;
@@ -156,7 +156,7 @@ impl Content {
                 stream.write_all(x.as_bytes())?;
             }
             Content::File(mut y) => {
-                    io::copy(&mut y, stream)?;
+                io::copy(&mut y, stream)?;
             }
             Content::Sf(z) => {
                 stream.write_all(z)?;

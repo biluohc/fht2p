@@ -11,13 +11,13 @@ use toml;
 
 use super::statics::*; // 名字,版本,作者，简介，地址
 
-use app::{App, Opt};
+use app::{App, Opt, Args};
 
 /// Get `Config` by `parse` `args`
 pub fn parse() -> Config {
     let mut config = Config::default();
     let mut server = Server::default();
-    let mut routes: Vec<String> = Vec::new();
+    let mut routes: Vec<String> = vec!["./".to_owned()];
     let mut cp = false;
     let mut c_path: Option<String> = None;
 
@@ -28,34 +28,33 @@ pub fn parse() -> Config {
             .addr(URL_NAME, URL)
             .desc(DESC)
             .opt(Opt::new("cp", &mut cp)
-                     .short("C")
+                     .short('C')
                      .long("cp")
                      .help("Print the default config file"))
             .opt(Opt::new("config", &mut c_path)
                      .optional()
-                     .short("c")
+                     .short('c')
                      .long("config")
                      .help("Sets a custom config file"))
             .opt(Opt::new("root", &mut config.redirect_root)
-                     .short("r")
+                     .short('r')
                      .long("rr")
                      .help("Redirect root('/') to '/index.htm[l]`"))
             .opt(Opt::new("secs", &mut config.keep_alive)
-                     .short("k")
+                     .short('k')
                      .long("ka")
                      .help("Time HTTP keep alive(default not use)")
                      .optional())
             .opt(Opt::new("ip", &mut server.ip)
-                     .short("i")
+                     .short('i')
                      .long("ip")
                      .help("Sets listenning ip"))
             .opt(Opt::new("port", &mut server.port)
-                     .short("p")
+                     .short('p')
                      .long("port")
                      .help("Sets listenning port"))
-            .args("PATHS", &mut routes)
-            .args_optional()
-            .args_help(r#"Sets the paths to share(default is "./")"#)
+            .args(Args::new("PATH", &mut routes)
+                      .help(r#"Sets the path to share"#))
             .parse_args()
     };
     // -cp/--cp
@@ -79,12 +78,11 @@ pub fn parse() -> Config {
             None => Config::load_from_STR(),
         }
     } else {
+        config.servers.clear();
         config.servers.push(SocketAddr::new(server.ip, server.port));
-        if !routes.is_empty() {
-            config.routes = args_paths_to_route(&routes[..])
-                .map_err(|e| helper.help_err_exit(e, 1))
-                .unwrap();
-        }
+        config.routes = args_paths_to_route(&routes[..])
+            .map_err(|e| helper.help_err_exit(e, 1))
+            .unwrap();
         config
     }
 }

@@ -14,8 +14,8 @@ lazy_static! {
         sfs.insert(JS_PATH, JS.as_bytes());
         sfs
     };
-    static ref ROUTES: UseAfterInit<Vec<Route>> = {
-        UseAfterInit::new(Vec::new())
+    static ref ROUTES: StaticMut<Vec<Route>> = {
+        StaticMut::new(Vec::new())
     };
 }
 /// `Url` -> `Path`

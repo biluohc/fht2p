@@ -1,5 +1,5 @@
 use super::statics::*;
-use client::status_code::StatusCode;
+use server::status_code::StatusCode;
 use super::path_info::PathInfo;
 use super::HTTP_PROTOCOL;
 
