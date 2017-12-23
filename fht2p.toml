@@ -1,26 +1,26 @@
 [fht2p]
 name = "fht2p"
-version = "0.8.0"
+version = "0.8.1"
 author = "Wspsxing <biluohc@qq.com>"
 desc =  "HTTP Server for Static File written with Rust"
 address= "https://github.com/biluohc/fht2p"
 encoding = "utf8"
 
 [setting]
-# whether use keep-alive
-# keep_alive =  5
-redirect_root = false
+keep-alive =  5
+redirect-html = false
+content-type = false
 
 # 0.0.0.0 is default listenning address, 8080 is default port.
 # fht2p will try to use the next one when the current one can not use, pramgram will exit if all failed.
-servers = ["0.0.0.0:8080","0.0.0.0:8000","127.0.0.1:80"]
+addrs = ["0.0.0.0:8080","0.0.0.0:8000","127.0.0.1:80"]
 
 # ./ is default "/" of, "/" must exist.
  [[routes]]
-img ="/"
-rel = "./"
+url ="/"
+path = "./"
 
-#  [[routes]]
-# img = "/rust/"
-# rel = "/home/viw/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/share/doc/rust/html/"
+ [[routes]]
+url = "/rust/"
+path = "/home/mxo/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/share/doc/rust/html/"
 

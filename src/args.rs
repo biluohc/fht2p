@@ -1,5 +1,8 @@
+use app::{App, Args, Opt};
+use toml;
+
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::collections::HashMap;
+use std::collections::HashMap as Map;
 use std::error::Error;
 use std::path::Path;
 use std::fs::File;
@@ -7,11 +10,7 @@ use std::io::Read;
 use std::env;
 use std;
 
-use toml;
-
-use super::statics::*; // 名字,版本,作者，简介，地址
-
-use app::{App, Opt, Args};
+use super::consts::*; // 名字,版本,作者，简介，地址
 
 /// Get `Config` by `parse` `args`
 pub fn parse() -> Config {
@@ -27,34 +26,45 @@ pub fn parse() -> Config {
             .author(AUTHOR, EMAIL)
             .addr(URL_NAME, URL)
             .desc(DESC)
-            .opt(Opt::new("cp", &mut cp)
-                     .short('C')
-                     .long("cp")
-                     .help("Print the default config file"))
-            .opt(Opt::new("config", &mut c_path)
-                     .optional()
-                     .short('c')
-                     .long("config")
-                     .help("Sets a custom config file"))
-            .opt(Opt::new("root", &mut config.redirect_root)
-                     .short('r')
-                     .long("rr")
-                     .help("Redirect root('/') to '/index.htm[l]`"))
-            .opt(Opt::new("secs", &mut config.keep_alive)
-                     .short('k')
-                     .long("ka")
-                     .help("Time HTTP keep alive(default not use)")
-                     .optional())
-            .opt(Opt::new("ip", &mut server.ip)
-                     .short('i')
-                     .long("ip")
-                     .help("Sets listenning ip"))
-            .opt(Opt::new("port", &mut server.port)
-                     .short('p')
-                     .long("port")
-                     .help("Sets listenning port"))
-            .args(Args::new("PATH", &mut routes)
-                      .help(r#"Sets the path to share"#))
+            .opt(
+                Opt::new("cp", &mut cp)
+                    .short('C')
+                    .long("cp")
+                    .help("Print the default config file"),
+            )
+            .opt(
+                Opt::new("config", &mut c_path)
+                    .optional()
+                    .short('c')
+                    .long("config")
+                    .help("Sets a custom config file"),
+            )
+            .opt(
+                Opt::new("root", &mut config.redirect_html)
+                    .short('r')
+                    .long("rh")
+                    .help("Redirect dir to 'index.htm[l]`, if it exists"),
+            )
+            .opt(
+                Opt::new("secs", &mut config.keep_alive)
+                    .short('k')
+                    .long("ka")
+                    .help("Time HTTP keep alive")
+                    .optional(),
+            )
+            .opt(
+                Opt::new("ip", &mut server.ip)
+                    .short('i')
+                    .long("ip")
+                    .help("Sets listenning ip"),
+            )
+            .opt(
+                Opt::new("port", &mut server.port)
+                    .short('p')
+                    .long("port")
+                    .help("Sets listenning port"),
+            )
+            .args(Args::new("PATH", &mut routes).help(r#"Sets the paths to share"#))
             .parse_args()
     };
     // -cp/--cp
@@ -64,22 +74,20 @@ pub fn parse() -> Config {
     //-c/--config选项，如果有就载入该文件。
     if let Some(s) = c_path {
         return Config::load_from_file(&s)
-                   .map_err(|e| helper.help_err_exit(e, 1))
-                   .unwrap();
+            .map_err(|e| helper.help_err_exit(e, 1))
+            .unwrap();
     }
     // 命令行有没有参数？有就解析参数，没有就寻找配置文件，再没有就使用默认配置。
     if env::args().skip(1).len() == 0 {
         match get_config_path() {
-            Some(s) => {
-                Config::load_from_file(&s)
-                    .map_err(|e| helper.help_err_exit(e, 1))
-                    .unwrap()
-            }
+            Some(s) => Config::load_from_file(&s)
+                .map_err(|e| helper.help_err_exit(e, 1))
+                .unwrap(),
             None => Config::load_from_STR(),
         }
     } else {
-        config.servers.clear();
-        config.servers.push(SocketAddr::new(server.ip, server.port));
+        config.addrs.clear();
+        config.addrs.push(SocketAddr::new(server.ip, server.port));
         config.routes = args_paths_to_route(&routes[..])
             .map_err(|e| helper.help_err_exit(e, 1))
             .unwrap();
@@ -87,7 +95,7 @@ pub fn parse() -> Config {
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 struct Server {
     pub ip: IpAddr,
     pub port: u16,
@@ -103,41 +111,43 @@ impl Server {
     }
 }
 // 关键是结构体的字段名，和toml的[name]对应
-#[derive(Debug,Deserialize)]
+#[derive(Debug, Deserialize)]
 struct Fht2p {
     setting: Setting,
     routes: Vec<Route>,
 }
 
-#[derive(Debug,Deserialize)]
+#[derive(Debug, Deserialize)]
 struct Setting {
-    redirect_root: bool,
-    keep_alive: Option<u64>,
-    servers: Vec<String>,
+    #[serde(rename = "redirect-html")] redirect_html: bool,
+    #[serde(rename = "keep-alive")] keep_alive: Option<u64>,
+    addrs: Vec<String>,
 }
 
-#[derive(Debug,Deserialize)]
+#[derive(Debug, Deserialize)]
 struct Route {
-    rel: String,
-    img: String,
+    url: String,
+    path: String,
 }
 
 /// `Config` for `main`
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct Config {
-    pub redirect_root: bool,
+    pub redirect_html: bool,
     pub keep_alive: Option<u64>,
-    pub servers: Vec<SocketAddr>,
-    pub routes: HashMap<String, String>,
+    pub addrs: Vec<SocketAddr>,
+    pub routes: Map<String, String>,
 }
 impl Default for Config {
     fn default() -> Self {
-        let mut map = HashMap::new();
+        let mut map = Map::new();
         map.insert("/".to_owned(), "./".to_owned());
         Config {
-            redirect_root: false,
+            redirect_html: false,
             keep_alive: None,
-            servers: vec![SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080)],
+            addrs: vec![
+                SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080),
+            ],
             routes: map,
         }
     }
@@ -146,8 +156,7 @@ impl Default for Config {
 impl Config {
     fn load_from_file(path: &str) -> Result<Self, String> {
         let mut str = String::new();
-        let mut file = File::open(path)
-            .map_err(|e| format!("config file('{}') open fails: {}", path, e.description()))?;
+        let mut file = File::open(path).map_err(|e| format!("config file('{}') open fails: {}", path, e.description()))?;
         file.read_to_string(&mut str)
             .map_err(|e| format!("config file('{}') read fails: {}", path, e.description()))?;
         Self::load_from_str(path, &str)
@@ -155,39 +164,42 @@ impl Config {
     fn load_from_str(file_name: &str, toml: &str) -> Result<Config, String> {
         let mut config = Self::default();
         config.routes.clear();
-        config.servers.clear();
+        config.addrs.clear();
 
-        let toml: Fht2p = toml::from_str(toml)
-            .map_err(|e| format!("config file('{}') parse fails: {}", file_name, e))?;
-        config.redirect_root = toml.setting.redirect_root;
+        let toml: Fht2p = toml::from_str(toml).map_err(|e| format!("config file('{}') parse fails: {}", file_name, e))?;
+        config.redirect_html = toml.setting.redirect_html;
         config.keep_alive = toml.setting.keep_alive;
-        for server in toml.setting.servers {
-            let addr = server
-                .parse::<SocketAddr>()
-                .map_err(|e| {
-                             format!("config file('{}')'s {} parse::<SocketAddr> fails: {}",
-                                     file_name,
-                                     server,
-                                     e.description())
-                         })?;
-            config.servers.push(addr);
+        for server in toml.setting.addrs {
+            let addr = server.parse::<SocketAddr>().map_err(|e| {
+                format!(
+                    "config file('{}')'s {} parse::<SocketAddr> fails: {}",
+                    file_name,
+                    server,
+                    e.description()
+                )
+            })?;
+            config.addrs.push(addr);
         }
 
         for route in &toml.routes {
-            if !Path::new(&route.rel).exists() {
-                errln!("Warning: '{}''s routes's `{}`'s `{}` is not exists",
-                       file_name,
-                       route.img,
-                       route.rel);
+            if !Path::new(&route.path).exists() {
+                warn!(
+                    "'{}''s routes({:?}: {:?}) is not exists",
+                    file_name, route.url, route.path
+                );
             }
             if config
-                   .routes
-                   .insert(route.img.clone(), route.rel.clone())
-                   .is_some() {
-                return Err(format!("'{}''s routes's {} already defined", file_name, route.img));
+                .routes
+                .insert(route.url.clone(), route.path.clone())
+                .is_some()
+            {
+                return Err(format!(
+                    "'{}''s routes's {} already defined",
+                    file_name, route.path
+                ));
             }
         }
-        if config.servers.is_empty() {
+        if config.addrs.is_empty() {
             return Err(format!("'{}''s addrs is empty", file_name));
         }
         if config.routes.is_empty() {
@@ -209,60 +221,70 @@ fn config_print() {
 
 fn get_config_path() -> Option<String> {
     match std::env::home_dir() {
-        // 家目录 ～/.config/fht2p/fht2p.ini
-        Some(ref home) if home.as_path()
-                              .join(".config/fht2p")
-                              .join(CONFIG_STR_PATH)
-                              .exists() => {
-            Some(home.as_path()
-                     .join(".config/fht2p")
-                     .join(CONFIG_STR_PATH)
-                     .to_string_lossy()
-                     .into_owned())
+        // 家目录 ～/.config/fht2p/fht2p.toml
+        Some(ref home)
+            if home.as_path()
+                .join(".config/fht2p")
+                .join(CONFIG_STR_PATH)
+                .exists() =>
+        {
+            Some(
+                home.as_path()
+                    .join(".config/fht2p")
+                    .join(CONFIG_STR_PATH)
+                    .to_string_lossy()
+                    .into_owned(),
+            )
         }
-        // 可执行文件所在目录 path/fht2p.ini
-        _ if std::env::current_exe().is_ok() &&
-             std::env::current_exe()
-                 .unwrap()
-                 .parent()
-                 .unwrap()
-                 .join(CONFIG_STR_PATH)
-                 .exists() => {
-            Some(std::env::current_exe()
-                     .unwrap()
-                     .parent()
-                     .unwrap()
-                     .join(CONFIG_STR_PATH)
-                     .to_string_lossy()
-                     .into_owned())
+        // 可执行文件所在目录 path/fht2p.toml
+        _ if std::env::current_exe().is_ok()
+            && std::env::current_exe()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .join(CONFIG_STR_PATH)
+                .exists() =>
+        {
+            Some(
+                std::env::current_exe()
+                    .unwrap()
+                    .parent()
+                    .unwrap()
+                    .join(CONFIG_STR_PATH)
+                    .to_string_lossy()
+                    .into_owned(),
+            )
         }
-        // 当前目录 dir/fht2p.ini
-        _ if std::env::current_dir().is_ok() &&
-             std::env::current_dir()
-                 .unwrap()
-                 .join(CONFIG_STR_PATH)
-                 .exists() => {
-            Some(std::env::current_dir()
-                     .unwrap()
-                     .join(CONFIG_STR_PATH)
-                     .to_string_lossy()
-                     .into_owned())
+        // 当前目录 dir/fht2p.toml
+        _ if std::env::current_dir().is_ok()
+            && std::env::current_dir()
+                .unwrap()
+                .join(CONFIG_STR_PATH)
+                .exists() =>
+        {
+            Some(
+                std::env::current_dir()
+                    .unwrap()
+                    .join(CONFIG_STR_PATH)
+                    .to_string_lossy()
+                    .into_owned(),
+            )
         }
         _ => None,
     }
 }
 
-// 参数转换为Route vir->rel
-fn args_paths_to_route(map: &[String]) -> Result<HashMap<String, String>, String> {
-    let mut routes: HashMap<String, String> = HashMap::new();
-    for (idx, rel) in map.iter().enumerate() {
-        if !Path::new(&rel).exists() {
-            errln!("Warning: {:?} is not exists", &rel);
+// 参数转换为Route url, path
+fn args_paths_to_route(map: &[String]) -> Result<Map<String, String>, String> {
+    let mut routes: Map<String, String> = Map::new();
+    for (idx, path) in map.iter().enumerate() {
+        if !Path::new(&path).exists() {
+            warn!("{:?} is not exists", &path);
         }
         if idx == 0 {
-            routes.insert("/".to_owned(), rel.to_string());
-        } else if routes.insert(route_name(rel)?, rel.to_string()).is_some() {
-            return Err(format!("{} already defined", route_name(rel).unwrap()));
+            routes.insert("/".to_owned(), path.to_string());
+        } else if routes.insert(route_name(path)?, path.to_string()).is_some() {
+            return Err(format!("{} already defined", route_name(path).unwrap()));
         }
     }
     fn route_name(msg: &str) -> Result<String, String> {
@@ -270,11 +292,11 @@ fn args_paths_to_route(map: &[String]) -> Result<HashMap<String, String>, String
         path.file_name()
             .map(|s| "/".to_owned() + s.to_str().unwrap())
             .map(|mut s| {
-                     if Path::new(msg).is_dir() {
-                         s.push('/');
-                     }
-                     s
-                 })
+                if Path::new(msg).is_dir() {
+                    s.push('/');
+                }
+                s
+            })
             .ok_or_else(|| format!("Path '{}' dost not have name", msg))
     }
     Ok(routes)

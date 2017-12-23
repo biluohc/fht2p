@@ -1,48 +1,36 @@
 [package]
 name = "fht2p"
-version = "0.8.0"
+version = "0.8.1"
 authors = ["Wspsxing <biluohc@qq.com>"]
 description = "A HTTP Server for Static File written with Rust"
-
-[[bin]]
-doc = false
-name = "fht2p"
-path = "src/main.rs"
-
 build = "build.rs"
 
-[profile.dev]      #    cargo build 
-opt-level = 0     
-debug = true      
-panic = 'unwind'
-
-[profile.release]  #    cargo build --release
-opt-level = 3      #    cargo build --release -vv
-# debug = false
+[profile.release]
+opt-level = 3
+# lto = true
 # debug = true 
-# panic = 'abort'
-panic = 'unwind'
 
-[workspace]
-[dependencies]
-signal_monitor = { path = "util/signal_monitor", version = "0.1.0" }
-
-maud = "^0.16.2"
-maud_macros = "^0.16.3"
-lazy_static = "^0.2.8"
-urlparse = "^0.7.3"
+[build-dependencies]
+encoding = "^0.2"
+chardet = "^0.2"
 time = "^0.1"
-toml = "^0.3.2"
+
+[dependencies]
+mxo_env_logger = "^0.1"
+lazy_static = "^0.2.8"
 serde_derive = "^0.9.14"
 serde = "^0.9.14"
+time = "^0.1"
+toml = "^0.3.2"
+log = "^0.3.8"
+app = "0.6.3"
+futures-cpupool= "^0.1.7"
+tokio-core = "^0.1.10"
+futures ="^0.1.17"
+walkdir = "^2.0.1"
+hyper = "^0.11.8"
+bytes = "^0.4.5"
+url = "^1.6.0"
 
-stderr ="0.8.0" # 要和 poolite 所用的同一个版本，否则loger不能正常工作。
-poolite = "0.6.3"
-app = "0.6.0"
+hyper-fs = {path="../hyper-fs", version= "*"}
 
-# stderr = { git = "https://github.com/biluohc/stderr", branch = "master", version = "0.7.0"}
-# poolite = { git = "https://github.com/biluohc/poolite",branch = "master", version = "0.6.1" }
-# app = { git = "https://github.com/biluohc/app-rs", branch = "master", version = "0.5.5" }
-# stderr = { path = "../stderr" }
-# poolite = { path ="../poolite" }
-# app = { path = "../app" }

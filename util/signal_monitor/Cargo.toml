@@ -1,8 +1,0 @@
-[package]
-name = "signal_monitor"
-version = "0.1.0"
-authors = ["Wspsxing <biluohc@qq.com>"]
-
-[dependencies]
-sig = { path="sig" }
-libc = "^0.2.20"

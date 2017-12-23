@@ -1,16 +1,35 @@
-extern crate signal_monitor as Sm;
 #[macro_use]
-extern crate stderr;
+extern crate log;
+extern crate mxo_env_logger;
+use mxo_env_logger::*;
 
-extern crate fht2p;
+#[macro_use]
+extern crate lazy_static;
+#[macro_use]
+extern crate serde_derive;
+extern crate toml;
 
-use std::process::exit;
+extern crate app;
+extern crate bytes;
+extern crate futures;
+extern crate futures_cpupool;
+extern crate hyper;
+#[macro_use]
+extern crate hyper_fs;
+extern crate tokio_core;
+extern crate url;
+extern crate walkdir;
+
+pub(crate) mod consts;
+pub mod exception;
+pub mod index;
+pub mod server;
+pub mod args;
 
 fn main() {
-    if let Err(e) = fht2p::fun() {
-        assert_ne!("", e.trim());
-        errln!("{}", e);
-        exit(1);
-    };
-    Sm::join(); //Ctrlc Signal
+    init().expect("Init log failed");
+
+    if let Err(e) = server::run(args::parse()) {
+        error!("{}", e.description())
+    }
 }
