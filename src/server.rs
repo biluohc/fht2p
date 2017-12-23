@@ -19,6 +19,7 @@ use exception::ExceptionHandler;
 
 use index::StaticIndex;
 use args::Config;
+use consts;
 
 #[allow(unused_imports)]
 use std::io::{self, ErrorKind as IoErrorKind};
@@ -36,7 +37,7 @@ pub fn run(config: Config) -> io::Result<()> {
 
     let mut core = Core::new()?;
     let handle = core.handle();
-    let listener = config.addrs[1..].iter().fold(
+    let tcp = config.addrs[1..].iter().fold(
         TcpListener::bind(&config.addrs[0], &handle),
         |tcp, &addr| {
             if tcp.is_err() {
@@ -47,19 +48,33 @@ pub fn run(config: Config) -> io::Result<()> {
         },
     )?;
     let server = Rc::new(Server::new(handle.clone(), pool, config, fsconfig));
-    let addr = listener.local_addr()?;
+    let addr = tcp.local_addr()?;
 
     let http = Http::new();
-    let server = listener.incoming().for_each(|(socket, addr)| {
+    let http_server = tcp.incoming().for_each(|(socket, addr)| {
         http.bind_connection(&handle, socket, addr, server.clone());
         Ok(())
     });
-    println!(
-        "Listening on http://{}:{} with 1 thread.",
+
+    let mut info = format!(
+        "{}/{} Serving at {}:{} for:\n",
+        consts::NAME,
+        env!("CARGO_PKG_VERSION"),
         addr.ip(),
         addr.port()
     );
-    core.run(server)
+    server
+        .routes
+        .iter()
+        .for_each(|r| info.push_str(&format!("   {:?} -> {:?}\n", r.1, r.2)));
+    info.push_str(&format!(
+        "You can visit http://{}:{}",
+        addr.ip(),
+        addr.port()
+    ));
+    println!("{}", info);
+
+    core.run(http_server)
 }
 
 /// `Server`

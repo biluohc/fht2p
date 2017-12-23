@@ -20,16 +20,49 @@ extern crate tokio_core;
 extern crate url;
 extern crate walkdir;
 
+extern crate signalbool;
+use signalbool::{Flag, Signal, SignalBool};
+
 pub(crate) mod consts;
 pub mod exception;
 pub mod index;
 pub mod server;
 pub mod args;
 
+use std::thread::{sleep, Builder};
+use std::sync::mpsc::{channel, TryRecvError};
+use std::time::Duration;
+use std::process::exit;
+use std::io;
+
+/// `Http.serve_addr_handle()` can not get `Request'`s remote addr now...
 fn main() {
     init().expect("Init log failed");
 
-    if let Err(e) = server::run(args::parse()) {
-        error!("{}", e.description())
+    let config = args::parse();
+
+    let sb = SignalBool::new(&[Signal::SIGINT], Flag::Restart)
+        .map_err(|e| eprintln!("Register Signal failed: {:?}", e))
+        .unwrap();
+    let (mp, sc) = channel::<io::Error>();
+
+    Builder::new()
+        .name("event-loop".to_owned())
+        .spawn(move || server::run(config).map_err(|e| mp.send(e).unwrap()))
+        .unwrap();
+
+    loop {
+        sleep(Duration::from_millis(10));
+        match sc.try_recv() {
+            Ok(e) => {
+                error!("{}", e.description());
+                exit(1);
+            }
+            Err(TryRecvError::Disconnected) => unreachable!(),
+            _ => {}
+        }
+        if sb.caught() {
+            break;
+        }
     }
 }
