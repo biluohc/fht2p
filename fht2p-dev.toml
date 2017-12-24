@@ -34,5 +34,9 @@ url = "/ghc/"
 path = "/home/mxo/ghc/share/doc/ghc-8.2.1/html/"
 
  [[routes]]
+url="python3"
+path="/home/mxo/Public/python-3.6.4-docs-html"
+
+ [[routes]]
 url = "/ghxc/"
 path = "/homex/mxo/ghc/share/doc/ghc-8.2.1/html/"

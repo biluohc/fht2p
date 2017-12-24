@@ -2,23 +2,21 @@
 extern crate log;
 extern crate mxo_env_logger;
 use mxo_env_logger::*;
-
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
 extern crate serde_derive;
 extern crate toml;
-
 extern crate app;
+extern crate url;
 extern crate bytes;
+extern crate hyper;
+extern crate walkdir;
+extern crate tokio_core;
 extern crate futures;
 extern crate futures_cpupool;
-extern crate hyper;
 #[macro_use]
 extern crate hyper_fs;
-extern crate tokio_core;
-extern crate url;
-extern crate walkdir;
 
 extern crate signalbool;
 use signalbool::{Flag, Signal, SignalBool};
@@ -40,6 +38,7 @@ fn main() {
     init().expect("Init log failed");
 
     let config = args::parse();
+    debug!("{:?}", config);
 
     let sb = SignalBool::new(&[Signal::SIGINT], Flag::Restart)
         .map_err(|e| eprintln!("Register Signal failed: {:?}", e))
