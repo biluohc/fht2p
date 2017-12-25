@@ -111,13 +111,14 @@ impl EntryMetadata {
             .bytes()
             .map(percent_encode_byte)
             .collect::<String>();
-        let name_tail = self.typo
+        let (name_style ,name_tail) = self.typo
             .as_ref()
-            .map(|ft| if ft.is_dir() { "/" } else { "" })
-            .unwrap_or("");
+            .map(|ft| if ft.is_dir() { (" class=\"dir\"", "/") } else { ("","") })
+            .unwrap_or(("",""));
 
         format!(
-            "<tr><td><a href=\"{}{}\">{}{}</a></td><td>{}</td><td><bold>{}</bold></td></tr>\n",
+            "<tr><td{}><a href=\"{}{}\">{}{}</a></td><td>{}</td><td><bold>{}</bold></td></tr>\n",
+            name_style,
             name_enc,
             name_tail,
             self.name,
