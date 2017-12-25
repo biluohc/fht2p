@@ -1,22 +1,23 @@
+#![allow(unknown_lints, clone_on_ref_ptr, boxed_local)]
 #[macro_use]
 extern crate log;
 extern crate mxo_env_logger;
 use mxo_env_logger::*;
+extern crate app;
+extern crate bytes;
+extern crate futures;
+extern crate futures_cpupool;
+extern crate hyper;
+#[macro_use]
+extern crate hyper_fs;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
 extern crate serde_derive;
-extern crate toml;
-extern crate app;
-extern crate url;
-extern crate bytes;
-extern crate hyper;
-extern crate walkdir;
+extern crate time;
 extern crate tokio_core;
-extern crate futures;
-extern crate futures_cpupool;
-#[macro_use]
-extern crate hyper_fs;
+extern crate toml;
+extern crate url;
 
 extern crate signalbool;
 use signalbool::{Flag, Signal, SignalBool};

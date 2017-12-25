@@ -1,25 +1,43 @@
 extern crate encoding;
 extern crate chardet;
+extern crate rsass;
 extern crate time;
 
 use encoding::label::encoding_from_whatwg_label;
+use rsass::{OutputStyle, compile_scss_file};
 use chardet::{detect, charset2encoding};
 use encoding::DecoderTrap;
 use time::now_utc;
 
 use std::process::Command as Cmd;
 use std::io::{self, Write};
-use std::path::PathBuf;
+use std::path::{Path,PathBuf};
 use std::fs::File;
 use std::env;
 
-/// `include!(concat!(env!("OUT_DIR"), "/zipcs.txt"));`
+const VERSION_FILE_NAME: &str = "fht2p.txt";
+const CSS_PATH: &str = "config/fht2p.css";
+const CSS_FILE_NAME: &str = "fht2p.css";
+
 fn main() {
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
-    let out_path = out_dir.join("fht2p.txt");
+    css(&out_dir).unwrap();
+    version(&out_dir).unwrap();
+}
+
+// use sass to compress css file
+fn css(out_dir: &PathBuf) -> io::Result<()> {
+     let css = compile_scss_file(Path::new(CSS_PATH), OutputStyle::Compressed).unwrap();
+     let out_path = out_dir.join(CSS_FILE_NAME);
+     File::create(&out_path)
+        .and_then(|mut f| f.write_all(css.as_slice()))
+}
+
+// include!(concat!(env!("OUT_DIR"), "/fht2p.txt"));
+fn version(out_dir: &PathBuf)-> io::Result<()> {
+    let out_path = out_dir.join(VERSION_FILE_NAME);
     File::create(&out_path)
         .and_then(|mut f| f.write_all(fun().as_bytes()))
-        .unwrap()
 }
 
 fn fun() -> String {

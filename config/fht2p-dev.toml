@@ -7,8 +7,7 @@ address= "https://github.com/biluohc/fht2p"
 encoding = "utf8"
 
 [setting]
-keep-alive =  5
-redirect-html = false
+keep-alive =  true
 content-type = false
 
 # 0.0.0.0 is default listenning address, 8080 is default port.
@@ -18,25 +17,31 @@ addrs = ["0.0.0.0:8080","0.0.0.0:8000","127.0.0.1:80"]
 # ./ is default "/" of, "/" must exist.
  [[routes]]
 url ="/"
-path = "/home/mxo/Downloads/cache/"
 # path = "./"
+path = "/home/mxo/Downloads/cache/"
+redirect-html = false
 
  [[routes]]
 url = "/rust/"
 path = "/home/mxo/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/share/doc/rust/html/"
+redirect-html = true
 
  [[routes]]
 url = "/cargo/"
 path = "/home/mxo/.cache/mozilla/cargo"
+redirect-html = true
 
  [[routes]]
 url = "/ghc/"
 path = "/home/mxo/ghc/share/doc/ghc-8.2.1/html/"
+redirect-html = true
 
  [[routes]]
 url="python3"
 path="/home/mxo/Public/python-3.6.4-docs-html"
+redirect-html = true
 
  [[routes]]
 url = "/ghxc/"
 path = "/homex/mxo/ghc/share/doc/ghc-8.2.1/html/"
+redirect-html = false

@@ -1,0 +1,63 @@
+html {
+    font-family: "Source Han Sans CN", Arial, sans-serif;
+}
+
+body {
+    padding: 0;
+    background: #FFFFFF;
+    font-size: medium;
+    color: #333333;
+}
+
+h1 {
+    font-size: x-large;
+    text-align: left;
+}
+
+
+/* h1 client addr*/
+
+#client {
+    text-align: right;
+    color: #FF6600;
+}
+
+a {
+    text-decoration: none;
+    color: #356AA0;
+}
+
+a:hover {
+    text-decoration: none;
+    color: #CC0000;
+}
+
+
+table {
+    border-collapse: collapse;
+    border-bottom: 0.1px solid #000080;
+}
+  
+table thead th {
+    font-size: small;
+    border-bottom: 0.1px solid #000080;
+    background-color: white;
+}
+
+hr {
+    border-bottom: 0.1px solid #000080;
+}
+
+address {
+    font-size: x-large;
+}
+
+
+/*.dir,
+.symlink,
+.file
+*/
+
+.dir {
+    font-size: large;
+}

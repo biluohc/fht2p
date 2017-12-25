@@ -1,19 +1,15 @@
 use hyper::{header, Error, Method, StatusCode};
 use hyper::server::{Request, Response};
-
-#[allow(unused_imports)]
-use walkdir::{DirEntry, Error as WalkDirErr, WalkDir};
-use url::percent_encoding::percent_encode_byte;
 use futures_cpupool::{CpuFuture, CpuPool};
 use futures::{Future, Poll};
-
 use hyper_fs::{Exception, ExceptionHandlerService};
 use hyper_fs::{Config, FutureObject};
 
 use exception::ExceptionHandler;
 
-#[allow(unused_imports)]
-use std::io::{self, ErrorKind as IoErrorKind};
+pub mod view;
+use self::view::{render_html, EntryOrder};
+
 use std::path::PathBuf;
 use std::{mem, time};
 use std::fs;
@@ -137,11 +133,15 @@ where
             .duration_since(time::UNIX_EPOCH)
             .expect("SystemTime::duration_since(UNIX_EPOCH) failed");
         let http_last_modified = header::HttpDate::from(last_modified);
+
+        let entry_order = EntryOrder::new(req.query());
+        debug!("{:?} -> {:?}", req.query(), entry_order);
         let etag = header::EntityTag::weak(format!(
-            "{:x}-{:x}.{:x}",
+            "{:x}-{:x}.{:x}@{}",
             metadata.len(),
             delta_modified.as_secs(),
-            delta_modified.subsec_nanos()
+            delta_modified.subsec_nanos(),
+            entry_order
         ));
         if let Some(&header::IfNoneMatch::Items(ref etags)) = req.headers().get() {
             if !etags.is_empty() && etag == etags[0] {
@@ -152,7 +152,7 @@ where
         }
 
         // io error
-        let html = match render_html(&self.title, &self.path, req.path(), self.config()) {
+        let html = match render_html(&self.title, &self.path, &req, &entry_order, self.config()) {
             Ok(html) => html,
             Err(e) => {
                 return ExceptionHandler::call(e, req);
@@ -175,51 +175,4 @@ where
         }
         Ok(res)
     }
-}
-
-fn render_html(title: &str, index: &PathBuf, path: &str, config: &Config) -> io::Result<String> {
-    let mut html = format!(
-        "
-<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">
-<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">
-<title>Index listing for {}</title>
-</head><body><h1>Index listing for  <a href=\"{}../\">{}</a></h1><hr><ul>",
-        title, path, title
-    );
-
-    let mut walker = WalkDir::new(index).min_depth(1).max_depth(1);
-    if config.get_follow_links() {
-        walker = walker.follow_links(true);
-    }
-    if config.get_hide_entry() {
-        for entry in walker.into_iter().filter_entry(|e| !is_hidden(e)) {
-            entries_render(entry?, &mut html);
-        }
-    } else {
-        for entry in walker {
-            entries_render(entry?, &mut html);
-        }
-    }
-    html.push_str("</ul><hr></body></html>");
-    Ok(html)
-}
-
-#[inline]
-fn is_hidden(entry: &DirEntry) -> bool {
-    entry
-        .file_name()
-        .to_str()
-        .map(|s| s.starts_with('.'))
-        .unwrap_or(false)
-}
-#[inline]
-fn entries_render(entry: DirEntry, html: &mut String) {
-    let mut name = entry.file_name().to_string_lossy().into_owned();
-    let mut name_dec = name.bytes().map(percent_encode_byte).collect::<String>();
-    if entry.file_type().is_dir() {
-        name.push('/');
-        name_dec.push('/');
-    }
-    let li = format!("<li><a href=\"{}\">{}</a></li>", name_dec, name);
-    html.push_str(&li);
 }

@@ -19,6 +19,7 @@ pub fn parse() -> Config {
     let mut routes: Vec<String> = vec!["./".to_owned()];
     let mut cp = false;
     let mut c_path: Option<String> = None;
+    let mut redirect_html = false;
 
     let helper = {
         App::new(NAME)
@@ -40,10 +41,10 @@ pub fn parse() -> Config {
                     .help("Sets a custom config file"),
             )
             .opt(
-                Opt::new("root", &mut config.redirect_html)
+                Opt::new("root", &mut redirect_html)
                     .short('r')
                     .long("rh")
-                    .help("Redirect dir to 'index.htm[l]`, if it exists"),
+                    .help("Redirect dir to 'index.html/htm`, if it exists"),
             )
             .opt(
                 Opt::new("secs", &mut config.keep_alive)
@@ -88,7 +89,7 @@ pub fn parse() -> Config {
     } else {
         config.addrs.clear();
         config.addrs.push(SocketAddr::new(server.ip, server.port));
-        config.routes = args_paths_to_route(&routes[..])
+        config.routes = args_paths_to_route(&routes[..], redirect_html)
             .map_err(|e| helper.help_err_exit(e, 1))
             .unwrap();
         config
@@ -119,32 +120,42 @@ struct Fht2p {
 
 #[derive(Debug, Deserialize)]
 struct Setting {
-    #[serde(rename = "redirect-html")] redirect_html: bool,
-    #[serde(rename = "keep-alive")] keep_alive: Option<u64>,
+    #[serde(rename = "keep-alive")] keep_alive: bool,
     addrs: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
-struct Route {
-    url: String,
-    path: String,
+pub struct Route {
+    #[serde(default)] pub url_components: Vec<String>,
+    pub url: String,
+    pub path: String,
+    #[serde(rename = "redirect-html")] pub redirect_html: bool,
+}
+
+impl Route {
+    fn new<S: Into<String>>(url: S, path: S, redirect_html: bool) -> Self {
+        Self {
+            url_components: Vec::new(),
+            url: url.into(),
+            path: path.into(),
+            redirect_html: redirect_html,
+        }
+    }
 }
 
 /// `Config` for `main`
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Config {
-    pub redirect_html: bool,
-    pub keep_alive: Option<u64>,
+    pub keep_alive: bool,
     pub addrs: Vec<SocketAddr>,
-    pub routes: Map<String, String>,
+    pub routes: Map<String, Route>,
 }
 impl Default for Config {
     fn default() -> Self {
         let mut map = Map::new();
-        map.insert("/".to_owned(), "./".to_owned());
+        map.insert("/".to_owned(), Route::new("/", ".", false));
         Config {
-            redirect_html: false,
-            keep_alive: None,
+            keep_alive: true,
             addrs: vec![
                 SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080),
             ],
@@ -167,7 +178,6 @@ impl Config {
         config.addrs.clear();
 
         let toml: Fht2p = toml::from_str(toml).map_err(|e| format!("config file('{}') parse fails: {}", file_name, e))?;
-        config.redirect_html = toml.setting.redirect_html;
         config.keep_alive = toml.setting.keep_alive;
         for server in toml.setting.addrs {
             let addr = server.parse::<SocketAddr>().map_err(|e| {
@@ -190,12 +200,15 @@ impl Config {
             }
             if config
                 .routes
-                .insert(route.url.clone(), route.path.clone())
+                .insert(
+                    route.url.clone(),
+                    Route::new(route.url.as_str(), route.path.as_str(), route.redirect_html),
+                )
                 .is_some()
             {
                 return Err(format!(
-                    "'{}''s routes's {} already defined",
-                    file_name, route.path
+                    "'{}''s routes's {:?} already defined",
+                    file_name, route.url
                 ));
             }
         }
@@ -275,16 +288,21 @@ fn get_config_path() -> Option<String> {
 }
 
 // 参数转换为Route url, path
-fn args_paths_to_route(map: &[String]) -> Result<Map<String, String>, String> {
-    let mut routes: Map<String, String> = Map::new();
+fn args_paths_to_route(map: &[String], redirect_html: bool) -> Result<Map<String, Route>, String> {
+    let mut routes = Map::new();
     for (idx, path) in map.iter().enumerate() {
         if !Path::new(&path).exists() {
             warn!("{:?} is not exists", &path);
         }
         if idx == 0 {
-            routes.insert("/".to_owned(), path.to_string());
-        } else if routes.insert(route_name(path)?, path.to_string()).is_some() {
-            return Err(format!("{} already defined", route_name(path).unwrap()));
+            let route = Route::new("/".to_owned(), path.to_string(), redirect_html);
+            routes.insert("/".to_owned(), route);
+        } else {
+            let route_url = route_name(path)?;
+            let route = Route::new(route_url.clone(), path.to_string(), redirect_html);
+            if routes.insert(route_url, route).is_some() {
+                return Err(format!("{} already defined", route_name(path).unwrap()));
+            }
         }
     }
     fn route_name(msg: &str) -> Result<String, String> {

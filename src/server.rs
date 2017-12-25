@@ -1,9 +1,9 @@
 use futures_cpupool::{Builder, CpuPool};
 use tokio_core::reactor::{Core, Handle};
 use tokio_core::net::TcpListener;
-use futures::{Future, Stream};
+use futures::{future, Future, Stream};
 use hyper::server::{Http, Request, Response, Service};
-use hyper::{Error, Method};
+use hyper::{header, Error, Method, StatusCode};
 use url::percent_encoding::percent_decode;
 
 use hyper_fs::{Exception, ExceptionHandlerServiceAsync};
@@ -18,20 +18,19 @@ pub use self::local::StaticFile;
 use exception::ExceptionHandler;
 
 use index::StaticIndex;
-use args::Config;
+use args::{Config, Route};
 use consts;
 
-#[allow(unused_imports)]
-use std::io::{self, ErrorKind as IoErrorKind};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::rc::Rc;
+use std::io;
 
 /// main function
 pub fn run(config: Config) -> io::Result<()> {
     let pool = Builder::new().pool_size(3).name_prefix("hyper-fs").create();
     let fsconfig = FsConfig::new()
-        .cache_secs(60)
+        .cache_secs(0)
         .follow_links(true)
         .show_index(true);
 
@@ -49,6 +48,7 @@ pub fn run(config: Config) -> io::Result<()> {
     )?;
     let server = Rc::new(Server::new(handle.clone(), pool, config, fsconfig));
     let addr = tcp.local_addr()?;
+    consts::SERVER_ADDR.set(addr);
 
     let http = Http::new();
     let http_server = tcp.incoming().for_each(|(socket, addr)| {
@@ -66,7 +66,7 @@ pub fn run(config: Config) -> io::Result<()> {
     server
         .routes
         .iter()
-        .for_each(|r| info.push_str(&format!("   {:?} -> {:?}\n", r.1, r.2)));
+        .for_each(|r| info.push_str(&format!("   {:?} -> {:?}\n", r.url, r.path)));
     info.push_str(&format!(
         "You can visit http://{}:{}",
         addr.ip(),
@@ -82,37 +82,32 @@ pub struct Server {
     handle: Handle,
     pool: CpuPool,
     fsconfig: Arc<FsConfig>,
-    routes: Vec<(Vec<String>, String, String)>,
-    redirect_html: bool,
+    routes: Vec<Route>,
 }
 
 impl Server {
     pub fn new(handle: Handle, pool: CpuPool, config: Config, fsconfig: FsConfig) -> Self {
-        let redirect_html = config.redirect_html;
         let mut routes = config
             .routes
             .into_iter()
-            .map(|(u, p)| {
-                (
-                    u.split('/')
-                        .filter(|c| !c.is_empty())
-                        .map(|c| c.to_owned())
-                        .collect::<Vec<_>>(),
-                    u,
-                    p,
-                )
+            .map(|(_, mut r)| {
+                r.url_components = r.url
+                    .split('/')
+                    .filter(|c| !c.is_empty())
+                    .map(|c| c.to_owned())
+                    .collect::<Vec<_>>();
+                r
             })
             .collect::<Vec<_>>();
-        routes.sort_by(|a, b| a.0.len().cmp(&b.0.len()));
+        routes.sort_by(|a, b| a.url_components.len().cmp(&b.url_components.len()));
         Self {
             handle: handle,
             pool: pool,
             fsconfig: Arc::new(fsconfig),
             routes: routes,
-            redirect_html: redirect_html,
         }
     }
-    pub fn router(&self, req_path: &str) -> Option<(String, PathBuf)> {
+    pub fn router(&self, req_path: &str) -> Option<(String, PathBuf, bool)> {
         let mut reqpath_components = req_path
             .split('/')
             .filter(|c| !c.is_empty() && c != &".")
@@ -131,26 +126,27 @@ impl Server {
         let mut components = (0..self.routes.len())
             .into_iter()
             .fold(Vec::with_capacity(self.routes.len()), |mut rs, idx| {
-                if self.routes[idx].0.len() <= reqpath_components.len() {
+                if self.routes[idx].url_components.len() <= reqpath_components.len() {
                     rs.push(&self.routes[idx]);
                 }
                 rs
             });
+        #[allow(unknown_lints, needless_range_loop)]
         for idx in 0..reqpath_components.len() {
             let rpc = reqpath_components[idx];
             let mut cs_idx = components.len();
             while cs_idx > 0 {
                 let cs_idx_tmp = cs_idx - 1;
-                if components[cs_idx_tmp].0.len() > idx && components[cs_idx_tmp].0[idx] != rpc {
+                if components[cs_idx_tmp].url_components.len() > idx && components[cs_idx_tmp].url_components[idx] != rpc {
                     components.remove(cs_idx_tmp);
                 }
                 cs_idx -= 1;
             }
         }
         for r in components.into_iter().rev() {
-            let extract_path = reqpath_components[r.0.len()..]
+            let mut extract_path = reqpath_components[r.url_components.len()..]
                 .iter()
-                .fold(PathBuf::from(&r.2), |mut p, &c| {
+                .fold(PathBuf::from(&r.path), |mut p, &c| {
                     p.push(c);
                     p
                 });
@@ -165,20 +161,51 @@ impl Server {
                 if req_path.ends_with('/') {
                     path.push('/');
                 }
-                return Some((path, extract_path));
+                return Some((path, extract_path, r.redirect_html));
             }
         }
         None
     }
     pub fn call2(&self, req_path: &str, req: Request) -> FutureObject {
+        debug!("{:?} {:?}?{:?}", req.method(), req.path(), req.query());
         match *req.method() {
             Method::Head | Method::Get => {}
             _ => return ExceptionHandler::call_async(Exception::Method, req),
         }
-        let (req_path, fspath) = match self.router(req_path) {
+        let (req_path, mut fspath, redirect_html) = match self.router(req_path) {
             Some(s) => s,
             None => return ExceptionHandler::call_async(Exception::not_found(), req),
         };
+        debug!("({:?} , {:?})", req_path, fspath);
+
+        if req_path.ends_with('/') && redirect_html {
+            let mut _301 = "";
+            fspath.push("index.html");
+            if fspath.exists() {
+                _301 = "index.html";
+            } else {
+                fspath.pop();
+                fspath.push("index.htm");
+                if fspath.exists() {
+                    _301 = "index.htm";
+                } else {
+                    fspath.pop();
+                }
+            }
+            if !_301.is_empty() {
+                let mut new_path = req.path().to_owned();
+                new_path.push_str(_301);
+                if let Some(query) = req.query() {
+                    new_path.push('?');
+                    new_path.push_str(query);
+                }
+                return Box::new(future::ok(
+                    Response::new()
+                        .with_status(StatusCode::MovedPermanently)
+                        .with_header(header::Location::new(new_path)),
+                ));
+            }
+        }
         let metadata = if self.fsconfig.get_follow_links() {
             fspath.metadata()
         } else {
@@ -210,7 +237,7 @@ impl Service for Server {
     fn call(&self, req: Request) -> Self::Future {
         match req.remote_addr() {
             Some(addr) => {
-                let info = (
+                let mut info = (
                     addr,
                     req.method().clone(),
                     percent_decode(req.path().as_bytes())
@@ -219,7 +246,10 @@ impl Service for Server {
                         .into_owned()
                         .to_owned(),
                 );
+                let query = req.query().map(|q| format!("?{}", q));
                 let object = self.call2(&info.2, req);
+
+                query.map(|q| info.2.push_str(&q));
                 Box::new(object.inspect(move |res| {
                     println!(
                         "[{}:{}] {} {} {}",
