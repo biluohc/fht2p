@@ -4,6 +4,7 @@ version = "0.8.1"
 authors = ["Wspsxing <biluohc@qq.com>"]
 description = "A HTTP Server for Static File written with Rust"
 build = "build.rs"
+license = "MIT"
 
 [profile.release]
 opt-level = 3
@@ -31,5 +32,5 @@ toml = "^0.3.2"
 log = "^0.3.8"
 app = "0.6.3"
 
-hyper-fs = {path="../hyper-fs", version= "*"}
+hyper-fs = {git="https://github.com/biluohc/hyper-fs", version= "^0.1.0"}
 

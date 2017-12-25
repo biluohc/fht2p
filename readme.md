@@ -1,42 +1,38 @@
 [![Build status](https://travis-ci.org/biluohc/fht2p.svg?branch=master)](https://github.com/biluohc/fht2p)
 
-# A HTTP Server for Static File written with Rust.
+## A HTTP Server for Static File written with Rust.
 
-## Support Unix-like and windows 7+.
+### Support Unix-like and windows 7+.
 
-## Usage  
+### Usage
 ```sh
-    cargo +nightly install --git https://github.com/biluohc/fht2p  fht2p
+    cargo install --git https://github.com/biluohc/fht2p  fht2p
 
     # running fht2p --help(-h) to get help.
 
     fht2p -h
 ```
-### Or
+#### Or
 ```sh
-    git clone https://github.com/biluohc/fht2p --depth 1 
+    git clone https://github.com/biluohc/fht2p --depth 1
     # cargo  install --path fht2p/ fht2p
-    
-    cd fht2p 
-    cargo +nightly build --release
+
+    cd fht2p
+    cargo build --release
 
     ./target/release/fht2p --help
 ```
 
-## Binary
+### Binary
 
-* [The Release Page](https://github.com/biluohc/fht2p/releases)  
+* [The Release Page](https://github.com/biluohc/fht2p/releases)
 
-## Help
+### Help
 ```sh
-fht2p 0.8.0
+fht2p 0.8.1 (b1786095@master rustc1.24.0-nightly 2017-12-25UTC)
 A HTTP Server for Static File written with Rust
-
-AUTHOR:
-   Wspsxing <biluohc@qq.com>
-
-ADDRESS:
-   Github: https://github.com/biluohc/fht2p
+Wspsxing <biluohc@qq.com>
+Github: https://github.com/biluohc/fht2p
 
 USAGE:
    fht2p [options] [<PATH>...]
@@ -48,9 +44,9 @@ OPTIONS:
    -C, --cp                              Print the default config file
    -i, --ip <ip>[0.0.0.0]                Sets listenning ip
    -p, --port <port>[8080]               Sets listenning port
-   -r, --rr                              Redirect root('/') to `/index.htm[l]`
-   -k, --ka <secs>(optional)             Time HTTP keep alive(default not use)
+   -r, --rh                              Redirect dir to 'index.html/htm`, if it exists
+   -k, --ka                              Time HTTP keep alive
 
 ARGS:
-   <PATH>["./"]     Sets the path to share
+   <PATH>["./"]     Sets the paths to share
 ```
