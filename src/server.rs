@@ -221,6 +221,7 @@ impl Server {
                     file_server.call(&self.pool, req)
                 } else if md.is_dir() {
                     let mut index_server = StaticIndex::new(req_path, fspath, config.clone());
+                    *index_server.headers_mut() = Some(consts::HTML_HEADERS.get().clone());
                     index_server.call(&self.pool, req)
                 } else {
                     ExceptionHandler::call_async(Exception::Typo, req)

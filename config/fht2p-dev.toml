@@ -45,3 +45,8 @@ redirect-html = true
 url = "/ghxc/"
 path = "/homex/mxo/ghc/share/doc/ghc-8.2.1/html/"
 redirect-html = false
+
+ [[routes]]
+url = "/ghxch/"
+path = "/home/mxo/ghc/share/doc/ghc-8.2.1/html/index.html"
+redirect-html = false

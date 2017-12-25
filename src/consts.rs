@@ -11,13 +11,22 @@ pub const URL: &str = "https://github.com/biluohc/fht2p";
 // config file
 pub const CONFIG_STR_PATH: &str = "fht2p.toml";
 pub const CONFIG_STR: &str = include_str!("../config/fht2p.toml");
+
+pub const HTML_CONTENT_TYPE: (&str, &str) = ("Content-Type", "text/html; charset=utf-8");
 pub const CSS: &str = include_str!(concat!(env!("OUT_DIR"), "/fht2p.css"));
 pub const SPACEHOLDER: &str = "&nbsp;";
+
+use hyper::header::Headers;
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::cell::UnsafeCell;
 
 lazy_static!{
+    pub static ref HTML_HEADERS:  MutStatic<Headers> = {
+        let mut tmp =Headers::new();
+        tmp.set_raw(HTML_CONTENT_TYPE.0, HTML_CONTENT_TYPE.1);
+         MutStatic::new(tmp)
+    };
     pub static ref SERVER_ADDR: MutStatic<SocketAddr> = MutStatic::new(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 0));
 }
 

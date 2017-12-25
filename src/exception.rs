@@ -60,10 +60,13 @@ impl ExceptionHandler {
             consts::SERVER_ADDR.get().ip(),
             consts::SERVER_ADDR.get().port()
         );
-        Ok(Response::new()
+        let mut res = Response::new()
             .with_status(code)
             .with_header(header::ContentLength(html.len() as u64))
-            .with_body(html))
+            .with_body(html);
+        res.headers_mut()
+            .set_raw(consts::HTML_CONTENT_TYPE.0, consts::HTML_CONTENT_TYPE.1);
+        Ok(res)
     }
 }
 impl ExceptionHandlerService for ExceptionHandler {
