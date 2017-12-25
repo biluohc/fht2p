@@ -5,6 +5,7 @@ use futures::{future, Future, Stream};
 use hyper::server::{Http, Request, Response, Service};
 use hyper::{header, Error, Method, StatusCode};
 use url::percent_encoding::percent_decode;
+use time;
 
 use hyper_fs::{Exception, ExceptionHandlerServiceAsync};
 use hyper_fs::{Config as FsConfig, FutureObject};
@@ -252,10 +253,12 @@ impl Service for Server {
 
                 query.map(|q| info.2.push_str(&q));
                 Box::new(object.inspect(move |res| {
+                    let datatime = time::now();
                     println!(
-                        "[{}:{}] {} {} {}",
+                        "[{}:{}{}] {} {} {}",
                         info.0.ip(),
                         info.0.port(),
+                        datatime.strftime("**%Y-%m%d/%I:%M:%S").unwrap(),
                         res.status().as_u16(),
                         info.1,
                         info.2
