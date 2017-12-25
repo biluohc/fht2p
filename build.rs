@@ -1,12 +1,7 @@
-extern crate encoding;
-extern crate chardet;
 extern crate rsass;
 extern crate time;
 
-use encoding::label::encoding_from_whatwg_label;
 use rsass::{OutputStyle, compile_scss_file};
-use chardet::{detect, charset2encoding};
-use encoding::DecoderTrap;
 use time::now_utc;
 
 use std::process::Command as Cmd;
@@ -65,7 +60,7 @@ fn commit_hash() -> io::Result<String> {
     Cmd::new("git")
         .args(&["rev-parse", "HEAD"])
         .output()
-        .map(|o| decode_utf8_unchecked(o.stdout))
+        .map(|o| decode(&o.stdout))
         .map(|s| s.trim().to_string())
 }
 
@@ -73,21 +68,16 @@ fn branch_name() -> io::Result<String> {
     Cmd::new("git")
         .args(&["rev-parse", "--abbrev-ref", "HEAD"])
         .output()
-        .map(|o| decode(o.stdout.as_slice()).trim().to_string())
+        .map(|o| decode(&o.stdout).trim().to_string())
 }
 
 fn rustc_version() -> io::Result<String> {
     Cmd::new("rustc").arg("--version").output().map(|o| {
-        decode_utf8_unchecked(o.stdout).trim().to_string()
+        decode(&o.stdout).trim().to_string()
     })
 }
 
-fn decode_utf8_unchecked(bytes: Vec<u8>) -> String {
-    unsafe { String::from_utf8_unchecked(bytes) }
-}
 
 fn decode(bytes: &[u8]) -> String {
-    encoding_from_whatwg_label(charset2encoding(&detect(bytes).0))
-        .and_then(|code| code.decode(bytes, DecoderTrap::Strict).ok())
-        .unwrap_or_else(|| String::from_utf8_lossy(bytes).into_owned().to_owned())
+    String::from_utf8_lossy(bytes).into_owned().to_owned()
 }

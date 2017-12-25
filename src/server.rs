@@ -14,6 +14,7 @@ mod local {
     use exception::ExceptionHandler;
     static_file!(StaticFile, ExceptionHandler);
 }
+
 pub use self::local::StaticFile;
 use exception::ExceptionHandler;
 

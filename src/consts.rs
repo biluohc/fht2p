@@ -12,6 +12,7 @@ pub const URL: &str = "https://github.com/biluohc/fht2p";
 pub const CONFIG_STR_PATH: &str = "fht2p.toml";
 pub const CONFIG_STR: &str = include_str!("../config/fht2p.toml");
 pub const CSS: &str = include_str!(concat!(env!("OUT_DIR"), "/fht2p.css"));
+pub const SPACEHOLDER: &str = "&nbsp;";
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::cell::UnsafeCell;
@@ -20,7 +21,7 @@ lazy_static!{
     pub static ref SERVER_ADDR: MutStatic<SocketAddr> = MutStatic::new(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 0));
 }
 
-/// it unsync, but only modify it before read it concurrent, lazy to use `RwLock`..
+/// it's unsync, but only modify it before read it concurrent, lazy to use `RwLock`..
 pub struct MutStatic<T>(UnsafeCell<T>);
 
 impl<T> MutStatic<T> {

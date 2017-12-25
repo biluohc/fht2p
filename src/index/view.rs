@@ -12,8 +12,6 @@ use std::fmt;
 use std::env;
 use std::io;
 
-const SPACEHOLDER: &str = "&nbsp;";
-
 pub fn render_html(title: &str, index: &PathBuf, req: &Request, order: &EntryOrder, config: &Config) -> io::Result<String> {
     let metadatas = EntryMetadata::read_dir(
         index,
@@ -37,10 +35,10 @@ pub fn render_html(title: &str, index: &PathBuf, req: &Request, order: &EntryOrd
 ",
         consts::CSS,
         title,
-        SPACEHOLDER.repeat(8),
+        consts::SPACEHOLDER.repeat(8),
         remote_addr.ip(),
         remote_addr.port(),
-        SPACEHOLDER.repeat(8),
+        consts::SPACEHOLDER.repeat(8),
         req.path(),
         title,
         next_order.0,
@@ -111,10 +109,16 @@ impl EntryMetadata {
             .bytes()
             .map(percent_encode_byte)
             .collect::<String>();
-        let (name_style ,name_tail) = self.typo
+        let (name_style, name_tail) = self.typo
             .as_ref()
-            .map(|ft| if ft.is_dir() { (" class=\"dir\"", "/") } else { ("","") })
-            .unwrap_or(("",""));
+            .map(|ft| {
+                if ft.is_dir() {
+                    (" class=\"dir\"", "/")
+                } else {
+                    ("", "")
+                }
+            })
+            .unwrap_or(("", ""));
 
         format!(
             "<tr><td{}><a href=\"{}{}\">{}{}</a></td><td>{}</td><td><bold>{}</bold></td></tr>\n",

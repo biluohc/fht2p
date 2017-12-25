@@ -11,9 +11,7 @@ opt-level = 3
 # debug = true 
 
 [build-dependencies]
-encoding = "^0.2"
 rsass =  "^0.6.0"
-chardet = "^0.2"
 time = "^0.1"
 
 [dependencies]
