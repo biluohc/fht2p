@@ -33,8 +33,8 @@ use std::io;
 pub fn run(config: Config) -> io::Result<()> {
     let pool = Builder::new().pool_size(3).name_prefix("hyper-fs").create();
     let fsconfig = FsConfig::new()
-        .cache_secs(0)
-        .follow_links(true)
+        .cache_secs(config.cache_secs)
+        .follow_links(config.follow_links)
         .show_index(true);
 
     let mut core = Core::new()?;
@@ -51,7 +51,7 @@ pub fn run(config: Config) -> io::Result<()> {
     )?;
     consts::MAGIC_LIMIT.set(config.magic_limit);
     let keep_alive = config.keep_alive;
-    
+
     let server = Rc::new(Server::new(handle.clone(), pool, config, fsconfig));
     let addr = tcp.local_addr()?;
     consts::SERVER_ADDR.set(addr);
@@ -119,6 +119,8 @@ impl Server {
             .split('/')
             .filter(|c| !c.is_empty() && c != &".")
             .collect::<Vec<_>>();
+
+        // can not handle /imkv/../../
         (0..reqpath_components.len())
             .into_iter()
             .rev()
@@ -130,6 +132,8 @@ impl Server {
                     }
                 }
             });
+        debug!("{:?}", reqpath_components);
+
         let mut components = (0..self.routes.len())
             .into_iter()
             .fold(Vec::with_capacity(self.routes.len()), |mut rs, idx| {
@@ -138,6 +142,7 @@ impl Server {
                 }
                 rs
             });
+
         #[allow(unknown_lints, needless_range_loop)]
         for idx in 0..reqpath_components.len() {
             let rpc = reqpath_components[idx];

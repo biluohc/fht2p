@@ -8,6 +8,8 @@ encoding = "utf8"
 
 [setting]
 keep-alive =  true
+follow-links = true
+cache-secs = 60 # secs
 # if file not have extname, pragram will to get mimetype by read it if magic_limic big than the size of file.
 magic-limit = 10485760 # 10M
 

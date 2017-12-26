@@ -143,8 +143,9 @@ where
             delta_modified.subsec_nanos(),
             entry_order
         ));
-        if let Some(&header::IfNoneMatch::Items(ref etags)) = req.headers().get() {
-            if !etags.is_empty() && etag == etags[0] {
+        
+         if let Some(&header::IfNoneMatch::Items(ref etags)) = req.headers().get() {
+            if !etags.is_empty() && *self.config.as_ref().get_cache_secs()>0 && etag == etags[0] {
                 return Ok(Response::new()
                     .with_headers(headers)
                     .with_status(StatusCode::NotModified));

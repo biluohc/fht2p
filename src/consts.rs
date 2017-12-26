@@ -25,7 +25,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::cell::UnsafeCell;
 
 lazy_static!{
-    //  10485760 = 10M 
+    //  10485760 = 10M
     pub static ref MAGIC_LIMIT: MutStatic<u64> = MutStatic::new(1024*1024*10);
     pub static ref HTML_HEADERS:  MutStatic<Headers> = {
         let mut tmp =Headers::new();

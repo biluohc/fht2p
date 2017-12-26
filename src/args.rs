@@ -47,16 +47,30 @@ pub fn parse() -> Config {
                     .help("Redirect dir to 'index.html/htm`, if it exists"),
             )
             .opt(
-                Opt::new("ckeepalive", &mut config.keep_alive)
+                Opt::new("keepalive", &mut config.keep_alive)
+                    .sort_key("cka")
                     .short('k')
                     .long("keep-alive")
-                    .help("Close HTTP keep alive")
+                    .help("Close HTTP keep alive"),
+            )
+            .opt(
+                Opt::new("follow-links", &mut config.follow_links)
+                    .short('f')
+                    .long("follow-links")
+                    .help("Whether follow links(default follow)"),
             )
             .opt(
                 Opt::new("byte", &mut config.magic_limit)
                     .short('m')
                     .long("magic-limit")
-                    .help("The limit for parse mimetype(use 0 to close)")
+                    .help("The limit for parse mimetype(use 0 to close)"),
+            )
+            .opt(
+                Opt::new("secs", &mut config.cache_secs)
+                    .sort_key("csecs")
+                    .short('s')
+                    .long("cache-secs")
+                    .help("Sets cache secs(use 0 to close)"),
             )
             .opt(
                 Opt::new("ip", &mut server.ip)
@@ -126,7 +140,9 @@ struct Fht2p {
 #[derive(Debug, Deserialize)]
 struct Setting {
     #[serde(rename = "keep-alive")] keep_alive: bool,
-    #[serde(rename = "magic-limit")] magic_limit: u64, 
+    #[serde(rename = "magic-limit")] magic_limit: u64,
+    #[serde(rename = "follow-links")] follow_links: bool,
+    #[serde(rename = "cache-secs")] cache_secs: u32,
     addrs: Vec<String>,
 }
 
@@ -153,7 +169,9 @@ impl Route {
 #[derive(Debug)]
 pub struct Config {
     pub keep_alive: bool,
-    pub magic_limit: u64, 
+    pub follow_links: bool,
+    pub cache_secs: u32,
+    pub magic_limit: u64,
     pub addrs: Vec<SocketAddr>,
     pub routes: Map<String, Route>,
 }
@@ -164,6 +182,8 @@ impl Default for Config {
         Config {
             keep_alive: true,
             magic_limit: *MAGIC_LIMIT.get(),
+            follow_links: true,
+            cache_secs: 60,
             addrs: vec![
                 SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080),
             ],
@@ -188,6 +208,8 @@ impl Config {
         let toml: Fht2p = toml::from_str(toml).map_err(|e| format!("config file('{}') parse fails: {}", file_name, e))?;
         config.keep_alive = toml.setting.keep_alive;
         config.magic_limit = toml.setting.magic_limit;
+        config.follow_links = toml.setting.follow_links;
+        config.cache_secs = toml.setting.cache_secs;
         for server in toml.setting.addrs {
             let addr = server.parse::<SocketAddr>().map_err(|e| {
                 format!(
