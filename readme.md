@@ -29,7 +29,7 @@
 
 ### Help
 ```sh
-fht2p 0.8.1 (b1786095@master rustc1.24.0-nightly 2017-12-25UTC)
+fht2p 0.8.1 (3d7711e7@master rustc1.24.0-nightly 2017-12-26UTC)
 A HTTP Server for Static File written with Rust
 Wspsxing <biluohc@qq.com>
 Github: https://github.com/biluohc/fht2p
@@ -38,14 +38,15 @@ USAGE:
    fht2p [options] [<PATH>...]
 
 OPTIONS:
-   -h, --help                            Show the help message
-   -V, --version                         Show the version message
-   -c, --config <config>(optional)       Sets a custom config file
-   -C, --cp                              Print the default config file
-   -i, --ip <ip>[0.0.0.0]                Sets listenning ip
-   -p, --port <port>[8080]               Sets listenning port
-   -r, --rh                              Redirect dir to 'index.html/htm`, if it exists
-   -k, --ka                              Time HTTP keep alive
+   -h, --help                               Show the help message
+   -V, --version                            Show the version message
+   -r, --redirect-html                      Redirect dir to 'index.html/htm`, if it exists
+   -m, --magic-limit <byte>[10485760]       The limit for parse mimetype(use 0 to close)
+   -k, --keep-alive                         Close HTTP keep alive
+   -c, --config <config>(optional)          Sets a custom config file
+   -C, --config-print                       Print the default config file
+   -i, --ip <ip>[0.0.0.0]                   Sets listenning ip
+   -p, --port <port>[8080]                  Sets listenning port
 
 ARGS:
    <PATH>["./"]     Sets the paths to share

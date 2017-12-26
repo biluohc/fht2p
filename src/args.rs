@@ -30,7 +30,7 @@ pub fn parse() -> Config {
             .opt(
                 Opt::new("cp", &mut cp)
                     .short('C')
-                    .long("cp")
+                    .long("config-print")
                     .help("Print the default config file"),
             )
             .opt(
@@ -41,17 +41,22 @@ pub fn parse() -> Config {
                     .help("Sets a custom config file"),
             )
             .opt(
-                Opt::new("root", &mut redirect_html)
+                Opt::new("bbredircet-html", &mut redirect_html)
                     .short('r')
-                    .long("rh")
+                    .long("redirect-html")
                     .help("Redirect dir to 'index.html/htm`, if it exists"),
             )
             .opt(
-                Opt::new("secs", &mut config.keep_alive)
+                Opt::new("ckeepalive", &mut config.keep_alive)
                     .short('k')
-                    .long("ka")
-                    .help("Time HTTP keep alive")
-                    .optional(),
+                    .long("keep-alive")
+                    .help("Close HTTP keep alive")
+            )
+            .opt(
+                Opt::new("byte", &mut config.magic_limit)
+                    .short('m')
+                    .long("magic-limit")
+                    .help("The limit for parse mimetype(use 0 to close)")
             )
             .opt(
                 Opt::new("ip", &mut server.ip)
@@ -121,6 +126,7 @@ struct Fht2p {
 #[derive(Debug, Deserialize)]
 struct Setting {
     #[serde(rename = "keep-alive")] keep_alive: bool,
+    #[serde(rename = "magic-limit")] magic_limit: u64, 
     addrs: Vec<String>,
 }
 
@@ -147,6 +153,7 @@ impl Route {
 #[derive(Debug)]
 pub struct Config {
     pub keep_alive: bool,
+    pub magic_limit: u64, 
     pub addrs: Vec<SocketAddr>,
     pub routes: Map<String, Route>,
 }
@@ -156,6 +163,7 @@ impl Default for Config {
         map.insert("/".to_owned(), Route::new("/", ".", false));
         Config {
             keep_alive: true,
+            magic_limit: *MAGIC_LIMIT.get(),
             addrs: vec![
                 SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080),
             ],
@@ -179,6 +187,7 @@ impl Config {
 
         let toml: Fht2p = toml::from_str(toml).map_err(|e| format!("config file('{}') parse fails: {}", file_name, e))?;
         config.keep_alive = toml.setting.keep_alive;
+        config.magic_limit = toml.setting.magic_limit;
         for server in toml.setting.addrs {
             let addr = server.parse::<SocketAddr>().map_err(|e| {
                 format!(

@@ -18,6 +18,7 @@ mod local {
 
 pub use self::local::StaticFile;
 use exception::ExceptionHandler;
+use content_type::headers_maker;
 
 use index::StaticIndex;
 use args::{Config, Route};
@@ -48,11 +49,15 @@ pub fn run(config: Config) -> io::Result<()> {
             }
         },
     )?;
+    consts::MAGIC_LIMIT.set(config.magic_limit);
+    let keep_alive = config.keep_alive;
+    
     let server = Rc::new(Server::new(handle.clone(), pool, config, fsconfig));
     let addr = tcp.local_addr()?;
     consts::SERVER_ADDR.set(addr);
 
-    let http = Http::new();
+    let mut http = Http::new();
+    http.keep_alive(keep_alive);
     let http_server = tcp.incoming().for_each(|(socket, addr)| {
         http.bind_connection(&handle, socket, addr, server.clone());
         Ok(())
@@ -218,6 +223,7 @@ impl Server {
                 let config = self.fsconfig.clone();
                 if md.is_file() {
                     let mut file_server = StaticFile::new(self.handle.clone(), self.pool.clone(), fspath, config);
+                    file_server.headers_maker(headers_maker);
                     file_server.call(&self.pool, req)
                 } else if md.is_dir() {
                     let mut index_server = StaticIndex::new(req_path, fspath, config.clone());

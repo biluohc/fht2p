@@ -12,7 +12,10 @@ pub const URL: &str = "https://github.com/biluohc/fht2p";
 pub const CONFIG_STR_PATH: &str = "fht2p.toml";
 pub const CONFIG_STR: &str = include_str!("../config/fht2p.toml");
 
-pub const HTML_CONTENT_TYPE: (&str, &str) = ("Content-Type", "text/html; charset=utf-8");
+pub const CONTENT_TYPE: &str = "Content-Type";
+pub const CHARSET: &str = "charset=utf-8";
+pub const HTML_CONTENT_TYPE: &str = "text/html; charset=utf-8";
+
 pub const CSS: &str = include_str!(concat!(env!("OUT_DIR"), "/fht2p.css"));
 pub const SPACEHOLDER: &str = "&nbsp;";
 
@@ -22,12 +25,14 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::cell::UnsafeCell;
 
 lazy_static!{
+    //  10485760 = 10M 
+    pub static ref MAGIC_LIMIT: MutStatic<u64> = MutStatic::new(1024*1024*10);
     pub static ref HTML_HEADERS:  MutStatic<Headers> = {
         let mut tmp =Headers::new();
-        tmp.set_raw(HTML_CONTENT_TYPE.0, HTML_CONTENT_TYPE.1);
+        tmp.set_raw(CONTENT_TYPE, HTML_CONTENT_TYPE);
          MutStatic::new(tmp)
     };
-    pub static ref SERVER_ADDR: MutStatic<SocketAddr> = MutStatic::new(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 0));
+    pub static ref SERVER_ADDR: MutStatic<SocketAddr> = MutStatic::new(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 8080));
 }
 
 /// it's unsync, but only modify it before read it concurrent, lazy to use `RwLock`..
@@ -40,6 +45,11 @@ impl<T> MutStatic<T> {
     pub fn get(&self) -> &T {
         unsafe { self.0.get().as_ref().unwrap() }
     }
+    // tls
+    pub fn get_mut(&self) -> &mut T {
+        unsafe { self.0.get().as_mut().unwrap() }
+    }
+    // modify it before read it concurrent
     pub fn set(&self, new: T) {
         unsafe { self.0.get().as_mut().map(|d| *d = new).unwrap() }
     }

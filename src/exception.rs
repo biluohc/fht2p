@@ -65,7 +65,7 @@ impl ExceptionHandler {
             .with_header(header::ContentLength(html.len() as u64))
             .with_body(html);
         res.headers_mut()
-            .set_raw(consts::HTML_CONTENT_TYPE.0, consts::HTML_CONTENT_TYPE.1);
+            .set_raw(consts::CONTENT_TYPE, consts::HTML_CONTENT_TYPE);
         Ok(res)
     }
 }

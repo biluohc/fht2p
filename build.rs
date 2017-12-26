@@ -11,7 +11,7 @@ use std::fs::File;
 use std::env;
 
 const VERSION_FILE_NAME: &str = "fht2p.txt";
-const CSS_PATH: &str = "config/fht2p.css";
+const CSS_PATH: &str = "config/assets/fht2p.css";
 const CSS_FILE_NAME: &str = "fht2p.css";
 
 fn main() {

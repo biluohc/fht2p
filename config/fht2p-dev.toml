@@ -8,7 +8,8 @@ encoding = "utf8"
 
 [setting]
 keep-alive =  true
-content-type = false
+# if file not have extname, pragram will to get mimetype by read it if magic_limic big than the size of file.
+magic-limit = 10485760 # 10M
 
 # 0.0.0.0 is default listenning address, 8080 is default port.
 # fht2p will try to use the next one when the current one can not use, pramgram will exit if all failed.
@@ -40,6 +41,16 @@ redirect-html = true
 url="python3"
 path="/home/mxo/Public/python-3.6.4-docs-html"
 redirect-html = true
+
+ [[routes]]
+url ="/imkv/"
+path = "/home/mxo/it雷雨/i~~mkv/"
+redirect-html = false
+
+ #[[routes]]
+#url ="/re "
+#path = "/home/mxo/Documents/languages/js/正则表达式必知必会RegExTester_JavaScript/regextester.html"
+# redirect-html = false
 
  [[routes]]
 url = "/ghxc/"
