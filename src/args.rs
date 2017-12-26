@@ -63,7 +63,7 @@ pub fn parse() -> Config {
                 Opt::new("byte", &mut config.magic_limit)
                     .short('m')
                     .long("magic-limit")
-                    .help("The limit for parse mimetype(use 0 to close)"),
+                    .help("The limit for detect file ContenType(use 0 to close)"),
             )
             .opt(
                 Opt::new("secs", &mut config.cache_secs)

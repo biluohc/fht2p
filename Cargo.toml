@@ -33,5 +33,7 @@ toml = "^0.3.2"
 log = "^0.3.8"
 app = "0.6.3"
 
-hyper-fs = {git="https://github.com/biluohc/hyper-fs", version= "^0.1.0"}
+[dependencies.hyper-fs]
+version = "^0.1.0"
+default-features = false
 
