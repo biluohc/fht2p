@@ -121,13 +121,15 @@ impl EntryMetadata {
             .unwrap_or(("", ""));
 
         format!(
-            "<tr><td{}><a href=\"{}{}\">{}{}</a></td><td>{}</td><td><bold>{}</bold></td></tr>\n",
+            "<tr><td{}><a href=\"{}{}\">{}{}</a></td><td>{}{}</td><td>{}<bold>{}</bold></td></tr>\n",
             name_style,
             name_enc,
             name_tail,
             self.name,
             name_tail,
+            consts::SPACEHOLDER.repeat(3),
             mtime_humman(&self.modified),
+            consts::SPACEHOLDER.repeat(3),
             size_human(&self.size)
         )
     }

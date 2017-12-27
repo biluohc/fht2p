@@ -37,7 +37,7 @@ pub fn run(config: Config) -> io::Result<()> {
         .follow_links(config.follow_links)
         .show_index(true);
     debug!("{:?}", fsconfig);
-    
+
     let mut core = Core::new()?;
     let handle = core.handle();
     let tcp = config.addrs[1..].iter().fold(
