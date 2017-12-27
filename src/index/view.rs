@@ -48,7 +48,7 @@ pub fn render_html(title: &str, index: &PathBuf, req: &Request, order: &EntryOrd
     metadatas.iter().for_each(|md| html.push_str(&md.format()));
 
     let tail = format!(
-        "</tbody></table></body><address><a href=\"{}\">{}</a>/{}({}/{}) server at <a href=\"/\">{}:{}</a></address></html>",
+        "</tbody></table></body><address><a href=\"{}\">{}/{}</a>({}/{}) server at <a href=\"/\">{}:{}</a></address></html>",
         consts::URL,
         consts::NAME,
         env!("CARGO_PKG_VERSION"),
@@ -76,7 +76,7 @@ impl EntryMetadata {
         }
         let metadata = d.metadata().ok();
         let typo = metadata.as_ref().map(|md| md.file_type());
-        if follow_links && typo.as_ref().map(|t| t.is_symlink()).unwrap_or(true) {
+        if !follow_links && typo.as_ref().map(|t| t.is_symlink()).unwrap_or(true) {
             return None;
         }
         Some(Self {

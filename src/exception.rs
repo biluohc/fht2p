@@ -43,7 +43,7 @@ impl ExceptionHandler {
 <style type=\"text/css\">{}</style> 
 <title>{}</title></head>
 <body><h1><span id=\"client\">{}{}:{}{}</span><a href=\"{}\">{}</a></h1></body>
-<address><a href=\"{}\">{}</a>/{}({}/{}) server at <a href=\"/\">{}:{}</a></address></html>",
+<address><a href=\"{}\">{}/{}</a>({}/{}) server at <a href=\"/\">{}:{}</a></address></html>",
             consts::CSS,
             &code,
             consts::SPACEHOLDER.repeat(8),
