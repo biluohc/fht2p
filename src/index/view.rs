@@ -109,22 +109,22 @@ impl EntryMetadata {
             .bytes()
             .map(percent_encode_byte)
             .collect::<String>();
-        let (name_style, name_tail) = self.typo
+        let (name_style, name_enc_tail, name_tail) = self.typo
             .as_ref()
-            .map(|ft| {
-                if ft.is_dir() {
-                    (" class=\"dir\"", "/")
-                } else {
-                    ("", "")
-                }
+            .map(|ft| match (ft.is_dir(), ft.is_symlink()) {
+                (false, false) => ("", "", ""),
+                (true, false) => (" class=\"dir\"", "/", "/"),
+                (false, true) => (" class=\"symlink\"", "", "@"),
+                // unreachable!() ?
+                (true, true) => (" class=\"dir symlink\"", "/", "/@"),
             })
-            .unwrap_or(("", ""));
+            .unwrap_or(("", "", ""));
 
         format!(
-            "<tr><td{}><a href=\"{}{}\">{}{}</a></td><td>{}{}</td><td>{}<bold>{}</bold></td></tr>\n",
+            "<tr><td{}><a href=\"{}{}\">{}{}</a></td><td>{}{}</td><td>{}<b>{}</b></td></tr>\n",
             name_style,
             name_enc,
-            name_tail,
+            name_enc_tail,
             self.name,
             name_tail,
             consts::SPACEHOLDER.repeat(3),

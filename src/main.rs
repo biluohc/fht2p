@@ -5,7 +5,7 @@
 
 ## Snapshot
 
-![snapshot.png](https://raw.githubusercontent.com/biluohc/fht2p/master/config/assets/snapshot.jpg)
+![snapshot.png](https://raw.githubusercontent.com/biluohc/fht2p/master/config/assets/snapshot.png)
 
 ## Usage  
 ```sh
