@@ -12,7 +12,7 @@ opt-level = 3
 # debug = true 
 
 [build-dependencies]
-rsass =  "^0.6.0"
+rsass =  "^0.7.0"
 time = "^0.1"
 
 [dependencies]

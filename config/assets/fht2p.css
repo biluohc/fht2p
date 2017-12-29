@@ -32,29 +32,27 @@ a:hover {
     color: #CC0000;
 }
 
-
 table {
     border-collapse: collapse;
     border-bottom: 0.1px solid #000080;
 }
-  
+
 table thead th {
     font-size: small;
     border-bottom: 0.1px solid #000080;
     background-color: white;
 }
 
-hr {
+/* hr {
     border-bottom: 0.1px solid #000080;
-}
+} */
 
 address {
     font-size: x-large;
 }
 
 
-/*.dir,
-.symlink,
+/*
 .file
 */
 
@@ -63,5 +61,5 @@ address {
 }
 
 .symlink {
-    font-style:italic;
+    font-style: italic;
 }
