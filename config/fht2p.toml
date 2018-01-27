@@ -1,3 +1,5 @@
+# $HOME/.config/fht2p/fht2p.toml
+
 [fht2p]
 name = "fht2p"
 version = "0.8.1"

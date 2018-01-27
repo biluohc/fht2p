@@ -1,12 +1,12 @@
 extern crate rsass;
 extern crate time;
 
-use rsass::{OutputStyle, compile_scss_file};
+use rsass::{compile_scss_file, OutputStyle};
 use time::now_utc;
 
 use std::process::Command as Cmd;
 use std::io::{self, Write};
-use std::path::{Path,PathBuf};
+use std::path::{Path, PathBuf};
 use std::fs::File;
 use std::env;
 
@@ -22,17 +22,15 @@ fn main() {
 
 // use sass to compress css file
 fn css(out_dir: &PathBuf) -> io::Result<()> {
-     let css = compile_scss_file(Path::new(CSS_PATH), OutputStyle::Compressed).unwrap();
-     let out_path = out_dir.join(CSS_FILE_NAME);
-     File::create(&out_path)
-        .and_then(|mut f| f.write_all(css.as_slice()))
+    let css = compile_scss_file(Path::new(CSS_PATH), OutputStyle::Compressed).unwrap();
+    let out_path = out_dir.join(CSS_FILE_NAME);
+    File::create(&out_path).and_then(|mut f| f.write_all(css.as_slice()))
 }
 
 // include!(concat!(env!("OUT_DIR"), "/fht2p.txt"));
-fn version(out_dir: &PathBuf)-> io::Result<()> {
+fn version(out_dir: &PathBuf) -> io::Result<()> {
     let out_path = out_dir.join(VERSION_FILE_NAME);
-    File::create(&out_path)
-        .and_then(|mut f| f.write_all(fun().as_bytes()))
+    File::create(&out_path).and_then(|mut f| f.write_all(fun().as_bytes()))
 }
 
 fn fun() -> String {
@@ -72,11 +70,11 @@ fn branch_name() -> io::Result<String> {
 }
 
 fn rustc_version() -> io::Result<String> {
-    Cmd::new("rustc").arg("--version").output().map(|o| {
-        decode(&o.stdout).trim().to_string()
-    })
+    Cmd::new("rustc")
+        .arg("--version")
+        .output()
+        .map(|o| decode(&o.stdout).trim().to_string())
 }
-
 
 fn decode(bytes: &[u8]) -> String {
     String::from_utf8_lossy(bytes).into_owned().to_owned()

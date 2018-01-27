@@ -228,33 +228,38 @@ pub fn router(routes: &Vec<Route>, req_path: &str) -> Option<(String, PathBuf, b
     let parent_count = (0..reqpath_components.len())
         .into_iter()
         .rev()
-        .fold(0, |count, idx| match (idx < reqpath_components.len(), idx > 0) {
-            (true, true) => match (reqpath_components[idx] == "..", reqpath_components[idx - 1] == "..") {
+        .fold(0, |count, idx| {
+            match (idx < reqpath_components.len(), idx > 0) {
+                (true, true) => match (
+                    reqpath_components[idx] == "..",
+                    reqpath_components[idx - 1] == "..",
+                ) {
+                    (false, _) => count,
+                    (true, false) => {
+                        reqpath_components.remove(idx);
+                        reqpath_components.remove(idx - 1);
+                        count
+                    }
+                    (true, true) => {
+                        reqpath_components.remove(idx);
+                        count + 1
+                    }
+                },
                 (false, _) => count,
                 (true, false) => {
-                    reqpath_components.remove(idx);
-                    reqpath_components.remove(idx - 1);
-                    count
-                }
-                (true, true) => {
-                    reqpath_components.remove(idx);
-                    count + 1
-                }
-            },
-            (false, _) => count,
-            (true, false) => {
-                if count >= reqpath_components.len() {
-                    reqpath_components.clear();
-                    count
-                } else {
-                    let new_len = reqpath_components.len() - count;
-                    reqpath_components.truncate(new_len);
-                    reqpath_components.first().map(|f| *f == "..").map(|b| {
-                        if b {
-                            reqpath_components.clear()
-                        }
-                    });
-                    count
+                    if count >= reqpath_components.len() {
+                        reqpath_components.clear();
+                        count
+                    } else {
+                        let new_len = reqpath_components.len() - count;
+                        reqpath_components.truncate(new_len);
+                        reqpath_components.first().map(|f| *f == "..").map(|b| {
+                            if b {
+                                reqpath_components.clear()
+                            }
+                        });
+                        count
+                    }
                 }
             }
         });

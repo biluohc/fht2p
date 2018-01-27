@@ -139,19 +139,25 @@ struct Fht2p {
 
 #[derive(Debug, Deserialize)]
 struct Setting {
-    #[serde(rename = "keep-alive")] keep_alive: bool,
-    #[serde(rename = "magic-limit")] magic_limit: u64,
-    #[serde(rename = "follow-links")] follow_links: bool,
-    #[serde(rename = "cache-secs")] cache_secs: u32,
+    #[serde(rename = "keep-alive")]
+    keep_alive: bool,
+    #[serde(rename = "magic-limit")]
+    magic_limit: u64,
+    #[serde(rename = "follow-links")]
+    follow_links: bool,
+    #[serde(rename = "cache-secs")]
+    cache_secs: u32,
     addrs: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Route {
-    #[serde(default)] pub url_components: Vec<String>,
+    #[serde(default)]
+    pub url_components: Vec<String>,
     pub url: String,
     pub path: String,
-    #[serde(rename = "redirect-html")] pub redirect_html: bool,
+    #[serde(rename = "redirect-html")]
+    pub redirect_html: bool,
 }
 
 impl Route {

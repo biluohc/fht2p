@@ -6,10 +6,13 @@ description = "A HTTP Server for Static File written with Rust"
 build = "build.rs"
 license = "MIT"
 
+[workspace]
+
 [profile.release]
 opt-level = 3
 # lto = true
 # debug = true 
+
 
 [build-dependencies]
 rsass =  "^0.7.0"
@@ -17,12 +20,11 @@ time = "^0.1"
 
 [dependencies]
 mime_guess="^2.0.0-alpha.3"
+futures-cpupool = "^0.1.7"
+serde_derive = "^0.9.14"
 mxo_env_logger = "^0.1"
 lazy_static = "^0.2.8"
-serde_derive = "^0.9.14"
-futures-cpupool= "^0.1.7"
 tokio-core = "^0.1.10"
-signalbool = "^0.2.0"
 futures ="^0.1.17"
 serde = "^0.9.14"
 hyper = "^0.11.8"
@@ -33,7 +35,12 @@ toml = "^0.3.2"
 log = "^0.3.8"
 app = "0.6.3"
 
+[dependencies.signalfn]
+path = "./crates/signalfn"
+version = "*"
+
 [dependencies.hyper-fs]
-version = "^0.1.0"
+# git = "https://github.com/biluohc/hyper-fs"
+version = "0.1.0"
 default-features = false
 
