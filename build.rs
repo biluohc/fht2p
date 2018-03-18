@@ -48,7 +48,7 @@ fn fun() -> String {
 
 fn date_time() -> String {
     now_utc()
-    // .strftime("%Y-%m-%d/%I:%M:%SUTC")
+    // .strftime("%Y-%m-%d/%H:%M:%SUTC")
     .strftime("%Y-%m-%dUTC")
     .map(|dt| dt.to_string())
     .unwrap_or_default()

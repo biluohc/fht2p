@@ -10,9 +10,8 @@ license = "MIT"
 
 [profile.release]
 opt-level = 3
-# lto = true
+lto = true
 # debug = true 
-
 
 [build-dependencies]
 rsass =  "^0.7.0"
@@ -30,7 +29,7 @@ serde = "^0.9.14"
 hyper = "^0.11.8"
 bytes = "^0.4.5"
 url = "^1.6.0"
-time = "^0.1"
+chrono = "^0.4"
 toml = "^0.3.2"
 log = "^0.3.8"
 app = "0.6.5"
@@ -41,6 +40,6 @@ version = "*"
 
 [dependencies.hyper-fs]
 # git = "https://github.com/biluohc/hyper-fs"
-version = "0.1.0"
+version = "0.1.1"
 default-features = false
 

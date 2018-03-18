@@ -64,6 +64,7 @@ extern crate mxo_env_logger;
 use mxo_env_logger::*;
 extern crate app;
 extern crate bytes;
+extern crate chrono;
 extern crate futures;
 extern crate futures_cpupool;
 extern crate hyper;
@@ -74,7 +75,6 @@ extern crate lazy_static;
 extern crate mime_guess;
 #[macro_use]
 extern crate serde_derive;
-extern crate time;
 extern crate tokio_core;
 extern crate toml;
 extern crate url;

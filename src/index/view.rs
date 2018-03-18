@@ -1,5 +1,6 @@
 use url::percent_encoding::percent_encode_byte;
-use time::{self, Duration, Tm};
+use chrono::{DateTime, Duration};
+use chrono::offset::Local;
 use hyper::server::Request;
 use hyper_fs::Config;
 
@@ -64,7 +65,7 @@ pub fn render_html(title: &str, index: &PathBuf, req: &Request, order: &EntryOrd
 pub struct EntryMetadata {
     pub name: String,
     pub size: Option<u64>,
-    pub modified: Option<Tm>,
+    pub modified: Option<DateTime<Local>>,
     pub typo: Option<FileType>,
 }
 
@@ -88,7 +89,7 @@ impl EntryMetadata {
                     .ok()
                     .and_then(|mt| mt.elapsed().ok())
                     .and_then(|sd| Duration::from_std(sd).ok())
-                    .map(|du| time::now() - du)
+                    .and_then(|du| Local::now().checked_sub_signed(du))
             }),
         })
     }
@@ -151,11 +152,10 @@ pub fn size_human(size: &Option<u64>) -> String {
         .unwrap_or_else(|| "--".to_owned())
 }
 
-pub fn mtime_humman(mtime: &Option<Tm>) -> String {
+pub fn mtime_humman(mtime: &Option<DateTime<Local>>) -> String {
     mtime
         .as_ref()
-        .and_then(|mt| mt.strftime("%Y-%m%d&nbsp;&nbsp;%I:%M:%S").ok())
-        .map(|s| s.to_string())
+        .map(|mt| mt.format("%Y-%m%d&nbsp;&nbsp;%H:%M:%S").to_string())
         .unwrap_or_else(|| "-- -".to_owned())
 }
 
