@@ -46,6 +46,7 @@ fn fun() -> String {
     format!("pub const VERSION: &str = \"{}\";", version)
 }
 
+// date --help
 fn date_time() -> String {
     now_utc()
     // .strftime("%Y-%m-%d/%H:%M:%SUTC")

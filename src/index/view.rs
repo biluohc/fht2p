@@ -119,7 +119,7 @@ impl EntryMetadata {
                 // unreachable!() ?
                 (true, true) => (" class=\"dir symlink\"", "/", "/@"),
             })
-            .unwrap_or(("", "", ""));
+            .unwrap_or_else(|| ("", "", ""));
 
         format!(
             "<tr><td{}><a href=\"{}{}\">{}{}</a></td><td>{}{}</td><td>{}<b>{}</b></td></tr>\n",

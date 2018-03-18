@@ -24,6 +24,7 @@ use index::StaticIndex;
 use args::{Config, Route};
 use consts;
 
+use std::time::Instant;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::rc::Rc;
@@ -186,6 +187,7 @@ impl Service for Server {
     type Error = Error;
     type Future = FutureObject;
     fn call(&self, req: Request) -> Self::Future {
+        let timer = Instant::now();
         match req.remote_addr() {
             Some(addr) => {
                 let mut info = (
@@ -203,11 +205,13 @@ impl Service for Server {
                 query.map(|q| info.2.push_str(&q));
                 Box::new(object.inspect(move |res| {
                     let datatime: DateTime<Local> = Local::now();
+                    let duration = timer.elapsed();
                     println!(
-                        "[{}:{}{}] {} {} {}",
+                        "[{} {}ms {}:{}] {} {} {}",
+                        datatime.format("%Y-%m%d/%H:%M:%S"),
+                        duration.as_secs() * 1000 + duration.subsec_nanos() as u64 / 1000_000,
                         info.0.ip(),
                         info.0.port(),
-                        datatime.format("**%Y-%m%d/%H:%M:%S"),
                         res.status().as_u16(),
                         info.1,
                         info.2
