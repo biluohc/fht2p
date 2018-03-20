@@ -45,17 +45,9 @@ fn print_addrs(addr: &SocketAddr) -> io::Result<()> {
         .flat_map(|netif| {
             trace!("{}: {:?}", netif.name, netif.addrs);
             netif.addrs.iter().filter_map(|a| match a.addr {
-                StatIpAddr::V4(ipv4) => if addr.is_ipv4() && addr.ip() != ipv4 {
-                    Some(IpAddr::V4(ipv4))
-                } else {
-                    None
-                },
-                StatIpAddr::V6(ipv6) => if addr.is_ipv6() && addr.ip() != ipv6 {
-                    Some(IpAddr::V6(ipv6))
-                } else {
-                    None
-                },
-                StatIpAddr::Empty | StatIpAddr::Unsupported => None,
+                StatIpAddr::V4(ipv4) if addr.is_ipv4() => Some(IpAddr::V4(ipv4)),
+                StatIpAddr::V6(ipv6) if addr.is_ipv6() => Some(IpAddr::V6(ipv6)),
+                _ => None,
             })
         })
         .collect::<Vec<_>>();
