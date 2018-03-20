@@ -34,6 +34,12 @@ toml = "^0.3.2"
 log = "^0.3.8"
 app = "0.6.5"
 
+[dependencies.systemstat]
+version = "^0.1.2"
+git = "https://github.com/myfreeweb/systemstat"
+# branch = "master"
+rev = "0f9758486bcbd7cd9009956cb5b5d333bdf4967c"
+
 [dependencies.signalfn]
 path = "./crates/signalfn"
 version = "*"

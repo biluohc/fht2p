@@ -22,6 +22,7 @@ use content_type::headers_maker;
 
 use index::StaticIndex;
 use args::{Config, Route};
+use servestat;
 use consts;
 
 use std::time::Instant;
@@ -65,23 +66,7 @@ pub fn run(config: Config) -> io::Result<()> {
         Ok(())
     });
 
-    let mut info = format!(
-        "{}/{} Serving at {}:{} for:\n",
-        consts::NAME,
-        env!("CARGO_PKG_VERSION"),
-        addr.ip(),
-        addr.port()
-    );
-    server
-        .routes
-        .iter()
-        .for_each(|r| info.push_str(&format!("   {:?} -> {:?}\n", r.url, r.path)));
-    info.push_str(&format!(
-        "You can visit http://{}:{}",
-        addr.ip(),
-        addr.port()
-    ));
-    println!("{}", info);
+    servestat::print(&addr, server.routes.as_slice());
 
     core.run(http_server)
 }

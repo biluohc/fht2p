@@ -81,6 +81,7 @@ extern crate url;
 
 #[macro_use(signalfn, ctrlcfn)]
 extern crate signalfn;
+extern crate systemstat;
 use signalfn::register_ctrlcfn;
 
 pub(crate) mod consts;
@@ -89,6 +90,7 @@ pub mod exception;
 pub mod index;
 pub mod server;
 pub mod args;
+pub mod servestat;
 
 use std::process::exit;
 
@@ -96,7 +98,7 @@ fn callback() {
     exit(0)
 }
 
-ctrlcfn!(ctrlc_callback, callback);
+ctrlcfn!(ctrlc_exit, callback);
 
 fn main() {
     init().expect("Init log failed");
@@ -104,7 +106,7 @@ fn main() {
     let config = args::parse();
     debug!("{:?}", config);
 
-    register_ctrlcfn(ctrlc_callback)
+    register_ctrlcfn(ctrlc_exit)
         .map_err(|e| error!("Register CtrlC Signal failed: {:?}", e))
         .ok();
 
