@@ -23,10 +23,10 @@ use content_type::headers_maker;
 use index::StaticIndex;
 use args::{Config, Route};
 use servestat;
+use router;
 use consts;
 
 use std::time::Instant;
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::rc::Rc;
 use std::io;
@@ -107,7 +107,7 @@ impl Server {
             Method::Head | Method::Get => {}
             _ => return ExceptionHandler::call_async(Exception::Method, req),
         }
-        let (req_path, mut fspath, redirect_html) = match router(&self.routes, req_path) {
+        let (req_path, mut fspath, redirect_html) = match router::find(&self.routes, req_path) {
             Some(s) => s,
             None => return ExceptionHandler::call_async(Exception::not_found(), req),
         };
@@ -158,7 +158,11 @@ impl Server {
                     *index_server.headers_mut() = Some(consts::HTML_HEADERS.get().clone());
                     index_server.call(&self.pool, req)
                 } else {
-                    ExceptionHandler::call_async(Exception::Typo, req)
+                    ExceptionHandler::call_async(
+                        // symlink, socket, ...
+                        Exception::Io(io::Error::from(io::ErrorKind::PermissionDenied)),
+                        req,
+                    )
                 }
             }
             Err(e) => ExceptionHandler::call_async(e, req),
@@ -206,95 +210,4 @@ impl Service for Server {
             None => unreachable!("Request.remote_addr() is None"),
         }
     }
-}
-
-pub fn router(routes: &Vec<Route>, req_path: &str) -> Option<(String, PathBuf, bool)> {
-    let mut reqpath_components = req_path
-        .split('/')
-        .filter(|c| !c.is_empty() && c != &".")
-        .collect::<Vec<_>>();
-
-    let parent_count = (0..reqpath_components.len())
-        .into_iter()
-        .rev()
-        .fold(0, |count, idx| {
-            match (idx < reqpath_components.len(), idx > 0) {
-                (true, true) => match (
-                    reqpath_components[idx] == "..",
-                    reqpath_components[idx - 1] == "..",
-                ) {
-                    (false, _) => count,
-                    (true, false) => {
-                        reqpath_components.remove(idx);
-                        reqpath_components.remove(idx - 1);
-                        count
-                    }
-                    (true, true) => {
-                        reqpath_components.remove(idx);
-                        count + 1
-                    }
-                },
-                (false, _) => count,
-                (true, false) => {
-                    if count >= reqpath_components.len() {
-                        reqpath_components.clear();
-                        count
-                    } else {
-                        let new_len = reqpath_components.len() - count;
-                        reqpath_components.truncate(new_len);
-                        reqpath_components.first().map(|f| *f == "..").map(|b| {
-                            if b {
-                                reqpath_components.clear()
-                            }
-                        });
-                        count
-                    }
-                }
-            }
-        });
-    debug!("{}: {:?}", parent_count, reqpath_components);
-
-    let mut components = (0..routes.len())
-        .into_iter()
-        .fold(Vec::with_capacity(routes.len()), |mut rs, idx| {
-            if routes[idx].url_components.len() <= reqpath_components.len() {
-                rs.push(&routes[idx]);
-            }
-            rs
-        });
-
-    #[allow(unknown_lints, needless_range_loop)]
-    for idx in 0..reqpath_components.len() {
-        let rpc = reqpath_components[idx];
-        let mut cs_idx = components.len();
-        while cs_idx > 0 {
-            let cs_idx_tmp = cs_idx - 1;
-            if components[cs_idx_tmp].url_components.len() > idx && components[cs_idx_tmp].url_components[idx] != rpc {
-                components.remove(cs_idx_tmp);
-            }
-            cs_idx -= 1;
-        }
-    }
-    for r in components.into_iter().rev() {
-        let mut extract_path = reqpath_components[r.url_components.len()..]
-            .iter()
-            .fold(PathBuf::from(&r.path), |mut p, &c| {
-                p.push(c);
-                p
-            });
-        if extract_path.exists() {
-            let mut path = reqpath_components
-                .into_iter()
-                .fold(String::with_capacity(req_path.len()), |mut p, c| {
-                    p.push('/');
-                    p.push_str(c);
-                    p
-                });
-            if req_path.ends_with('/') {
-                path.push('/');
-            }
-            return Some((path, extract_path, r.redirect_html));
-        }
-    }
-    None
 }

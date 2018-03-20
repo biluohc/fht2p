@@ -89,6 +89,7 @@ pub mod content_type;
 pub mod exception;
 pub mod index;
 pub mod server;
+pub mod router;
 pub mod args;
 pub mod servestat;
 
