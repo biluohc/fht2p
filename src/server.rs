@@ -22,9 +22,9 @@ use content_type::headers_maker;
 
 use index::StaticIndex;
 use args::{Config, Route};
-use servestat;
 use router;
 use consts;
+use stat;
 
 use std::time::Instant;
 use std::sync::Arc;
@@ -66,7 +66,7 @@ pub fn run(config: Config) -> io::Result<()> {
         Ok(())
     });
 
-    servestat::print(&addr, server.routes.as_slice());
+    stat::print(&addr, server.routes.as_slice());
 
     core.run(http_server)
 }

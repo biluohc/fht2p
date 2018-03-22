@@ -32,7 +32,7 @@
 
 ## Help
 ```sh
-fht2p 0.8.1 (926fab12@master rustc1.24.0-nightly 2017-12-26UTC)
+fht2p 0.8.1 (6fad795e@master rustc1.26.0-nightly 2018-03-22UTC)
 A HTTP Server for Static File written with Rust
 Wspsxing <biluohc@qq.com>
 Github: https://github.com/biluohc/fht2p
@@ -91,7 +91,7 @@ pub mod index;
 pub mod server;
 pub mod router;
 pub mod args;
-pub mod servestat;
+pub mod stat;
 
 use std::process::exit;
 
