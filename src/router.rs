@@ -8,26 +8,21 @@ pub fn find(routes: &Vec<Route>, req_path: &str) -> Option<(String, PathBuf, boo
     // handle ..
     let reqpath_components = components_raw
         .fold(Ok(vec![]), |cs, c| {
-            if cs.is_ok() {
-                let mut cs = cs.unwrap();
-                match (cs.len() > 0, c == "..") {
-                    (_, false) => {
-                        cs.push(c);
-                        Ok(cs)
-                    }
-                    (true, true) => {
-                        cs.pop();
-                        Ok(cs)
-                    }
-                    (false, true) => Err(cs),
+            cs.and_then(move |mut cs| match (cs.len() > 0, c == "..") {
+                (_, false) => {
+                    cs.push(c);
+                    Ok(cs)
                 }
-            } else {
-                cs
-            }
+                (true, true) => {
+                    cs.pop();
+                    Ok(cs)
+                }
+                (false, true) => Err(cs),
+            })
         })
         .unwrap_or_else(|e| e);
     debug!("{} -> {:?}", req_path, reqpath_components);
-
+    
     // remove routes that the count of components bg than reqpath_components
     let mut routes = (0..routes.len())
         .into_iter()
