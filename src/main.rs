@@ -17,7 +17,7 @@
 ```
 ### Or
 ```sh
-    git clone https://github.com/biluohc/fht2p --depth 1 
+    git clone https://github.com/biluohc/fht2p
     # cargo  install --path fht2p/ fht2p
     
     cd fht2p 

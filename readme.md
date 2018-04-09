@@ -18,7 +18,7 @@
 ```
 #### Or
 ```sh
-    git clone https://github.com/biluohc/fht2p --depth 1
+    git clone https://github.com/biluohc/fht2p
     # cargo  install --path fht2p/ fht2p
 
     cd fht2p
@@ -33,7 +33,7 @@
 
 ### Help
 ```sh
-fht2p 0.8.1 (926fab12@master rustc1.24.0-nightly 2017-12-26UTC)
+fht2p 0.8.1 (6fad795e@master rustc1.26.0-nightly 2018-03-22UTC)
 A HTTP Server for Static File written with Rust
 Wspsxing <biluohc@qq.com>
 Github: https://github.com/biluohc/fht2p
