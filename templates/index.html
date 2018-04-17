@@ -1,0 +1,34 @@
+{% extends "base.html" %} {% block content %}
+<table>
+    <thead>
+        <tr>
+            <th>
+                <button onclick="javascrtpt:window.location.href='?Sort={{ next.0 }}'">Name</button>
+            </th>
+            <th>
+                <button onclick="javascrtpt:window.location.href='?Sort={{ next.1 }}'">Last_modified</button>
+            </th>
+            <th>
+                <button onclick="javascrtpt:window.location.href='?Sort={{ next.2 }}'">Size</button>
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry in entries -%}
+        <tr>
+            <td {% if entry.class.is_some() %} class="{{ entry.class.as_ref().unwrap() }}" {% endif %}>
+                <a href="{{ entry.url }}">{{ entry.name|e }}</a>
+            </td>
+            <td>
+                <span class="pre">  </span>
+                {% if entry.modified.is_some() %}{{ entry.modified.as_ref().unwrap() }}{% else %}-- -{%- endif -%}
+            </td>
+            <td>
+                <span class="pre">  </span>
+                <b>{% if entry.size.is_some() -%}{{ entry.size.as_ref().unwrap() }}{% else %}--{%- endif -%}</b>
+            </td>
+        </tr>
+        {% endfor -%}
+    </tbody>
+</table>
+{% endblock %}

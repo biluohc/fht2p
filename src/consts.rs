@@ -16,9 +16,6 @@ pub const CONTENT_TYPE: &str = "Content-Type";
 pub const CHARSET: &str = "charset=utf-8";
 pub const HTML_CONTENT_TYPE: &str = "text/html; charset=utf-8";
 
-pub const CSS: &str = include_str!(concat!(env!("OUT_DIR"), "/fht2p.css"));
-pub const SPACEHOLDER: &str = "&nbsp;";
-
 use hyper::header::Headers;
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};

@@ -78,6 +78,8 @@ extern crate serde_derive;
 extern crate tokio_core;
 extern crate toml;
 extern crate url;
+#[macro_use]
+extern crate askama;
 
 #[macro_use(signalfn, ctrlcfn)]
 extern crate signalfn;
@@ -85,13 +87,15 @@ extern crate systemstat;
 use signalfn::register_ctrlcfn;
 
 pub(crate) mod consts;
-pub mod content_type;
-pub mod exception;
-pub mod index;
-pub mod server;
-pub mod router;
-pub mod args;
-pub mod stat;
+pub(crate) mod content_type;
+pub(crate) mod exception;
+pub(crate) mod server;
+pub(crate) mod router;
+pub(crate) mod views;
+pub(crate) mod index;
+pub(crate) mod tools;
+pub(crate) mod args;
+pub(crate) mod stat;
 
 use std::process::exit;
 

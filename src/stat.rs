@@ -24,7 +24,7 @@ pub fn print(addr: &SocketAddr, routes: &[Route]) {
 
     println!("{}", TIP);
 
-    print_addrs(&addr).unwrap_or_else(|e| {
+    print_addrs(addr).unwrap_or_else(|e| {
         // systemstat is unsupported NetworkInterface on windows and opendsb now.
         if !cfg!(openbsd) {
             error!("Networks: {:?}", e)
