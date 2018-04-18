@@ -3,6 +3,9 @@
     <thead>
         <tr>
             <th>
+                <button disabled="disabled">No.</button>
+            </th>
+            <th>
                 <button onclick="javascrtpt:window.location.href='?Sort={{ next.0 }}'">Name</button>
             </th>
             <th>
@@ -16,6 +19,7 @@
     <tbody>
         {% for entry in entries -%}
         <tr>
+            <td align="center" id="No.{{loop.index}}"><a href="#No.{{loop.index}}">{{ loop.index }}</a></td>
             <td {% if entry.class.is_some() %} class="{{ entry.class.as_ref().unwrap() }}" {% endif %}>
                 <a href="{{ entry.url }}">{{ entry.name|e }}</a>
             </td>
