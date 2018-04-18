@@ -14,7 +14,7 @@ lto = true
 # debug = true 
 
 [build-dependencies]
-askama = "^0.6.1"
+askama = "^0.6.2"
 rsass = "^0.7.0"
 time = "^0.1"
 
@@ -40,7 +40,7 @@ serde = "^0.9.14"
 hyper = "^0.11.8"
 bytes = "^0.4.5"
 url = "^1.6.0"
-askama = "^0.6.1"
+askama = "^0.6.2"
 chrono = "^0.4"
 toml = "^0.3.2"
 log = "^0.3.8"

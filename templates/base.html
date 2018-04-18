@@ -7,13 +7,13 @@
 </head>
 <body>
     <h1>
-        <!-- 8/client/8 -->
+        {#- 8/client/8 -#}
         <span id="client" class="pre">        {{ client }}        </span>
         <a href="{{ parent }}">{{ h1|e }}</a>
     </h1>
-    {% block content %}{% endblock %}
+    {%- block content %}{% endblock -%}
 </body>
 <address>
-    <a href="{{ url }}">{{ name }}/{{ version }}</a>({{ os }}/{{ arch }}) server at<a href="/">{{ server }}</a>
+    <a href="{{ url }}">{{ name }}/{{ version }}</a>({{ os }}/{{ arch }}) server at <a href="/">{{ server }}</a>
 </address>
 </html>

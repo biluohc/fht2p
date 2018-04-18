@@ -133,13 +133,13 @@ impl EntryOrder {
                 (None, Some(_)) => Ordering::Greater,
                 _ => Ordering::Equal,
             }),
-            Modified => entries.sort_by(|a, b| match (a.modified.as_ref(), b.modified.as_ref()) {
+            Modified => entries.sort_by(|b, a| match (a.modified.as_ref(), b.modified.as_ref()) {
                 (Some(aa), Some(bb)) => aa.cmp(bb),
                 (Some(_), None) => Ordering::Less,
                 (None, Some(_)) => Ordering::Greater,
                 _ => Ordering::Equal,
             }),
-            ModifiedRev => entries.sort_by(|b, a| match (a.modified.as_ref(), b.modified.as_ref()) {
+            ModifiedRev => entries.sort_by(|a, b| match (a.modified.as_ref(), b.modified.as_ref()) {
                 (Some(aa), Some(bb)) => aa.cmp(bb),
                 (Some(_), None) => Ordering::Less,
                 (None, Some(_)) => Ordering::Greater,
