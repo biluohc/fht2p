@@ -5,7 +5,8 @@ use super::base::*;
 use std::net::SocketAddr;
 
 #[derive(Template)]
-#[template(path = "error.html", print = "code", escape= "none")]
+// #[template(path = "error.html", print = "code", escape= "none")]
+#[template(path = "error.html", print = "none", escape= "none")]
 pub struct ErrorTemplate<'a> { _parent: BaseTemplate<'a> }
 
 impl<'a> ErrorTemplate<'a>{

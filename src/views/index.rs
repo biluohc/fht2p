@@ -56,7 +56,8 @@ impl<'a> Entry<'a> {
 }
 
 #[derive(Template)]
-#[template(path = "index.html", print = "code", escape= "none")]
+// #[template(path = "index.html", print = "code", escape= "none")]
+#[template(path = "index.html", print = "none", escape= "none")]
 pub struct IndexTemplate<'a> {
    _parent: BaseTemplate<'a>,
    entries: Vec<Entry<'a>>,    

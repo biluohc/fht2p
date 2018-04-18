@@ -6,7 +6,8 @@ use std::net::SocketAddr;
 use std;
 
 #[derive(Template)]
-#[template(path = "base.html", print = "code", escape= "none")]
+// #[template(path = "base.html", print = "code", escape= "none")]
+#[template(path = "base.html", print = "none", escape= "none")]
 pub struct BaseTemplate<'a> {
     css: &'a str,
     title: &'a str,
