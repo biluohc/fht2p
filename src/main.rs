@@ -9,7 +9,7 @@
 
 ## Usage  
 ```sh
-    cargo install --git https://github.com/biluohc/fht2p  fht2p
+    cargo install --git https://github.com/biluohc/fht2p fht2p -f
 
     # running fht2p --help(-h) to get help.
 
@@ -18,7 +18,7 @@
 ### Or
 ```sh
     git clone https://github.com/biluohc/fht2p
-    # cargo  install --path fht2p/ fht2p
+    # cargo  install --path fht2p/ fht2p -f
     
     cd fht2p 
     cargo build --release
@@ -26,13 +26,9 @@
     ./target/release/fht2p --help
 ```
 
-## Binary
-
-* [The Release Page](https://github.com/biluohc/fht2p/releases)  
-
 ## Help
 ```sh
-fht2p 0.8.1 (6fad795e@master rustc1.26.0-nightly 2018-03-22UTC)
+fht2p 0.8.2 (f9dbc530@master rustc1.27.0-nightly 2018-04-18UTC)
 A HTTP Server for Static File written with Rust
 Wspsxing <biluohc@qq.com>
 Github: https://github.com/biluohc/fht2p
@@ -43,7 +39,7 @@ USAGE:
 OPTIONS:
    -h, --help                               Show the help message
    -V, --version                            Show the version message
-   -r, --redirect-html                      Redirect dir to 'index.html/htm`, if it exists
+   -r, --redirect-html                      Redirect dir to `index.html/htm`, if it exists
    -m, --magic-limit <byte>[10485760]       The limit for detect file ContenType(use 0 to close)
    -k, --keep-alive                         Close HTTP keep alive
    -c, --config <config>(optional)          Sets a custom config file
@@ -78,6 +74,8 @@ extern crate serde_derive;
 extern crate tokio_core;
 extern crate toml;
 extern crate url;
+#[macro_use]
+extern crate askama;
 
 #[macro_use(signalfn, ctrlcfn)]
 extern crate signalfn;
@@ -85,13 +83,15 @@ extern crate systemstat;
 use signalfn::register_ctrlcfn;
 
 pub(crate) mod consts;
-pub mod content_type;
-pub mod exception;
-pub mod index;
-pub mod server;
-pub mod router;
-pub mod args;
-pub mod stat;
+pub(crate) mod content_type;
+pub(crate) mod exception;
+pub(crate) mod server;
+pub(crate) mod router;
+pub(crate) mod views;
+pub(crate) mod index;
+pub(crate) mod tools;
+pub(crate) mod args;
+pub(crate) mod stat;
 
 use std::process::exit;
 

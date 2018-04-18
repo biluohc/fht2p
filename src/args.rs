@@ -44,7 +44,7 @@ pub fn parse() -> Config {
                 Opt::new("bbredircet-html", &mut redirect_html)
                     .short('r')
                     .long("redirect-html")
-                    .help("Redirect dir to 'index.html/htm`, if it exists"),
+                    .help("Redirect dir to `index.html/htm`, if it exists"),
             )
             .opt(
                 Opt::new("keepalive", &mut config.keep_alive)

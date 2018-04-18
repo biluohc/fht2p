@@ -1,16 +1,16 @@
-use url::percent_encoding::percent_encode_byte;
 use chrono::{DateTime, Duration};
 use chrono::offset::Local;
 use hyper::server::Request;
 use hyper_fs::Config;
+use askama::Template;
 
-use consts;
+use views::IndexTemplate;
+use tools::url_for_parent;
 
 use std::fs::{self, DirEntry, FileType};
 use std::path::{Path, PathBuf};
 use std::cmp::Ordering;
 use std::fmt;
-use std::env;
 use std::io;
 
 pub fn render_html(title: &str, index: &PathBuf, req: &Request, order: &EntryOrder, config: &Config) -> io::Result<String> {
@@ -22,43 +22,10 @@ pub fn render_html(title: &str, index: &PathBuf, req: &Request, order: &EntryOrd
     )?;
     let next_order = order.next();
     let remote_addr = req.remote_addr().unwrap();
-    let mut html = format!(
-        "<!DOCTYPE html><html><head>
-<meta charset=\"UTF-8\">
-<style type=\"text/css\">{}</style> 
-<title>{}</title></head>
-<body><h1><span id=\"client\">{}{}:{}{}</span><a href=\"{}../\">{}</a><p></h1>
-<table><thead><tr style=\"border-bottom: 0.1px solid #000080;\">
-<th><button onclick=\"javascrtpt:window.location.href='?Sort={}'\">Name</button></th>
-<th><button onclick=\"javascrtpt:window.location.href='?Sort={}'\">Last_modified</button></th>
-<th><button onclick=\"javascrtpt:window.location.href='?Sort={}'\">Size</button></th>
-</tr></thead><tbody>
-",
-        consts::CSS,
-        title,
-        consts::SPACEHOLDER.repeat(8),
-        remote_addr.ip(),
-        remote_addr.port(),
-        consts::SPACEHOLDER.repeat(8),
-        req.path(),
-        title,
-        next_order.0,
-        next_order.1,
-        next_order.2
-    );
-    metadatas.iter().for_each(|md| html.push_str(&md.format()));
+    let parent = url_for_parent(req.uri().path());
+    let template = IndexTemplate::new(title, title, &parent, &remote_addr, next_order, &metadatas);
+    let html = template.render().unwrap();
 
-    let tail = format!(
-        "</tbody></table></body><address><a href=\"{}\">{}/{}</a>({}/{}) server at <a href=\"/\">{}:{}</a></address></html>",
-        consts::URL,
-        consts::NAME,
-        env!("CARGO_PKG_VERSION"),
-        env::consts::OS,
-        env::consts::ARCH,
-        consts::SERVER_ADDR.get().ip(),
-        consts::SERVER_ADDR.get().port(),
-    );
-    html.push_str(&tail);
     Ok(html)
 }
 
@@ -81,9 +48,9 @@ impl EntryMetadata {
             return None;
         }
         Some(Self {
-            name: name,
+            name,
+            typo,            
             size: metadata.as_ref().map(|md| md.len()),
-            typo: typo,
             modified: metadata.as_ref().and_then(|md| {
                 md.modified()
                     .ok()
@@ -105,59 +72,8 @@ impl EntryMetadata {
         order.sort(&mut entries_vec);
         Ok(entries_vec)
     }
-    pub fn format(&self) -> String {
-        let name_enc = self.name
-            .bytes()
-            .map(percent_encode_byte)
-            .collect::<String>();
-        let (name_style, name_enc_tail, name_tail) = self.typo
-            .as_ref()
-            .map(|ft| match (ft.is_dir(), ft.is_symlink()) {
-                (false, false) => ("", "", ""),
-                (true, false) => (" class=\"dir\"", "/", "/"),
-                (false, true) => (" class=\"symlink\"", "", "@"),
-                // unreachable!() ?
-                (true, true) => (" class=\"dir symlink\"", "/", "/@"),
-            })
-            .unwrap_or_else(|| ("", "", ""));
-
-        format!(
-            "<tr><td{}><a href=\"{}{}\">{}{}</a></td><td>{}{}</td><td>{}<b>{}</b></td></tr>\n",
-            name_style,
-            name_enc,
-            name_enc_tail,
-            self.name,
-            name_tail,
-            consts::SPACEHOLDER.repeat(3),
-            mtime_humman(&self.modified),
-            consts::SPACEHOLDER.repeat(3),
-            size_human(&self.size)
-        )
-    }
 }
 
-pub fn size_human(size: &Option<u64>) -> String {
-    // B，KB，MB，GB，TB，PB，EB，ZB，YB，BB
-    static UNITS: &[&'static str] = &["", "K", "M", "G", "T", "P", "E", "Z", "Y", "B"];
-    size.as_ref()
-        .map(|s| {
-            let mut count = 0usize;
-            let mut s = *s as f64;
-            while s / 1024. > 1. {
-                s /= 1024.;
-                count += 1;
-            }
-            format!("{:.02} {}", s, UNITS[count])
-        })
-        .unwrap_or_else(|| "--".to_owned())
-}
-
-pub fn mtime_humman(mtime: &Option<DateTime<Local>>) -> String {
-    mtime
-        .as_ref()
-        .map(|mt| mt.format("%Y-%m%d&nbsp;&nbsp;%H:%M:%S").to_string())
-        .unwrap_or_else(|| "-- -".to_owned())
-}
 
 #[derive(Debug)]
 pub enum EntryOrder {

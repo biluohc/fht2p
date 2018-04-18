@@ -14,12 +14,27 @@ h1 {
     text-align: left;
 }
 
+/* 
+    h1 client addr
 
-/* h1 client addr*/
+    white-space: pre; 保留空格和换行
+*/
 
 #client {
     text-align: right;
     color: #FF6600;
+}
+
+.pre {
+    white-space: pre;
+}
+
+.dir {
+    font-weight: bold;
+}
+
+.symlink {
+    font-style: italic;
 }
 
 a {
@@ -37,29 +52,19 @@ table {
     border-bottom: 0.1px solid #000080;
 }
 
-table thead th {
-    font-size: small;
+table thead tr {
     border-bottom: 0.1px solid #000080;
-    background-color: white;
 }
 
-/* hr {
-    border-bottom: 0.1px solid #000080;
-} */
+table thead th {
+    font-size: small;
+    background-color: white;
+}
 
 address {
     font-size: x-large;
 }
 
-
-/*
-.file
-*/
-
-.dir {
-    font-weight: bold;
-}
-
-.symlink {
-    font-style: italic;
-}
+/* hr {
+    border-bottom: 0.1px solid #000080;
+} */

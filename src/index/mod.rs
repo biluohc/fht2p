@@ -7,8 +7,8 @@ use hyper_fs::{Config, FutureObject};
 
 use exception::ExceptionHandler;
 
-pub mod view;
-use self::view::{render_html, EntryOrder};
+pub mod model;
+use self::model::{render_html, EntryOrder};
 
 use std::path::PathBuf;
 use std::{mem, time};

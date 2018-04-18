@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style type="text/css">{{ css }}</style>
+    <title>{{ title|e }}</title>
+</head>
+<body>
+    <h1>
+        <!-- 8/client/8 -->
+        <span id="client" class="pre">        {{ client }}        </span>
+        <a href="{{ parent }}">{{ h1|e }}</a>
+    </h1>
+    {% block content %}{% endblock %}
+</body>
+<address>
+    <a href="{{ url }}">{{ name }}/{{ version }}</a>({{ os }}/{{ arch }}) server at<a href="/">{{ server }}</a>
+</address>
+</html>
