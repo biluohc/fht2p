@@ -1,6 +1,6 @@
 [package]
 name = "fht2p"
-version = "0.8.1"
+version = "0.8.2"
 authors = ["Wspsxing <biluohc@qq.com>"]
 description = "A HTTP Server for Static File written with Rust"
 build = "build.rs"
