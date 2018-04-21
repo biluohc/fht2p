@@ -1,25 +1,20 @@
-use chrono::{DateTime, Duration};
-use chrono::offset::Local;
+use askama::Template;
+use chrono::{DateTime, Local, TimeZone};
 use hyper::server::Request;
 use hyper_fs::Config;
-use askama::Template;
 
-use views::IndexTemplate;
 use tools::url_for_parent;
+use views::IndexTemplate;
 
-use std::fs::{self, DirEntry, FileType};
-use std::path::{Path, PathBuf};
 use std::cmp::Ordering;
 use std::fmt;
+use std::fs::{self, DirEntry, FileType};
 use std::io;
+use std::path::{Path, PathBuf};
+use std::time;
 
 pub fn render_html(title: &str, index: &PathBuf, req: &Request, order: &EntryOrder, config: &Config) -> io::Result<String> {
-    let metadatas = EntryMetadata::read_dir(
-        index,
-        config.get_follow_links(),
-        config.get_hide_entry(),
-        order,
-    )?;
+    let metadatas = EntryMetadata::read_dir(index, config.get_follow_links(), config.get_hide_entry(), order)?;
     let next_order = order.next();
     let remote_addr = req.remote_addr().unwrap();
     let parent = url_for_parent(req.uri().path());
@@ -49,14 +44,13 @@ impl EntryMetadata {
         }
         Some(Self {
             name,
-            typo,            
+            typo,
             size: metadata.as_ref().map(|md| md.len()),
             modified: metadata.as_ref().and_then(|md| {
                 md.modified()
                     .ok()
-                    .and_then(|mt| mt.elapsed().ok())
-                    .and_then(|sd| Duration::from_std(sd).ok())
-                    .and_then(|du| Local::now().checked_sub_signed(du))
+                    .and_then(|mt| mt.duration_since(time::UNIX_EPOCH).ok())
+                    .map(|sd| Local.timestamp(sd.as_secs() as i64, sd.subsec_nanos()))
             }),
         })
     }
@@ -73,7 +67,6 @@ impl EntryMetadata {
         Ok(entries_vec)
     }
 }
-
 
 #[derive(Debug)]
 pub enum EntryOrder {
