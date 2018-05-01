@@ -34,8 +34,8 @@ impl EncodeSet for PATH_ENCODE_SET {
     fn contains(&self, byte: u8) -> bool {
         match byte {
             0x00...0x20 => true,
-            // %  ?
-            0x25 | 0x3f => true,
+            // #  %  ?
+            0x23 | 0x25 | 0x3f => true,
             c if c <= 0x7e => false,
             _ => true,
         }
