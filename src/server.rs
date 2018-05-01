@@ -4,7 +4,6 @@ use tokio_core::net::TcpListener;
 use futures::{future, Future, Stream};
 use hyper::server::{Http, Request, Response, Service};
 use hyper::{header, Error, Method, StatusCode};
-use url::percent_encoding::percent_decode;
 use chrono::{DateTime, Local};
 
 use hyper_fs::{Exception, ExceptionHandlerServiceAsync};
@@ -20,8 +19,9 @@ pub use self::local::StaticFile;
 use exception::ExceptionHandler;
 use content_type::headers_maker;
 
-use index::StaticIndex;
+use tools::url_path_decode;
 use args::{Config, Route};
+use index::StaticIndex;
 use router;
 use consts;
 use stat;
@@ -182,9 +182,7 @@ impl Service for Server {
                 let mut info = (
                     addr,
                     req.method().clone(),
-                    percent_decode(req.path().as_bytes())
-                        .decode_utf8()
-                        .unwrap()
+                    url_path_decode(req.uri().path())
                         .into_owned()
                         .to_owned(),
                 );

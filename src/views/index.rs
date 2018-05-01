@@ -1,4 +1,3 @@
-use url::percent_encoding::percent_encode_byte;
 use chrono::format::strftime::StrftimeItems;
 use chrono::format::DelayedFormat;
 use chrono::offset::Local;
@@ -6,6 +5,7 @@ use chrono::{DateTime};
 use askama::Template;
 
 use index::model::EntryMetadata;
+use tools::url_for_path;
 use super::base::*;
 
 use std::net::SocketAddr;
@@ -20,7 +20,7 @@ pub struct Entry<'a> {
 
 impl<'a> Entry<'a> {
     fn new(entry: &'a EntryMetadata)->Self {
-        let mut url = entry.name.bytes().map(percent_encode_byte).collect::<String>();
+        let mut url = url_for_path(&entry.name);
         let mut name = entry.name.clone();
 
         let class = entry.typo.as_ref()
