@@ -61,17 +61,22 @@ use mxo_env_logger::*;
 extern crate app;
 extern crate bytes;
 extern crate chrono;
-extern crate futures;
-extern crate futures_cpupool;
-extern crate hyper;
+// extern crate futures_cpupool;
 #[macro_use]
-extern crate hyper_fs;
-#[macro_use]
+// extern crate hyper_fs;
+// #[macro_use]
 extern crate lazy_static;
 extern crate mime_guess;
 #[macro_use]
 extern crate serde_derive;
+
+extern crate futures;
+extern crate hyper;
 extern crate tokio_core;
+extern crate tokio_tcp;
+extern crate rustls;
+extern crate tokio_rustls;
+
 extern crate toml;
 extern crate url;
 #[macro_use]
@@ -83,15 +88,18 @@ extern crate systemstat;
 use signalfn::register_ctrlcfn;
 
 pub(crate) mod consts;
-pub(crate) mod content_type;
-pub(crate) mod exception;
-pub(crate) mod server;
-pub(crate) mod router;
-pub(crate) mod views;
-pub(crate) mod index;
-pub(crate) mod tools;
+// pub(crate) mod content_type;
+// pub(crate) mod exception;
+// pub(crate) mod server;
+// pub(crate) mod router;
+// pub(crate) mod views;
+// pub(crate) mod index;
+// pub(crate) mod tools;
 pub(crate) mod args;
-pub(crate) mod stat;
+// pub(crate) mod stat;
+
+pub(crate) mod ssl ;
+use  ssl  as  server ;
 
 use std::process::exit;
 
