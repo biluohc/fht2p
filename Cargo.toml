@@ -15,7 +15,7 @@ lto = true
 # debug = true 
 
 [build-dependencies]
-askama = "^0.6.2"
+askama = "^0.7.0"
 rsass = "^0.7.0"
 time = "^0.1"
 
@@ -30,26 +30,33 @@ version = "*"
 # default-features = false
 
 [dependencies]
-mime_guess="^2.0.0-alpha.3"
+mime_guess="^2.0.0-alpha.5"
 # futures-cpupool = "^0.1.7"
-serde_derive = "^0.9.14"
+serde_derive = "^1.0"
 mxo_env_logger = "^0.1"
 lazy_static = "^1.0.0"
 futures ="^0.1.17"
-serde = "^0.9.14"
+serde = "^1.0"
 
-hyper = "0.12"
+num_cpus = "1.0"
+
+http = "0.1"
+hyper = "0.12.5"
 rustls = "0.12"
 tokio-core = "0.1"
 tokio-io = "0.1"
 tokio-rustls = "0.6"
 tokio-tcp = "0.1"
+tokio = "0.1"
+tokio-fs = "0.1"
+tokio-timer = "0.2"
+tokio-threadpool = "0.1"
 
 bytes = "^0.4.5"
 url = "^1.6.0"
-askama = "^0.6.2"
+askama = "^0.7"
 chrono = "^0.4"
-toml = "^0.3.2"
+toml = "^0.4.6"
 log = "^0.3.8"
 app = "0.6.5"
 
