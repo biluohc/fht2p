@@ -56,32 +56,30 @@ ARGS:
 #![allow(unknown_lints, clone_on_ref_ptr, boxed_local)]
 #[macro_use]
 extern crate log;
-extern crate mxo_env_logger;
-use mxo_env_logger::*;
-extern crate app;
 extern crate bytes;
 extern crate chrono;
-// extern crate futures_cpupool;
+extern crate clap;
+extern crate fern;
 #[macro_use]
 // extern crate hyper_fs;
-// #[macro_use]
+#[macro_use]
 extern crate lazy_static;
 extern crate mime_guess;
 #[macro_use]
 extern crate serde_derive;
+extern crate ron;
+extern crate serde;
 
+extern crate futures;
 extern crate http;
 extern crate hyper;
-extern crate futures;
-extern crate tokio_core;
-extern crate tokio_tcp;
-extern crate rustls;
-extern crate tokio_rustls;
-extern crate tokio;
-extern crate tokio_threadpool;
 extern crate num_cpus;
+extern crate rustls;
+extern crate tokio;
+extern crate tokio_rustls;
+extern crate tokio_tcp;
+extern crate tokio_threadpool;
 
-extern crate toml;
 extern crate url;
 #[macro_use]
 extern crate askama;
@@ -91,18 +89,20 @@ extern crate signalfn;
 extern crate systemstat;
 use signalfn::register_ctrlcfn;
 
-pub(crate) mod consts;
-pub(crate) mod base;
+pub mod base;
+pub mod consts;
 // pub(crate) mod content_type;
 // pub(crate) mod exception;
-pub(crate) mod server;
+pub mod server;
 // pub(crate) mod router;
 // pub(crate) mod views;
 // pub(crate) mod index;
 // pub(crate) mod tools;
-pub(crate) mod args;
+pub mod args;
 // pub(crate) mod stat;
+pub mod logger;
 
+use std::error::Error;
 use std::process::exit;
 
 fn callback() {
@@ -112,16 +112,29 @@ fn callback() {
 ctrlcfn!(ctrlc_exit, callback);
 
 fn main() {
-    init().expect("Init log failed");
+    // let cert = Some( args::Cert {
+    //     pub_: "pub".to_owned(),
+    //     key: "key".to_owned(),
+    // });
+    // let str = ron::ser::to_string_pretty(&Some(cert), ron::ser::PrettyConfig::default()).unwrap();
+    // println!("{}", str);
 
-    let config = args::parse();
+    let (config, loglvl) = args::parse();
+    logger::set(loglvl).expect("Set logger failed");
+
     debug!("{:?}", config);
 
     register_ctrlcfn(ctrlc_exit)
         .map_err(|e| error!("Register CtrlC Signal failed: {:?}", e))
         .ok();
 
-    if let Err(e) = server::run(config) {
+    let rest = if config.cert.is_none() {
+        server::run(config)
+    } else {
+        server::run_with_tls(config)
+    };
+
+    if let Err(e) = rest {
         error!("{}", e.description());
         exit(1);
     }
