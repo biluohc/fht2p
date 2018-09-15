@@ -3,145 +3,150 @@ use futures::Stream;
 use hyper::rt::Future;
 use hyper::server::conn::Http;
 // use hyper::{self, Body, Method, Request, Response, Server, StatusCode};
+use failure::Error;
 use rustls;
 use rustls::internal::pemfile;
-use std::{env, fs, io, sync};
 use tokio::net as tcp;
 use tokio_rustls::{self, ServerConfigExt};
 
-use num_cpus;
-// use tokio::runtime::current_thread;
+use tokio::runtime::current_thread;
 use tokio::runtime::Builder as RuntimeBuilder;
+use tokio::runtime::TaskExecutor;
 use tokio_threadpool::Builder as ThreadPoolBuilder;
 
 use std;
-use std::error::Error;
+use std::net::SocketAddr;
+use std::{env, fs, io, sync};
+use StdError;
 
 use base::BaseService;
 use config::{Config, Route};
-use reuse_address::reuse_address;
+use reuse::reuse_address;
+use stat::print as stat_print;
 
-pub fn run(conf: Config) -> std::io::Result<()> {
-    let addr = conf.addrs[0];
-
-    let http = Http::new();
-
-    let pool_size = num_cpus::get();
+pub fn run(config: Config) -> Result<(), Error> {
     let mut threadpool_builder = ThreadPoolBuilder::new();
     threadpool_builder.name_prefix("fht2p-worker-");
-    threadpool_builder.pool_size(pool_size);
-    threadpool_builder.max_blocking(2);
-    let mut runtime = RuntimeBuilder::new()
-        .threadpool_builder(threadpool_builder)
-        .build()
-        .expect("failed to create event loop and thread pool");
 
-    let executor_for_tcp_listener = runtime.executor();
+    let runtime = RuntimeBuilder::new().threadpool_builder(threadpool_builder).build()?;
 
-    let tcp = reuse_address(&addr).map_err(|e| {
-        error!("{:?}", e);
-        e
-    })?;
-    info!("Starting to serve on http://{}.", addr);
-    let tcp_listener_module = tcp
-        .incoming()
-        .map(|s| Some(s))
-        .or_else(|e| {
-            error!("error in accepting connection: {:?}", e.description());
-            let tmp: Option<tcp::TcpStream> = None;
-            future::ok::<_, std::io::Error>(tmp)
-        }).filter_map(|s| s)
-        // already or_else..
-        .map_err(|e| unreachable!(e))
-        .for_each(move |s| {
-            let remote_addr = s.peer_addr().unwrap();
-            let connection = http.serve_connection(s, BaseService::new(remote_addr));
+    let executor = runtime.executor();
 
-            executor_for_tcp_listener.spawn(connection.then(move |connection_res| {
-                if let Err(e) = connection_res {
-                    error!("client[{}]: {}", remote_addr, e.description());
-                }
-                Ok(())
-            }));
-            Ok(())
-        });
+    let mut tcp_listener: Option<Box<dyn Future<Item = (), Error = ()> + 'static>> = None;
+    let mut error = None;
 
-    runtime.spawn(tcp_listener_module);
-    // current_thread_runtime.spawn(log_module);
-    // current_thread_runtime.run().unwrap();
-    runtime.shutdown_on_idle().wait().unwrap();
+    for addr in config.addrs.clone() {
+        match tcp_listener_module(&addr, config.clone(), executor.clone()) {
+            Ok(tcp) => {
+                tcp_listener = Some(tcp);
+                stat_print(
+                    &addr,
+                    if config.cert.is_some() { "https" } else { "http" },
+                    config.routes.values().cloned().collect(),
+                );
+                break;
+            }
+            Err(e) => {
+                warn!("listen {}: {}", addr, e);
+                error = Some(e);
+            }
+        }
+    }
+
+    if tcp_listener.is_none() {
+        if let Some(e) = error {
+            return Err(e);
+        } else {
+            unreachable!("tcp-listener and error is None");
+        }
+    }
+
+    let mut current_thread_runtime = current_thread::Runtime::new()?;
+    current_thread_runtime.spawn(tcp_listener.unwrap());
+    current_thread_runtime.run()?;
     Ok(())
 }
 
-fn load_certs(filename: &str) -> Vec<rustls::Certificate> {
-    let certfile = fs::File::open(filename).expect("cannot open certificate file");
+pub fn load_certs(filename: &str) -> Result<Vec<rustls::Certificate>, Error> {
+    let certfile = fs::File::open(filename).map_err(|e| format_err!("open certificate file({}) failed: {:?}", filename, e))?;
     let mut reader = io::BufReader::new(certfile);
-    pemfile::certs(&mut reader).unwrap()
+    pemfile::certs(&mut reader).map_err(|e| format_err!("load certificate({}) failed: {:?}", filename, e))
 }
 
-fn load_private_key(filename: &str) -> rustls::PrivateKey {
-    let keyfile = fs::File::open(filename).expect("cannot open private key file");
+pub fn load_private_key(filename: &str) -> Result<rustls::PrivateKey, Error> {
+    let keyfile = fs::File::open(filename).map_err(|e| format_err!("open private key file({}) failed: {:?}", filename, e))?;
     let mut reader = io::BufReader::new(keyfile);
-    let keys = pemfile::rsa_private_keys(&mut reader).unwrap();
+    let keys =
+        pemfile::rsa_private_keys(&mut reader).map_err(|e| format_err!("load private key({}) failed: {:?}", filename, e))?;
     assert!(keys.len() == 1);
-    keys[0].clone()
+    Ok(keys[0].clone())
 }
 
-pub fn run_with_tls(conf: Config) -> std::io::Result<()> {
-    let addr = conf.addrs[0];
-    let cert = conf.cert.as_ref().unwrap();
-
-    let tls_cfg = {
-        let certs = load_certs(&cert.pub_);
-        let key = load_private_key(&cert.key);
-        let mut cfg = rustls::ServerConfig::new(rustls::NoClientAuth::new());
-        cfg.set_single_cert(certs, key);
-        sync::Arc::new(cfg)
-    };
-
+pub fn tcp_listener_module(
+    addr: &SocketAddr,
+    config: Config,
+    executor: TaskExecutor,
+) -> Result<Box<dyn Future<Item = (), Error = ()> + 'static>, Error> {
+    let tcp = reuse_address(&addr)?;
     let http = Http::new();
 
-    let pool_size = num_cpus::get();
-    let mut threadpool_builder = ThreadPoolBuilder::new();
-    threadpool_builder.name_prefix("fht2p-worker-");
-    threadpool_builder.pool_size(pool_size);
-    threadpool_builder.max_blocking(2);
-    let mut runtime = RuntimeBuilder::new()
-        .threadpool_builder(threadpool_builder)
-        .build()
-        .expect("failed to create event loop and thread pool");
+    if let Some(cert) = &config.cert {
+        let tls_cfg = {
+            let certs = load_certs(&cert.pub_)?;
+            let key = load_private_key(&cert.key)?;
+            let mut cfg = rustls::ServerConfig::new(rustls::NoClientAuth::new());
+            cfg.set_single_cert(certs, key)
+                .map_err(|e| format_err!("set single cert failed: {:?}", e))?;
+            sync::Arc::new(cfg)
+        };
 
-    let executor_for_tcp_listener = runtime.executor();
+        let tcp_listener_module = tcp
+            .incoming()
+            .and_then(move |s| tls_cfg.accept_async(s))
+            .map(|s| Some(s))
+            .or_else(|e| {
+                error!("error in accepting connection: {:?}", e.description());
+                let tmp: Option<tokio_rustls::TlsStream<tcp::TcpStream, rustls::ServerSession>> = None;
+                future::ok::<_, std::io::Error>(tmp)
+            }).filter_map(|s| s)
+            // already or_else..
+            .map_err(|e| unreachable!(e))
+            .for_each(move |s| {
+                let remote_addr = s.get_ref().0.peer_addr().unwrap();
+                let connection = http.serve_connection(s, BaseService::new(remote_addr));
 
-    let tcp = reuse_address(&addr)?;
-    info!("Starting to serve on https://{}.", addr);
-    let tcp_listener_module = tcp
-        .incoming()
-        .and_then(move |s| tls_cfg.accept_async(s))
-        .map(|s| Some(s))
-        .or_else(|e| {
-            error!("error in accepting connection: {:?}", e.description());
-            let tmp: Option<tokio_rustls::TlsStream<tcp::TcpStream, rustls::ServerSession>> = None;
-            future::ok::<_, std::io::Error>(tmp)
-        }).filter_map(|s| s)
-        // already or_else..
-        .map_err(|e| unreachable!(e))
-        .for_each(move |s| {
-            let remote_addr = s.get_ref().0.peer_addr().unwrap();
-            let connection = http.serve_connection(s, BaseService::new(remote_addr));
-
-            executor_for_tcp_listener.spawn(connection.then(move |connection_res| {
-                if let Err(e) = connection_res {
-                    error!("client[{}]: {}", remote_addr, e.description());
-                }
+                executor.spawn(connection.then(move |connection_res| {
+                    if let Err(e) = connection_res {
+                        error!("client[{}]: {}", remote_addr, e.description());
+                    }
+                    Ok(())
+                }));
                 Ok(())
-            }));
-            Ok(())
-        });
+            });
+        Ok(Box::new(tcp_listener_module) as _)
+    } else {
+        let tcp_listener_module = tcp
+            .incoming()
+            .map(|s| Some(s))
+            .or_else(|e| {
+                error!("error in accepting connection: {:?}", e.description());
+                let tmp: Option<tcp::TcpStream> = None;
+                future::ok::<_, std::io::Error>(tmp)
+            }).filter_map(|s| s)
+            // already or_else..
+            .map_err(|e| unreachable!(e))
+            .for_each(move |s| {
+                let remote_addr = s.peer_addr().unwrap();
+                let connection = http.serve_connection(s, BaseService::new(remote_addr));
 
-    runtime.spawn(tcp_listener_module);
-    // current_thread_runtime.spawn(log_module);
-    // current_thread_runtime.run().unwrap();
-    runtime.shutdown_on_idle().wait().unwrap();
-    Ok(())
+                executor.spawn(connection.then(move |connection_res| {
+                    if let Err(e) = connection_res {
+                        error!("client[{}]: {}", remote_addr, e.description());
+                    }
+                    Ok(())
+                }));
+                Ok(())
+            });
+        Ok(Box::new(tcp_listener_module) as _)
+    }
 }

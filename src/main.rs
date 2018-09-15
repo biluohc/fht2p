@@ -95,7 +95,7 @@ use signalfn::register_ctrlcfn;
 
 pub mod base;
 pub mod consts;
-pub mod reuse_address;
+pub mod reuse;
 // pub(crate) mod content_type;
 // pub(crate) mod exception;
 pub mod server;
@@ -105,15 +105,15 @@ pub mod server;
 // pub(crate) mod tools;
 pub mod args;
 pub mod config;
-// pub(crate) mod stat;
+pub mod stat;
 pub mod logger;
 
-use std::error::Error;
-use std::process::exit;
+pub use std::error::Error as StdError;
+pub use std::process::exit as process_exit;
 
 fn callback() {
     info!("Received a CtrlC, exiting...");
-    exit(0)
+    process_exit(1)
 }
 
 ctrlcfn!(ctrlc_exit, callback);
@@ -123,17 +123,15 @@ fn main() {
 
     debug!("{:?}", config);
 
-    register_ctrlcfn(ctrlc_exit).map_err(|e| error!("Register CtrlC Signal failed: {:?}", e)).ok();
+    register_ctrlcfn(ctrlc_exit)
+        .map_err(|e| error!("Register CtrlC Signal failed: {:?}", e))
+        .ok();
 
-    let rest = if config.cert.is_none() {
-        server::run(config)
-    } else {
-        server::run_with_tls(config)
-    };
+    let rest = server::run(config);
 
     debug!("{:?}", rest);
     if let Err(e) = rest {
-        error!("{}", e.description());
-        exit(1);
+        error!("{}", e);
+        process_exit(1)
     }
 }

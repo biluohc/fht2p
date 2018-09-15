@@ -31,6 +31,7 @@ pub fn parse() -> Config {
             .arg(
                 Arg::with_name("verbose")
                     .short("v")
+                    .long("verbose")
                     .multiple(true)
                     .help("Increases logging verbosity each use for up to 2 times(info0_debug1_trace2+)"),
             ).arg(
@@ -61,8 +62,12 @@ pub fn parse() -> Config {
                     .long("redircet-html")
                     .short("r")
                     .help("Redirect dir to `index.html/htm`, if it exists"),
-            ).arg(Arg::with_name("keepalive").long("keepalive").short("k").help("Close HTTP keep alive"))
-            .arg(
+            ).arg(
+                Arg::with_name("keepalive")
+                    .long("keepalive")
+                    .short("k")
+                    .help("Close HTTP keep alive"),
+            ).arg(
                 Arg::with_name("follow-links")
                     .long("follow-links")
                     .short("f")
@@ -72,30 +77,47 @@ pub fn parse() -> Config {
                     .long("magic-limit")
                     .short("m")
                     .takes_value(true)
-                    .validator(|s| s.parse::<u64>().map(|_| ()).map_err(|e| format!("invalid value for magic-limit: {}", e)))
-                    .help("The limit for detect file ContenType(use 0 to close)"),
+                    .validator(|s| {
+                        s.parse::<u64>()
+                            .map(|_| ())
+                            .map_err(|e| format!("invalid value for magic-limit: {}", e))
+                    }).help("The limit for detect file ContenType(use 0 to close)"),
             ).arg(
                 Arg::with_name("cache-secs")
                     .long("cache-secs")
                     .short("s")
                     .takes_value(true)
-                    .validator(|s| s.parse::<u32>().map(|_| ()).map_err(|e| format!("invalid value for cache-secs: {}", e)))
-                    .help("Set cache secs(use 0 to close)"),
+                    .validator(|s| {
+                        s.parse::<u32>()
+                            .map(|_| ())
+                            .map_err(|e| format!("invalid value for cache-secs: {}", e))
+                    }).help("Set cache secs(use 0 to close)"),
             ).arg(
                 Arg::with_name("ip")
                     .long("ip")
                     .short("i")
                     .takes_value(true)
-                    .validator(|s| s.parse::<IpAddr>().map(|_| ()).map_err(|e| format!("invalid value for ip: {}", e)))
-                    .help("Set listenning ip"),
+                    .validator(|s| {
+                        s.parse::<IpAddr>()
+                            .map(|_| ())
+                            .map_err(|e| format!("invalid value for ip: {}", e))
+                    }).help("Set listenning ip"),
             ).arg(
                 Arg::with_name("port")
                     .long("port")
                     .short("p")
                     .takes_value(true)
-                    .validator(|s| s.parse::<u16>().map(|_| ()).map_err(|e| format!("invalid value for port: {}", e)))
-                    .help("Set listenning port"),
-            ).arg(Arg::with_name("PATH").index(1).multiple(true).help(r#"Set the paths to share"#))
+                    .validator(|s| {
+                        s.parse::<u16>()
+                            .map(|_| ())
+                            .map_err(|e| format!("invalid value for port: {}", e))
+                    }).help("Set listenning port"),
+            ).arg(
+                Arg::with_name("PATH")
+                    .index(1)
+                    .multiple(true)
+                    .help(r#"Set the paths to share"#),
+            )
     };
 
     let matches = app.clone().get_matches();
@@ -209,7 +231,13 @@ impl Config {
             }
             config.routes.insert(
                 url.clone(),
-                Route::new(url.as_str(), route.path.as_str(), route.redirect_html, route.follow_links, route.authorized),
+                Route::new(
+                    url.as_str(),
+                    route.path.as_str(),
+                    route.redirect_html,
+                    route.follow_links,
+                    route.authorized,
+                ),
             );
         }
         if config.addrs.is_empty() {
@@ -238,14 +266,25 @@ fn get_config_path() -> Option<String> {
     #[allow(deprecated)]
     let home = std::env::home_dir()?;
     if home.as_path().join(".config/fht2p").join(CONFIG_STR_PATH).exists() {
-        Some(home.as_path().join(".config/fht2p").join(CONFIG_STR_PATH).to_string_lossy().into_owned())
+        Some(
+            home.as_path()
+                .join(".config/fht2p")
+                .join(CONFIG_STR_PATH)
+                .to_string_lossy()
+                .into_owned(),
+        )
     } else {
         None
     }
 }
 
 // 参数转换为Route url, path
-fn args_paths_to_route(map: &[String], redirect_html: bool, follow_links: bool, authorized: bool) -> Result<Map<String, Route>, String> {
+fn args_paths_to_route(
+    map: &[String],
+    redirect_html: bool,
+    follow_links: bool,
+    authorized: bool,
+) -> Result<Map<String, Route>, String> {
     let mut routes = Map::new();
     for (idx, path) in map.iter().enumerate() {
         if !Path::new(&path).exists() {

@@ -1,15 +1,15 @@
-use systemstat::{Platform, System};
 use systemstat::data::IpAddr as StatIpAddr;
+use systemstat::{Platform, System};
 
-use args::Route;
+use config::Route;
 use consts;
 
-use std::net::{IpAddr, SocketAddr};
 use std::io;
+use std::net::{IpAddr, SocketAddr};
 
 const TIP: &str = "You can visit:";
 
-pub fn print(addr: &SocketAddr, routes: &[Route]) {
+pub fn print(addr: &SocketAddr, proto: &str, routes: Vec<Route>) {
     println!(
         "{}/{} Serving at {}:{} for:",
         consts::NAME,
@@ -18,25 +18,15 @@ pub fn print(addr: &SocketAddr, routes: &[Route]) {
         addr.port()
     );
 
-    routes
-        .iter()
-        .for_each(|r| println!("   {:?} -> {:?}", r.url, r.path));
+    routes.iter().for_each(|r| println!("   {:?} -> {:?}", r.url, r.path));
 
     println!("{}", TIP);
 
-    print_addrs(addr).unwrap_or_else(|e| {
-        // systemstat is unsupported NetworkInterface on windows and opendsb now.
-        if !cfg!(openbsd) {
-            error!("Networks: {:?}", e)
-        }
-        println!(
-            "{}http://{}:{}",
-            " ".repeat(TIP.len()),
-            addr.ip(),
-            addr.port()
-        )
-    })
+    print_addrs(addr)
+        .map_err(|e| error!("print_addrs faield: {:?}", e))
+        .unwrap_or_else(|_| println!("{}{}://{}:{}", " ".repeat(TIP.len()), proto, addr.ip(), addr.port()))
 }
+
 fn print_addrs(addr: &SocketAddr) -> io::Result<()> {
     let netifs = System::new().networks()?;
 
@@ -49,12 +39,10 @@ fn print_addrs(addr: &SocketAddr) -> io::Result<()> {
                 StatIpAddr::V6(ipv6) if addr.is_ipv6() => Some(IpAddr::V6(ipv6)),
                 _ => None,
             })
-        })
-        .collect::<Vec<_>>();
+        }).collect::<Vec<_>>();
 
     adrs.sort();
     adrs.iter()
         .for_each(|adr| println!("{}http://{}:{}", " ".repeat(TIP.len()), adr, addr.port()));
     Ok(())
-    // Err(io::Error::new(io::ErrorKind::Other, "Not windows or openbsd!"))
 }

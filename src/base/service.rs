@@ -32,6 +32,8 @@ impl Service for BaseService {
         let _req = Request::new(self.peer_addr, req);
         let addr = self.peer_addr;
 
-        Box::new(future::ok(HttpResponse::new(Body::from(INDEX))).inspect(move |res| info!("[{}]: {}", addr, res.status().as_u16())))
+        Box::new(
+            future::ok(HttpResponse::new(Body::from(INDEX))).inspect(move |res| info!("[{}]: {}", addr, res.status().as_u16())),
+        )
     }
 }

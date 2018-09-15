@@ -17,7 +17,16 @@ pub fn set(info0_debug1_trace2: u64) -> Result<(), fern::InitError> {
         _3_or_more => base_config.level(LevelFilter::Trace),
     };
 
-    let filter_targets = vec!["mio", "tokio_reactor", "tokio_core", "tokio", "tokio_threadpool", "hyper", "want", "tokio_io"];
+    let filter_targets = vec![
+        "mio",
+        "tokio_reactor",
+        "tokio_core",
+        "tokio",
+        "tokio_threadpool",
+        "hyper",
+        "want",
+        "tokio_io",
+    ];
     // 开发阶段通过日志多熟悉 tokio*
     // let filter_targets: Vec<&str> = vec![];
 
@@ -35,7 +44,7 @@ pub fn set(info0_debug1_trace2: u64) -> Result<(), fern::InitError> {
     base_config
         .format(move |out, message, record| {
             out.finish(format_args!(
-                "[{} {:5}#{}:{}->{}] {}",
+                "[{} {:5}#{}:{}.{}] {}",
                 chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
                 colors.color(record.level()),
                 record.module_path().unwrap_or("*"),

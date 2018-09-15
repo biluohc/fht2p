@@ -1,6 +1,6 @@
 verbose = "Verbose"
                        
 format_strings = false
-max_width = 160                            
+max_width = 128                            
 tab_spaces = 4                             
 newline_style = "Unix"                      
