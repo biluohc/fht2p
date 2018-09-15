@@ -56,33 +56,37 @@ ARGS:
 #![allow(unknown_lints, clone_on_ref_ptr, boxed_local)]
 #[macro_use]
 extern crate log;
-extern crate bytes;
-extern crate chrono;
 extern crate clap;
 extern crate fern;
+// #[macro_use]
+// extern crate cfg_if;
 #[macro_use]
-// extern crate hyper_fs;
+extern crate failure_derive;
+#[macro_use]
+extern crate failure;
+
 #[macro_use]
 extern crate lazy_static;
 extern crate mime_guess;
 #[macro_use]
 extern crate serde_derive;
+extern crate chrono;
 extern crate ron;
 extern crate serde;
+extern crate url;
+#[macro_use]
+extern crate askama;
 
+extern crate bytes;
 extern crate futures;
 extern crate http;
 extern crate hyper;
+extern crate net2;
 extern crate num_cpus;
 extern crate rustls;
 extern crate tokio;
 extern crate tokio_rustls;
-extern crate tokio_tcp;
 extern crate tokio_threadpool;
-
-extern crate url;
-#[macro_use]
-extern crate askama;
 
 #[macro_use(signalfn, ctrlcfn)]
 extern crate signalfn;
@@ -91,6 +95,7 @@ use signalfn::register_ctrlcfn;
 
 pub mod base;
 pub mod consts;
+pub mod reuse_address;
 // pub(crate) mod content_type;
 // pub(crate) mod exception;
 pub mod server;
@@ -99,6 +104,7 @@ pub mod server;
 // pub(crate) mod index;
 // pub(crate) mod tools;
 pub mod args;
+pub mod config;
 // pub(crate) mod stat;
 pub mod logger;
 
@@ -106,27 +112,18 @@ use std::error::Error;
 use std::process::exit;
 
 fn callback() {
+    info!("Received a CtrlC, exiting...");
     exit(0)
 }
 
 ctrlcfn!(ctrlc_exit, callback);
 
 fn main() {
-    // let cert = Some( args::Cert {
-    //     pub_: "pub".to_owned(),
-    //     key: "key".to_owned(),
-    // });
-    // let str = ron::ser::to_string_pretty(&Some(cert), ron::ser::PrettyConfig::default()).unwrap();
-    // println!("{}", str);
-
-    let (config, loglvl) = args::parse();
-    logger::set(loglvl).expect("Set logger failed");
+    let config = args::parse();
 
     debug!("{:?}", config);
 
-    register_ctrlcfn(ctrlc_exit)
-        .map_err(|e| error!("Register CtrlC Signal failed: {:?}", e))
-        .ok();
+    register_ctrlcfn(ctrlc_exit).map_err(|e| error!("Register CtrlC Signal failed: {:?}", e)).ok();
 
     let rest = if config.cert.is_none() {
         server::run(config)
@@ -134,6 +131,7 @@ fn main() {
         server::run_with_tls(config)
     };
 
+    debug!("{:?}", rest);
     if let Err(e) = rest {
         error!("{}", e.description());
         exit(1);

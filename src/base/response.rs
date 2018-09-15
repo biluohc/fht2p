@@ -1,8 +1,8 @@
 use std::net::SocketAddr;
 use std::ops::{Deref, DerefMut};
 
-use http::Response as HttpResponse;
 use http::request::Parts as RequestHead;
+use http::Response as HttpResponse;
 
 use super::request::Request;
 

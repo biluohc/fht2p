@@ -6,8 +6,8 @@ use hyper::server::conn::Http;
 use rustls;
 use rustls::internal::pemfile;
 use std::{env, fs, io, sync};
+use tokio::net as tcp;
 use tokio_rustls::{self, ServerConfigExt};
-use tokio_tcp;
 
 use num_cpus;
 // use tokio::runtime::current_thread;
@@ -17,8 +17,9 @@ use tokio_threadpool::Builder as ThreadPoolBuilder;
 use std;
 use std::error::Error;
 
-use args::{Config, Route};
 use base::BaseService;
+use config::{Config, Route};
+use reuse_address::reuse_address;
 
 pub fn run(conf: Config) -> std::io::Result<()> {
     let addr = conf.addrs[0];
@@ -37,17 +38,19 @@ pub fn run(conf: Config) -> std::io::Result<()> {
 
     let executor_for_tcp_listener = runtime.executor();
 
-    let tcp = tokio_tcp::TcpListener::bind(&addr)?;
+    let tcp = reuse_address(&addr).map_err(|e| {
+        error!("{:?}", e);
+        e
+    })?;
     info!("Starting to serve on http://{}.", addr);
     let tcp_listener_module = tcp
         .incoming()
         .map(|s| Some(s))
         .or_else(|e| {
             error!("error in accepting connection: {:?}", e.description());
-            let tmp: Option<tokio_tcp::TcpStream> = None;
+            let tmp: Option<tcp::TcpStream> = None;
             future::ok::<_, std::io::Error>(tmp)
-        })
-        .filter_map(|s| s)
+        }).filter_map(|s| s)
         // already or_else..
         .map_err(|e| unreachable!(e))
         .for_each(move |s| {
@@ -69,7 +72,6 @@ pub fn run(conf: Config) -> std::io::Result<()> {
     runtime.shutdown_on_idle().wait().unwrap();
     Ok(())
 }
-
 
 fn load_certs(filename: &str) -> Vec<rustls::Certificate> {
     let certfile = fs::File::open(filename).expect("cannot open certificate file");
@@ -111,7 +113,7 @@ pub fn run_with_tls(conf: Config) -> std::io::Result<()> {
 
     let executor_for_tcp_listener = runtime.executor();
 
-    let tcp = tokio_tcp::TcpListener::bind(&addr)?;
+    let tcp = reuse_address(&addr)?;
     info!("Starting to serve on https://{}.", addr);
     let tcp_listener_module = tcp
         .incoming()
@@ -119,10 +121,9 @@ pub fn run_with_tls(conf: Config) -> std::io::Result<()> {
         .map(|s| Some(s))
         .or_else(|e| {
             error!("error in accepting connection: {:?}", e.description());
-            let tmp: Option<tokio_rustls::TlsStream<tokio_tcp::TcpStream, rustls::ServerSession>> = None;
+            let tmp: Option<tokio_rustls::TlsStream<tcp::TcpStream, rustls::ServerSession>> = None;
             future::ok::<_, std::io::Error>(tmp)
-        })
-        .filter_map(|s| s)
+        }).filter_map(|s| s)
         // already or_else..
         .map_err(|e| unreachable!(e))
         .for_each(move |s| {

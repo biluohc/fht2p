@@ -1,4 +1,4 @@
-verbose = true    
+verbose = "Verbose"
                        
 format_strings = false
 max_width = 160                            

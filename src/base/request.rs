@@ -11,7 +11,7 @@ pub struct Request<Bd> {
 
 impl<Bd> Request<Bd> {
     pub fn new(remote_addr: SocketAddr, http_req: HttpRequest<Bd>) -> Request<Bd> {
-        Request {remote_addr, http_req }
+        Request { remote_addr, http_req }
     }
 
     #[inline]

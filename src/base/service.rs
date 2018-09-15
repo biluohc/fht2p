@@ -26,17 +26,12 @@ impl Service for BaseService {
     type ReqBody = Body;
     type ResBody = Body;
     type Error = error::Error;
-    type Future =
-        Box<Future<Item = HttpResponse<Self::ResBody>, Error = Self::Error> + Send + 'static>;
+    type Future = Box<Future<Item = HttpResponse<Self::ResBody>, Error = Self::Error> + Send + 'static>;
 
     fn call(&mut self, req: HttpRequest<Self::ReqBody>) -> Self::Future {
         let _req = Request::new(self.peer_addr, req);
         let addr = self.peer_addr;
 
-        Box::new(
-            future::ok(HttpResponse::new(Body::from(INDEX)))
-                .inspect(move |res| info!("[{}]: {}", addr, res.status().as_u16())),
-        )
+        Box::new(future::ok(HttpResponse::new(Body::from(INDEX))).inspect(move |res| info!("[{}]: {}", addr, res.status().as_u16())))
     }
 }
-

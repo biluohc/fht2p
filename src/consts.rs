@@ -18,8 +18,8 @@ pub const HTML_CONTENT_TYPE: &str = "text/html; charset=utf-8";
 
 use hyper::header::HeaderMap;
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::cell::UnsafeCell;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 lazy_static!{
     //  10485760 = 10M
