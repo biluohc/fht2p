@@ -16,7 +16,7 @@ use tokio_threadpool::Builder as ThreadPoolBuilder;
 
 use std;
 use std::net::SocketAddr;
-use std::{env, fs, io, sync};
+use std::{fs, io, sync, thread, time};
 use StdError;
 
 use base::BaseService;
@@ -102,22 +102,22 @@ pub fn tcp_listener_module(
 
         let tcp_listener_module = tcp
             .incoming()
-            .and_then(move |s| tls_cfg.accept_async(s))
-            .map(|s| Some(s))
+            .and_then(move |socket| tls_cfg.accept_async(socket))
+            .and_then(|socket| socket.get_ref().0.peer_addr().map(|addr| Some((addr, socket))))
             .or_else(|e| {
-                error!("error in accepting connection: {:?}", e.description());
-                let tmp: Option<tokio_rustls::TlsStream<tcp::TcpStream, rustls::ServerSession>> = None;
+                tcp_listener_sleep_ms(e, 1);
+
+                let tmp: Option<(SocketAddr, tokio_rustls::TlsStream<tcp::TcpStream, rustls::ServerSession>)> = None;
                 future::ok::<_, std::io::Error>(tmp)
             }).filter_map(|s| s)
             // already or_else..
             .map_err(|e| unreachable!(e))
-            .for_each(move |s| {
-                let remote_addr = s.get_ref().0.peer_addr().unwrap();
-                let connection = http.serve_connection(s, BaseService::new(remote_addr));
+            .for_each(move |(addr, socket)| {
+                let connection = http.serve_connection(socket, BaseService::new(addr));
 
                 executor.spawn(connection.then(move |connection_res| {
                     if let Err(e) = connection_res {
-                        error!("client[{}]: {}", remote_addr, e.description());
+                        error!("client[{}]: {}", addr, e.description());
                     }
                     Ok(())
                 }));
@@ -127,26 +127,36 @@ pub fn tcp_listener_module(
     } else {
         let tcp_listener_module = tcp
             .incoming()
-            .map(|s| Some(s))
+            .and_then(|socket| socket.peer_addr().map(|addr| Some((addr, socket))))
             .or_else(|e| {
-                error!("error in accepting connection: {:?}", e.description());
-                let tmp: Option<tcp::TcpStream> = None;
+                tcp_listener_sleep_ms(e, 1);
+
+                let tmp: Option<(SocketAddr, tcp::TcpStream)> = None;
                 future::ok::<_, std::io::Error>(tmp)
             }).filter_map(|s| s)
             // already or_else..
             .map_err(|e| unreachable!(e))
-            .for_each(move |s| {
-                let remote_addr = s.peer_addr().unwrap();
-                let connection = http.serve_connection(s, BaseService::new(remote_addr));
+            .for_each(move |(addr, socket)| {
+                let connection = http.serve_connection(socket, BaseService::new(addr));
 
                 executor.spawn(connection.then(move |connection_res| {
                     if let Err(e) = connection_res {
-                        error!("client[{}]: {}", remote_addr, e.description());
+                        error!("client[{}]: {}", addr, e.description());
                     }
                     Ok(())
                 }));
+
                 Ok(())
             });
         Ok(Box::new(tcp_listener_module) as _)
     }
+}
+
+fn tcp_listener_sleep_ms<T: StdError>(error: T, ms: u64) {
+    error!(
+        "error in accepting connection: {}, tcp_listener will sleep {} ms",
+        error.description(),
+        ms
+    );
+    thread::sleep(time::Duration::from_millis(ms));
 }

@@ -10,7 +10,7 @@ use std::fs::File;
 use std::io::Read;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::Path;
-use std::{fs, process, str};
+use std::{process, str};
 
 use config::{Auth, Cert, Config, Route};
 use consts::*; // 名字,版本,作者，简介，地址
