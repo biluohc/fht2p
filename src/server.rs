@@ -1,9 +1,8 @@
-use futures::future;
-use futures::Stream;
-use hyper::rt::Future;
+use futures::{future, Async, Future, Poll, Stream};
 use hyper::server::conn::Http;
 // use hyper::{self, Body, Method, Request, Response, Server, StatusCode};
 use failure::Error;
+use futures::future::Either;
 use rustls;
 use rustls::internal::pemfile;
 use tokio::net as tcp;
@@ -14,9 +13,8 @@ use tokio::runtime::Builder as RuntimeBuilder;
 use tokio::runtime::TaskExecutor;
 use tokio_threadpool::Builder as ThreadPoolBuilder;
 
-use std;
 use std::net::SocketAddr;
-use std::{fs, io, sync, thread, time};
+use std::{fs, io, mem, str, sync, thread, time};
 use StdError;
 
 use base::BaseService;
@@ -67,19 +65,36 @@ pub fn run(config: Config) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn load_certs(filename: &str) -> Result<Vec<rustls::Certificate>, Error> {
-    let certfile = fs::File::open(filename).map_err(|e| format_err!("open certificate file({}) failed: {:?}", filename, e))?;
-    let mut reader = io::BufReader::new(certfile);
-    pemfile::certs(&mut reader).map_err(|e| format_err!("load certificate({}) failed: {:?}", filename, e))
-}
+macro_rules! sockets_stream_handle {
+    ($socket: expr, $http: expr, $executor: expr) => {
+        $socket
+            .and_then(|(addr, socket)| Box::new(MethodDetection::new(true, addr, socket).map(|addrs| Some(addrs))))
+            .or_else(|e| {
+                tcp_listener_sleep_ms(e, 1);
+                future::ok(None)
+            }).filter_map(|s: Option<Either<(SocketAddr, _), (SocketAddr, _)>>| s)
+            // already or_else..
+            // .map_err(|e: io::Error| unreachable!(e))
+            .for_each(move |addrs| {
+                match addrs {
+                    Either::A((addr, socket)) => {
+                        let connection = $http.serve_connection(socket, BaseService::new(addr));
 
-pub fn load_private_key(filename: &str) -> Result<rustls::PrivateKey, Error> {
-    let keyfile = fs::File::open(filename).map_err(|e| format_err!("open private key file({}) failed: {:?}", filename, e))?;
-    let mut reader = io::BufReader::new(keyfile);
-    let keys =
-        pemfile::rsa_private_keys(&mut reader).map_err(|e| format_err!("load private key({}) failed: {:?}", filename, e))?;
-    assert!(keys.len() == 1);
-    Ok(keys[0].clone())
+                        $executor.spawn(connection.then(move |connection_res| {
+                            if let Err(e) = connection_res {
+                                error!("client[{}]: {}", addr, e.description());
+                            }
+                            Ok(())
+                        }));
+                    }
+                    Either::B((addr, _socket)) => {
+                        info!("{} Use CONNECT Method ~", addr);
+                    }
+                };
+
+                Ok(())
+            })
+    };
 }
 
 pub fn tcp_listener_module(
@@ -102,52 +117,17 @@ pub fn tcp_listener_module(
 
         let tcp_listener_module = tcp
             .incoming()
-            .and_then(move |socket| tls_cfg.accept_async(socket))
-            .and_then(|socket| socket.get_ref().0.peer_addr().map(|addr| Some((addr, socket))))
-            .or_else(|e| {
-                tcp_listener_sleep_ms(e, 1);
+            .and_then(|socket| socket.peer_addr().map(|addr| (addr, socket)))
+            .and_then(move |(addr, socket)| tls_cfg.accept_async(socket).map(move |socket| (addr, socket)));
+        let tcp_listener_module = sockets_stream_handle!(tcp_listener_module, http, executor);
 
-                let tmp: Option<(SocketAddr, tokio_rustls::TlsStream<tcp::TcpStream, rustls::ServerSession>)> = None;
-                future::ok::<_, std::io::Error>(tmp)
-            }).filter_map(|s| s)
-            // already or_else..
-            .map_err(|e| unreachable!(e))
-            .for_each(move |(addr, socket)| {
-                let connection = http.serve_connection(socket, BaseService::new(addr));
-
-                executor.spawn(connection.then(move |connection_res| {
-                    if let Err(e) = connection_res {
-                        error!("client[{}]: {}", addr, e.description());
-                    }
-                    Ok(())
-                }));
-                Ok(())
-            });
         Ok(Box::new(tcp_listener_module) as _)
     } else {
         let tcp_listener_module = tcp
             .incoming()
-            .and_then(|socket| socket.peer_addr().map(|addr| Some((addr, socket))))
-            .or_else(|e| {
-                tcp_listener_sleep_ms(e, 1);
+            .and_then(|socket| socket.peer_addr().map(|addr| (addr, socket)));
 
-                let tmp: Option<(SocketAddr, tcp::TcpStream)> = None;
-                future::ok::<_, std::io::Error>(tmp)
-            }).filter_map(|s| s)
-            // already or_else..
-            .map_err(|e| unreachable!(e))
-            .for_each(move |(addr, socket)| {
-                let connection = http.serve_connection(socket, BaseService::new(addr));
-
-                executor.spawn(connection.then(move |connection_res| {
-                    if let Err(e) = connection_res {
-                        error!("client[{}]: {}", addr, e.description());
-                    }
-                    Ok(())
-                }));
-
-                Ok(())
-            });
+        let tcp_listener_module = sockets_stream_handle!(tcp_listener_module, http, executor);
         Ok(Box::new(tcp_listener_module) as _)
     }
 }
@@ -159,4 +139,97 @@ fn tcp_listener_sleep_ms<T: StdError>(error: T, ms: u64) {
         ms
     );
     thread::sleep(time::Duration::from_millis(ms));
+}
+
+pub struct MethodDetection<S> {
+    pub socket: Option<S>,
+    pub addr: Option<SocketAddr>,
+    pub proxy: bool,
+}
+
+impl<S> MethodDetection<S>
+where
+    S: AsyncPeek + Send + 'static,
+{
+    pub fn new(proxy: bool, addr: SocketAddr, socket: S) -> Self {
+        let addr = Some(addr);
+        let socket = Some(socket);
+        Self { proxy, addr, socket }
+    }
+}
+
+impl<S> Future for MethodDetection<S>
+where
+    S: AsyncPeek + Send + 'static,
+{
+    type Item = Either<(SocketAddr, S), (SocketAddr, S)>;
+    type Error = io::Error;
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        if self.proxy {
+            // CONNECT
+            let mut buf = [0u8; 7];
+
+            match self.socket.as_mut().unwrap().async_peek(&mut buf[..]) {
+                Ok(Async::NotReady) => Ok(Async::NotReady),
+                Ok(Async::Ready(len)) => {
+                    debug!("{:?}", str::from_utf8(&buf[..]));
+
+                    let addr = mem::replace(&mut self.addr, None).unwrap();
+                    let socket = mem::replace(&mut self.socket, None).unwrap();
+
+                    // 如果太短可能需要忽视这一次，然后等下一次?
+                    if len < 7 {
+                        if b"CONNECT".starts_with(&buf[..len]) {
+                            Ok(Async::Ready(Either::B((addr, socket))))
+                        } else {
+                            Ok(Async::Ready(Either::A((addr, socket))))
+                        }
+                    } else {
+                        if buf.starts_with(b"CONNECT") {
+                            Ok(Async::Ready(Either::B((addr, socket))))
+                        } else {
+                            Ok(Async::Ready(Either::A((addr, socket))))
+                        }
+                    }
+                }
+                Err(e) => Err(e),
+            }
+        } else {
+            let addr = mem::replace(&mut self.addr, None).unwrap();
+            let socket = mem::replace(&mut self.socket, None).unwrap();
+
+            Ok(Async::Ready(Either::A((addr, socket))))
+        }
+    }
+}
+
+pub trait AsyncPeek {
+    fn async_peek(&mut self, buf: &mut [u8]) -> Result<Async<usize>, io::Error>;
+}
+
+impl AsyncPeek for tcp::TcpStream {
+    fn async_peek(&mut self, buf: &mut [u8]) -> Result<Async<usize>, io::Error> {
+        self.poll_peek(buf)
+    }
+}
+
+impl AsyncPeek for tokio_rustls::TlsStream<tcp::TcpStream, rustls::ServerSession> {
+    fn async_peek(&mut self, buf: &mut [u8]) -> Result<Async<usize>, io::Error> {
+        self.get_mut().0.poll_peek(buf)
+    }
+}
+
+pub fn load_certs(filename: &str) -> Result<Vec<rustls::Certificate>, Error> {
+    let certfile = fs::File::open(filename).map_err(|e| format_err!("open certificate file({}) failed: {:?}", filename, e))?;
+    let mut reader = io::BufReader::new(certfile);
+    pemfile::certs(&mut reader).map_err(|e| format_err!("load certificate({}) failed: {:?}", filename, e))
+}
+
+pub fn load_private_key(filename: &str) -> Result<rustls::PrivateKey, Error> {
+    let keyfile = fs::File::open(filename).map_err(|e| format_err!("open private key file({}) failed: {:?}", filename, e))?;
+    let mut reader = io::BufReader::new(keyfile);
+    let keys =
+        pemfile::rsa_private_keys(&mut reader).map_err(|e| format_err!("load private key({}) failed: {:?}", filename, e))?;
+    assert!(keys.len() == 1);
+    Ok(keys[0].clone())
 }

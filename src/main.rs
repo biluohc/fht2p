@@ -85,6 +85,7 @@ extern crate net2;
 extern crate num_cpus;
 extern crate rustls;
 extern crate tokio;
+extern crate tokio_io;
 extern crate tokio_rustls;
 extern crate tokio_threadpool;
 extern crate tokio_timer;
