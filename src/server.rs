@@ -19,12 +19,13 @@ use StdError;
 
 use base::BaseService;
 use config::{Config, Route};
+use connect;
 use reuse::reuse_address;
 use stat::print as stat_print;
 
 pub fn run(config: Config) -> Result<(), Error> {
     let mut threadpool_builder = ThreadPoolBuilder::new();
-    threadpool_builder.name_prefix("fht2p-worker-");
+    threadpool_builder.name_prefix("worker-");
 
     let runtime = RuntimeBuilder::new().threadpool_builder(threadpool_builder).build()?;
 
@@ -87,11 +88,11 @@ macro_rules! sockets_stream_handle {
                             Ok(())
                         }));
                     }
-                    Either::B((addr, _socket)) => {
+                    Either::B((addr, socket)) => {
                         info!("{} Use CONNECT Method ~", addr);
+                        $executor.spawn(connect::process_socket(addr, socket));
                     }
-                };
-
+                }
                 Ok(())
             })
     };
@@ -166,8 +167,7 @@ where
     type Error = io::Error;
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         if self.proxy {
-            // CONNECT
-            let mut buf = [0u8; 7];
+            let mut buf = [0u8; 16];
 
             match self.socket.as_mut().unwrap().async_peek(&mut buf[..]) {
                 Ok(Async::NotReady) => Ok(Async::NotReady),

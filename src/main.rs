@@ -80,11 +80,14 @@ extern crate askama;
 extern crate bytes;
 extern crate futures;
 extern crate http;
+extern crate httparse;
 extern crate hyper;
 extern crate net2;
 extern crate num_cpus;
 extern crate rustls;
+extern crate systemstat;
 extern crate tokio;
+extern crate tokio_codec;
 extern crate tokio_io;
 extern crate tokio_rustls;
 extern crate tokio_threadpool;
@@ -92,7 +95,6 @@ extern crate tokio_timer;
 
 #[macro_use(signalfn, ctrlcfn)]
 extern crate signalfn;
-extern crate systemstat;
 use signalfn::register_ctrlcfn;
 
 pub mod base;
@@ -107,6 +109,7 @@ pub mod server;
 // pub(crate) mod tools;
 pub mod args;
 pub mod config;
+pub mod connect;
 pub mod logger;
 pub mod stat;
 

@@ -16,7 +16,7 @@ pub const CONTENT_TYPE: &str = "Content-Type";
 pub const CHARSET: &str = "charset=utf-8";
 pub const HTML_CONTENT_TYPE: &str = "text/html; charset=utf-8";
 
-use hyper::header::HeaderMap;
+// use hyper::header::HeaderMap;
 
 use std::cell::UnsafeCell;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};

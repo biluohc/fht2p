@@ -22,7 +22,7 @@ pub fn set(warn0_info1_debug2_trace3: u64) -> Result<(), fern::InitError> {
         "tokio_core",
         "tokio",
         "tokio_threadpool",
-        "hyper",
+        // "hyper",
         "want",
         "tokio_io",
     ];
