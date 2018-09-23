@@ -1,9 +1,9 @@
 extern crate askama;
+extern crate chrono;
 extern crate rsass;
-extern crate time;
 
+use chrono::offset::Utc;
 use rsass::{compile_scss_file, OutputStyle};
-use time::now_utc;
 
 use std::env;
 use std::fs::File;
@@ -30,7 +30,7 @@ fn css(out_dir: &PathBuf) -> io::Result<()> {
     File::create(&out_path).and_then(|mut f| f.write_all(css.as_slice()))
 }
 
-// include!(concat!(env!("OUT_DIR"), "/fht2p.txt"));
+// pub const VERSION: &str = include_str!(concat!(env!("OUT_DIR"), "/fht2p.txt"));
 fn version(out_dir: &PathBuf) -> io::Result<()> {
     let out_path = out_dir.join(VERSION_FILE_NAME);
     File::create(&out_path).and_then(|mut f| f.write_all(fun().as_bytes()))
@@ -41,26 +41,22 @@ fn fun() -> String {
         .map(|s| format!(" rustc{}", s.split(' ').nth(1).unwrap()))
         .unwrap_or_default();
     let git = commit_hash()
-        .map(|s| (&s[0..8]).to_string())
         .and_then(|s| branch_name().map(|b| format!("{}@{}{} ", s, b, rustc)))
         .unwrap_or_default();
 
-    let version = format!("{} ({}{})", env!("CARGO_PKG_VERSION"), git, date_time());
-    format!("pub const VERSION: &str = \"{}\";", version)
+    format!("{} ({}{})", env!("CARGO_PKG_VERSION"), git, date_time())
 }
 
 // date --help
 fn date_time() -> String {
-    now_utc()
-        // .strftime("%Y-%m-%d/%H:%M:%SUTC")
-        .strftime("%Y-%m-%dUTC")
-        .map(|dt| dt.to_string())
-        .unwrap_or_default()
+    // Utc::now().format("%Y-%m-%dUTC").to_string()
+    Utc::now().format("%Y-%m-%d~%H:%M:%SUTC").to_string()
 }
 
+// git describe --always --abbrev=10 --dirty=-modified
 fn commit_hash() -> io::Result<String> {
     Cmd::new("git")
-        .args(&["rev-parse", "HEAD"])
+        .args(&["describe", "--always", "--abbrev=8", "--dirty=-modified"])
         .output()
         .map(|o| decode(&o.stdout))
         .map(|s| s.trim().to_string())

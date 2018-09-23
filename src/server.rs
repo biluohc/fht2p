@@ -34,7 +34,6 @@ pub fn run(config: Config) -> Result<(), Error> {
     let mut tcp_listener: Option<Box<dyn Future<Item = (), Error = ()> + 'static>> = None;
     let mut error = None;
 
-    info!("{}", if config.cert.is_some() { "https" } else { "http" });
     for addr in config.addrs.clone() {
         match tcp_listener_module(&addr, config.clone(), executor.clone()) {
             Ok(tcp) => {
