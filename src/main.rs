@@ -92,6 +92,7 @@ extern crate tokio_io;
 extern crate tokio_rustls;
 extern crate tokio_threadpool;
 extern crate tokio_timer;
+extern crate bytesize;
 
 #[macro_use(signalfn, ctrlcfn)]
 extern crate signalfn;

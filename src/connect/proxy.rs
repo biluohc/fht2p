@@ -2,8 +2,19 @@ use bytes::{BufMut, Bytes, BytesMut};
 use std::io;
 use tokio_io::_tokio_codec::{Decoder, Encoder};
 
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct BytesCodec;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
+
+#[derive(Debug)]
+pub struct BytesCodec {
+    pub count: Arc<AtomicUsize>,
+}
+
+impl BytesCodec {
+    pub fn new(count: Arc<AtomicUsize>) -> Self {
+        Self { count }
+    }
+}
 
 impl Decoder for BytesCodec {
     type Item = BytesMut;
@@ -12,6 +23,7 @@ impl Decoder for BytesCodec {
     fn decode(&mut self, buf: &mut BytesMut) -> Result<Option<BytesMut>, io::Error> {
         if buf.len() > 0 {
             let len = buf.len();
+            self.count.fetch_add(len, Ordering::Relaxed);
             Ok(Some(buf.split_to(len)))
         } else {
             Ok(None)

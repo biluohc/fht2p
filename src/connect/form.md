@@ -24,12 +24,15 @@ Content-Length: 0
 HTTP/1.1 200 Connection Established
 
 
-GET / HTTP/1.1
+GET /apiv1/share/info/Q3X-blu778wmB7+-y1TO-z HTTP/1.1
 content-length: 0
 Host: biluohc.me:8080
-Date: 2018-09-22T21:17:17.971
+Accept: */*
+date: Sat, 22 Sep 2018 05:26:58 GMT
 
 
 CONNECT biluohc.me:8080 HTTP/1.1
 content-length: 0
 date: Sat, 22 Sep 2018 05:26:58 GMT
+
+http://biluohc.me:8080/apiv1/share/info/Q3X-blu778wmB7+-y1TO-z

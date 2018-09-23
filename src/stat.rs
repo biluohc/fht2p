@@ -22,12 +22,12 @@ pub fn print(addr: &SocketAddr, proto: &str, routes: Vec<Route>) {
 
     println!("{}", TIP);
 
-    print_addrs(addr)
+    print_addrs(addr, proto)
         .map_err(|e| error!("print_addrs faield: {:?}", e))
         .unwrap_or_else(|_| println!("{}{}://{}:{}", " ".repeat(TIP.len()), proto, addr.ip(), addr.port()))
 }
 
-fn print_addrs(addr: &SocketAddr) -> io::Result<()> {
+fn print_addrs(addr: &SocketAddr, proto: &str) -> io::Result<()> {
     let netifs = System::new().networks()?;
 
     let mut adrs = netifs
@@ -43,6 +43,6 @@ fn print_addrs(addr: &SocketAddr) -> io::Result<()> {
 
     adrs.sort();
     adrs.iter()
-        .for_each(|adr| println!("{}http://{}:{}", " ".repeat(TIP.len()), adr, addr.port()));
+        .for_each(|adr| println!("{}{}://{}:{}", " ".repeat(TIP.len()), proto, adr, addr.port()));
     Ok(())
 }

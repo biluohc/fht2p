@@ -1,7 +1,7 @@
 use chrono::naive::NaiveDateTime;
 use chrono::offset::Local;
 use failure::Error;
-use futures::{future, Future, Sink, Stream};
+use futures::{future, Future};
 use http::uri::Uri;
 use http::{self, Request, Response, StatusCode};
 
