@@ -8,6 +8,7 @@ use rustls::internal::pemfile;
 use tokio::net as tcp;
 use tokio_rustls::{self, ServerConfigExt};
 
+use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::runtime::current_thread;
 use tokio::runtime::Builder as RuntimeBuilder;
 use tokio::runtime::TaskExecutor;
@@ -66,38 +67,6 @@ pub fn run(config: Config) -> Result<(), Error> {
     Ok(())
 }
 
-macro_rules! sockets_stream_handle {
-    ($socket: expr, $http: expr, $executor: expr) => {
-        $socket
-            .and_then(|(addr, socket)| Box::new(MethodDetection::new(true, addr, socket).map(|addrs| Some(addrs))))
-            .or_else(|e| {
-                tcp_listener_sleep_ms(e, 1);
-                future::ok(None)
-            }).filter_map(|s: Option<Either<(SocketAddr, _), (SocketAddr, _)>>| s)
-            // already or_else..
-            // .map_err(|e: io::Error| unreachable!(e))
-            .for_each(move |addrs| {
-                match addrs {
-                    Either::A((addr, socket)) => {
-                        let connection = $http.serve_connection(socket, BaseService::new(addr));
-
-                        $executor.spawn(connection.then(move |connection_res| {
-                            if let Err(e) = connection_res {
-                                error!("client[{}]: {}", addr, e.description());
-                            }
-                            Ok(())
-                        }));
-                    }
-                    Either::B((addr, socket)) => {
-                        info!("{} Use CONNECT Method ~", addr);
-                        $executor.spawn(connect::process_socket(addr, socket));
-                    }
-                }
-                Ok(())
-            })
-    };
-}
-
 pub fn tcp_listener_module(
     addr: &SocketAddr,
     config: Config,
@@ -120,20 +89,56 @@ pub fn tcp_listener_module(
             .incoming()
             .and_then(|socket| socket.peer_addr().map(|addr| (addr, socket)))
             .and_then(move |(addr, socket)| tls_cfg.accept_async(socket).map(move |socket| (addr, socket)));
-        let tcp_listener_module = sockets_stream_handle!(tcp_listener_module, http, executor);
 
-        Ok(Box::new(tcp_listener_module) as _)
+        Ok(Box::new(sockets_stream_handle(tcp_listener_module, http, executor)) as _)
     } else {
         let tcp_listener_module = tcp
             .incoming()
             .and_then(|socket| socket.peer_addr().map(|addr| (addr, socket)));
 
-        let tcp_listener_module = sockets_stream_handle!(tcp_listener_module, http, executor);
-        Ok(Box::new(tcp_listener_module) as _)
+        Ok(Box::new(sockets_stream_handle(tcp_listener_module, http, executor)) as _)
     }
 }
 
-fn tcp_listener_sleep_ms<T: StdError>(error: T, ms: u64) {
+pub fn sockets_stream_handle<RW>(
+    socket: impl Stream<Item = (SocketAddr, RW), Error = io::Error> + Send + 'static,
+    http: Http,
+    executor: TaskExecutor,
+) -> impl Future<Item = (), Error = ()> + Send + 'static
+where
+    RW: AsyncRead + AsyncWrite + AsyncPeek + Send + 'static,
+{
+    socket
+        .and_then(|(addr, socket)| Box::new(MethodDetection::new(true, addr, socket).map(|addrs| Some(addrs))))
+        .or_else(|e| {
+            tcp_listener_sleep_ms(e, 1);
+            future::ok(None)
+        }).filter_map(|s: Option<Either<(SocketAddr, _), (SocketAddr, _)>>| s)
+        // already or_else..
+        // .map_err(|e: io::Error| unreachable!(e))
+        .for_each(move |addrs| {
+            match addrs {
+                Either::A((addr, socket)) => {
+                    let connection = http.serve_connection(socket, BaseService::new(addr));
+
+                    executor.spawn(connection.then(move |connection_res| {
+                        if let Err(e) = connection_res {
+                            error!("client[{}]: {}", addr, e.description());
+                        }
+                        Ok(())
+                    }));
+                }
+                Either::B((addr, socket)) => {
+                    info!("{} Use CONNECT Method ~", addr);
+                    executor.spawn(connect::process_socket(addr, socket));
+                }
+            }
+            Ok(())
+        })
+}
+
+// todo: async if need
+pub fn tcp_listener_sleep_ms<T: StdError>(error: T, ms: u64) {
     error!(
         "error in accepting connection: {}, tcp_listener will sleep {} ms",
         error.description(),
