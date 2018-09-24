@@ -4,6 +4,8 @@ use futures::{future, Future, Sink, Stream};
 use tokio::codec::Decoder;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::TcpStream;
+use tokio_retry::strategy::{jitter, ExponentialBackoff};
+use tokio_retry::Retry;
 
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -23,34 +25,54 @@ where
 {
     let addr_clone = addr.clone();
     let (w, r) = Http.framed(socket).split();
+
     let socket_auth_remote = r
         .into_future()
         .map_err(|(e, _rh)| Error::from(e))
-        .and_then(|(req, rh)| req.ok_or(format_err!("read or parse Request failed")).map(|req| (req, rh)))
+        .and_then(|(req, rh)| req.ok_or(format_err!("read or parse Request error")).map(|req| (req, rh)))
+        .map_err(move |e| error!("handle connect method for {} failed: {:?}", addr_clone, e))
         .and_then(move |(req, rh)| {
             info!("{:?}", req);
-            auth::handle(addr, req).and_then(|(ok, resp)| {
-                if let Some(auth) = ok {
-                    info!("{:?}", auth);
-                    let uri = auth.uri.to_string();
-                    // todo: handle dns async and safely
-                    let socket_addr = uri.to_socket_addrs().unwrap().nth(0).unwrap();
+            auth::handle(addr, req).map_err(|_| ()).and_then(|(ok, resp)| {
+                future::result(ok.ok_or(format_err!("Auth failed")))
+                    .and_then(|auth| {
+                        info!("{:?}", auth);
+                        let uri = auth.uri.to_string();
+                        // todo: handle dns async and safely
+                        uri.to_socket_addrs().map_err(Error::from).and_then(|mut iter| {
+                            iter.nth(0)
+                                .ok_or(format_err!("resolvered DNS failed"))
+                                .map(|sokcet_addr| (auth, sokcet_addr))
+                        })
+                    }).and_then(|(auth, socket_addr)| {
+                        let retry_strategy = ExponentialBackoff::from_millis(10).map(jitter).take(3);
+                        Retry::spawn(retry_strategy, move || TcpStream::connect(&socket_addr))
+                            .map_err(Error::from)
+                            .map(|socket| (auth, socket))
+                    }).then(move |rest| match rest {
+                        Ok((auth, remote_socket)) => {
+                            let send = w
+                                .send(resp)
+                                .map_err(|e| error!("send resp for connect method failed: {:?}", e))
+                                .and_then(move |wh| {
+                                    rh.reunite(wh)
+                                        .map(move |socket| (socket.into_inner(), auth, remote_socket))
+                                        .map_err(|e| error!("merge socket failed: {:?}", e))
+                                });
+                            Box::new(send) as Box<Future<Item = (S, Auth, TcpStream), Error = ()> + Send + 'static>
+                        }
+                        Err(e) => {
+                            error!("handle connect method failed: {:?}", e);
 
-                    Box::new(
-                        TcpStream::connect(&socket_addr)
-                            .and_then(|remote| w.send(resp).map(move |wh| (wh, remote)))
-                            .map_err(|e| Error::from(e))
-                            .and_then(|(wh, remote)| {
-                                rh.reunite(wh)
-                                    .map(move |socket| (socket.into_inner(), auth, remote))
-                                    .map_err(|e| format_err!("merge socket failed: {:?}", e))
-                            }),
-                    ) as Box<Future<Item = (S, Auth, TcpStream), Error = Error> + Send + 'static>
-                } else {
-                    Box::new(future::err(format_err!("Auth failed"))) as _
-                }
+                            let _ = w.send(resp).map_err(|e| {
+                                error!("send resp for connect method failed: {:?}", e);
+                            });
+
+                            Box::new(future::err(())) as _
+                        }
+                    })
             })
-        }).map_err(move |e| error!("handle connect request for {} failed: {:?}", addr_clone, e));
+        });
 
     socket_auth_remote.and_then(|(socket, auth, remote)| {
         let up_count = Arc::from(AtomicUsize::new(0));

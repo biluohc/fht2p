@@ -78,6 +78,7 @@ extern crate url;
 extern crate askama;
 
 extern crate bytes;
+extern crate bytesize;
 extern crate futures;
 extern crate http;
 extern crate httparse;
@@ -89,10 +90,10 @@ extern crate systemstat;
 extern crate tokio;
 extern crate tokio_codec;
 extern crate tokio_io;
+extern crate tokio_retry;
 extern crate tokio_rustls;
 extern crate tokio_threadpool;
 extern crate tokio_timer;
-extern crate bytesize;
 
 #[macro_use(signalfn, ctrlcfn)]
 extern crate signalfn;
