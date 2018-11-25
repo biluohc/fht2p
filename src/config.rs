@@ -21,10 +21,13 @@ pub struct Cert {
 pub struct Route {
     pub path: String,
     #[serde(default)]
+    #[serde(skip)]
     pub url_components: Vec<String>,
     #[serde(default)]
+    #[serde(skip)]
     pub url: String,
     #[serde(default)]
+    #[serde(skip)]
     pub follow_links: bool,
     #[serde(default)]
     pub redirect_html: bool,

@@ -71,7 +71,7 @@ extern crate mime_guess;
 #[macro_use]
 extern crate serde_derive;
 extern crate chrono;
-extern crate ron;
+extern crate json5;
 extern crate serde;
 extern crate url;
 #[macro_use]

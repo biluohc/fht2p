@@ -40,7 +40,7 @@ url = "1.6.0"
 serde_derive = "1.0.80"
 lazy_static = "1.2.0"
 serde = "1.0.80"
-ron = "0.4"
+json5 = "0.2.1"
 fern = { version = "0.5.6", features = ["colored"] }
 chrono  = { version = "0.4.6", features = ["serde"] }
 bytesize = "1.0.0"

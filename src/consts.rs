@@ -9,8 +9,8 @@ pub const URL_NAME: &str = "Github";
 pub const URL: &str = "https://github.com/biluohc/fht2p";
 
 // config file
-pub const CONFIG_STR_PATH: &str = "fht2p.ron";
-pub const CONFIG_STR: &str = include_str!("../config/fht2p.ron");
+pub const CONFIG_STR_PATH: &str = "fht2p.json";
+pub const CONFIG_STR: &str = include_str!("../config/fht2p.json");
 
 pub const CONTENT_TYPE: &str = "Content-Type";
 pub const CHARSET: &str = "charset=utf-8";

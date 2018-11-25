@@ -1,6 +1,5 @@
 use clap::{App, Arg};
-
-use ron;
+use json5;
 
 use std;
 use std::collections::BTreeMap as Map;
@@ -185,7 +184,7 @@ impl Server {
     }
 }
 
-// 关键是结构体的字段名，和toml的[name]对应
+// 关键是结构体的字段名，和 json 的[name]对应
 #[serde(rename_all = "camelCase")]
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Fht2p {
@@ -212,20 +211,20 @@ impl Config {
             .map_err(|e| format!("config file('{}') read fails: {}", path, e.description()))?;
         Self::load_from_str(path, &str)
     }
-    fn load_from_str(file_name: &str, toml: &str) -> Result<Config, String> {
+    fn load_from_str(file_name: &str, json: &str) -> Result<Config, String> {
         let mut config = Self::default();
         config.routes.clear();
         config.addrs.clear();
 
-        let toml: Fht2p = ron::de::from_str(toml).map_err(|e| format!("config file('{}') parse fails: {}", file_name, e))?;
-        config.keep_alive = toml.setting.keep_alive;
-        config.magic_limit = toml.setting.magic_limit;
-        config.cache_secs = toml.setting.cache_secs;
-        config.addrs = toml.setting.addrs.clone();
-        config.cert = toml.setting.cert.clone();
-        config.auth = toml.setting.auth.clone();
+        let json: Fht2p = json5::from_str(json).map_err(|e| format!("config file('{}') parse fails: {}", file_name, e))?;
+        config.keep_alive = json.setting.keep_alive;
+        config.magic_limit = json.setting.magic_limit;
+        config.cache_secs = json.setting.cache_secs;
+        config.addrs = json.setting.addrs.clone();
+        config.cert = json.setting.cert.clone();
+        config.auth = json.setting.auth.clone();
 
-        for (url, route) in &toml.routes {
+        for (url, route) in &json.routes {
             if !Path::new(&route.path).exists() {
                 warn!("'{}''s routes({:?}: {:?}) is not exists", file_name, url, route.path);
             }
@@ -260,7 +259,7 @@ fn config_print() {
     std::process::exit(0);
 }
 
-// 家目录 ～/.config/fht2p/fht2p.toml
+// 家目录 ～/.config/fht2p/fht2p.json
 fn get_config_path() -> Option<String> {
     // using the home_dir function from https://crates.io/crates/dirs instead.
     #[allow(deprecated)]
