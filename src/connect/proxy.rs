@@ -1,6 +1,6 @@
 use bytes::{BufMut, Bytes, BytesMut};
 use std::io;
-use tokio_io::_tokio_codec::{Decoder, Encoder};
+use tokio::codec::{Decoder, Encoder};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;

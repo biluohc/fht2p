@@ -3,16 +3,14 @@ use hyper::server::conn::Http;
 // use hyper::{self, Body, Method, Request, Response, Server, StatusCode};
 use failure::Error;
 use futures::future::Either;
-use rustls;
-use rustls::internal::pemfile;
 use tokio::net as tcp;
-use tokio_rustls::{self, ServerConfigExt};
+use tokio_rustls::rustls::{self, internal::pemfile};
+use tokio_rustls::TlsAcceptor;
 
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::runtime::current_thread;
 use tokio::runtime::Builder as RuntimeBuilder;
 use tokio::runtime::TaskExecutor;
-use tokio_threadpool::Builder as ThreadPoolBuilder;
 
 use std::net::SocketAddr;
 use std::{fs, io, mem, str, sync, thread, time};
@@ -25,10 +23,7 @@ use reuse::reuse_address;
 use stat::print as stat_print;
 
 pub fn run(config: Config) -> Result<(), Error> {
-    let mut threadpool_builder = ThreadPoolBuilder::new();
-    threadpool_builder.name_prefix("worker-");
-
-    let runtime = RuntimeBuilder::new().threadpool_builder(threadpool_builder).build()?;
+    let runtime = RuntimeBuilder::new().name_prefix("worker-").build()?;
 
     let executor = runtime.executor();
 
@@ -80,15 +75,17 @@ pub fn tcp_listener_module(
             let certs = load_certs(&cert.pub_)?;
             let key = load_private_key(&cert.key)?;
             let mut cfg = rustls::ServerConfig::new(rustls::NoClientAuth::new());
+
             cfg.set_single_cert(certs, key)
                 .map_err(|e| format_err!("set single cert failed: {:?}", e))?;
-            sync::Arc::new(cfg)
+
+            TlsAcceptor::from(sync::Arc::new(cfg))
         };
 
         let tcp_listener_module = tcp
             .incoming()
             .and_then(|socket| socket.peer_addr().map(|addr| (addr, socket)))
-            .and_then(move |(addr, socket)| tls_cfg.accept_async(socket).map(move |socket| (addr, socket)));
+            .and_then(move |(addr, socket)| tls_cfg.accept(socket).map(move |socket| (addr, socket)));
 
         Ok(Box::new(sockets_stream_handle(tcp_listener_module, http, executor)) as _)
     } else {

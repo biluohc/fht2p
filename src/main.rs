@@ -85,15 +85,10 @@ extern crate httparse;
 extern crate hyper;
 extern crate net2;
 extern crate num_cpus;
-extern crate rustls;
 extern crate systemstat;
 extern crate tokio;
-extern crate tokio_codec;
-extern crate tokio_io;
 extern crate tokio_retry;
 extern crate tokio_rustls;
-extern crate tokio_threadpool;
-extern crate tokio_timer;
 
 #[macro_use(signalfn, ctrlcfn)]
 extern crate signalfn;
