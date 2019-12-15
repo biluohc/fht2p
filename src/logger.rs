@@ -1,77 +1,50 @@
-use chrono;
-use fern;
-use fern::colors::{Color, ColoredLevelConfig};
-use log::LevelFilter;
+use nonblock_logger::{
+    current_thread_name,
+    log::{LevelFilter, Record},
+    BaseFilter, BaseFormater, FixedLevel, NonblockLogger,
+};
 
-use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
-use std::{io, mem, thread};
+pub fn format(base: &BaseFormater, record: &Record) -> String {
+    let level = FixedLevel::with_color(record.level(), base.color_get())
+        .length(base.level_get())
+        .into_colored()
+        .into_coloredfg();
 
-pub fn set(warn0_info1_debug2_trace3: u64) -> Result<(), fern::InitError> {
-    let mut base_config = fern::Dispatch::new();
-
-    base_config = match warn0_info1_debug2_trace3 {
-        0 => base_config.level(LevelFilter::Warn),
-        1 => base_config.level(LevelFilter::Info),
-        2 => base_config.level(LevelFilter::Debug),
-        _3_or_more => base_config.level(LevelFilter::Trace),
-    };
-
-    let filter_targets = vec![
-        "mio",
-        "tokio_reactor",
-        "tokio_core",
-        "tokio",
-        "tokio_threadpool",
-        // "hyper",
-        "want",
-        "tokio_io",
-    ];
-    // 开发阶段通过日志多熟悉 tokio*
-    // let filter_targets: Vec<&str> = vec![];
-
-    for target in filter_targets {
-        base_config = base_config.level_for(target, LevelFilter::Info);
-    }
-
-    let colors = ColoredLevelConfig::new()
-        .error(Color::Red)
-        .warn(Color::Yellow)
-        .info(Color::Green)
-        .debug(Color::White)
-        .trace(Color::White);
-
-    base_config
-        .format(move |out, message, record| {
-            out.finish(format_args!(
-                "[{} {:5}#{}:{}.{}] {}",
-                chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
-                colors.color(record.level()),
-                record.module_path().unwrap_or("*"),
-                // record.file().unwrap_or("*"),
-                record.line().unwrap_or(0),
-                current_thread_name(),
-                message
-            ))
-        }).chain(io::stdout())
-        .apply()?;
-    Ok(())
+    format!(
+        "{} {} [{} {}:{}] {}\n",
+        chrono::Local::now().format("%Y-%m-%d %H:%M:%S.%3f"),
+        level,
+        current_thread_name(),
+        record.file().unwrap_or("*"),
+        record.line().unwrap_or(0),
+        record.args()
+    )
 }
 
-fn current_thread_name() -> &'static str {
-    thread_local!(static TNAME: String = thread::current()
-        .name()
-        .map(|s| format!("{}.{}", thread_id(), s))
-        .unwrap_or_else(||format!("{}.<uname-{:2}>", thread_id(), uname_count())));
-    TNAME.with(|tname| unsafe { mem::transmute::<&str, &'static str>(tname.as_str()) })
-}
+pub fn fun<F>(f: F)
+where
+    F: FnOnce(),
+{
+    let pkg = env!("CARGO_PKG_NAME");
+    let log = LevelFilter::Debug;
+    println!("{}: {:?}", pkg, log);
 
-// https://doc.rust-lang.org/nightly/src/std/thread/mod.rs.html#938
-// pub struct ThreadId(u64);
-fn thread_id() -> u64 {
-    unsafe { mem::transmute::<thread::ThreadId, _>(thread::current().id()) }
-}
+    let formater = BaseFormater::new().local(true).color(true).level(4).formater(format);
+    let filter = BaseFilter::new()
+        .max_level(log)
+        .starts_with(true)
+        .notfound(true)
+        .chain(pkg, log)
+        .chain("tokio", LevelFilter::Info)
+        .chain("hyper", LevelFilter::Info)
+        .chain("mio", LevelFilter::Info);
 
-fn uname_count() -> usize {
-    static COUNT: AtomicUsize = ATOMIC_USIZE_INIT;
-    COUNT.fetch_add(1, Ordering::SeqCst)
+    let _handle = NonblockLogger::new()
+        .formater(formater)
+        .filter(filter)
+        .expect("add filiter failed")
+        .log_to_stdout()
+        .map_err(|e| eprintln!("failed to init nonblock_logger: {:?}", e))
+        .unwrap();
+    f()
 }

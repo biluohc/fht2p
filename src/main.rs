@@ -7,7 +7,7 @@
 
 ![snapshot.png](https://raw.githubusercontent.com/biluohc/fht2p/master/config/assets/snapshot.png)
 
-## Usage  
+## Usage
 ```sh
     cargo install --git https://github.com/biluohc/fht2p fht2p -f
 
@@ -19,8 +19,8 @@
 ```sh
     git clone https://github.com/biluohc/fht2p
     # cargo  install --path fht2p/ fht2p -f
-    
-    cd fht2p 
+
+    cd fht2p
     cargo build --release
 
     ./target/release/fht2p --help
@@ -53,89 +53,42 @@ ARGS:
    <PATH>["./"]     Sets the paths to share
 ```
 */
-#![allow(unknown_lints, clone_on_ref_ptr, boxed_local)]
+#![allow(unknown_lints)]
 #[macro_use]
-extern crate log;
+pub extern crate nonblock_logger;
+#[macro_use]
 extern crate clap;
-extern crate fern;
-// #[macro_use]
-// extern crate cfg_if;
-#[macro_use]
-extern crate failure_derive;
-#[macro_use]
-extern crate failure;
-
 #[macro_use]
 extern crate lazy_static;
-extern crate mime_guess;
 #[macro_use]
-extern crate serde_derive;
-extern crate chrono;
-extern crate json5;
+extern crate anyhow;
+#[macro_use]
 extern crate serde;
-extern crate url;
 #[macro_use]
 extern crate askama;
 
-extern crate bytes;
-extern crate bytesize;
-extern crate futures;
-extern crate http;
-extern crate httparse;
-extern crate hyper;
-extern crate net2;
-extern crate num_cpus;
-extern crate systemstat;
-extern crate tokio;
-extern crate tokio_retry;
-extern crate tokio_rustls;
+pub type Error = anyhow::Error;
+pub type Result<T> = anyhow::Result<T>;
 
-#[macro_use(signalfn, ctrlcfn)]
-extern crate signalfn;
-use signalfn::register_ctrlcfn;
-
-pub mod base;
-pub mod consts;
-pub mod reuse;
-// pub(crate) mod content_type;
-// pub(crate) mod exception;
-pub mod server;
-// pub(crate) mod router;
-// pub(crate) mod views;
-// pub(crate) mod index;
-// pub(crate) mod tools;
 pub mod args;
+pub mod base;
 pub mod config;
-pub mod connect;
+pub mod consts;
 pub mod logger;
+pub mod service;
 pub mod stat;
 
 pub use std::error::Error as StdError;
 pub use std::process::exit as process_exit;
 
-fn callback() {
-    info!("Received a CtrlC, exiting...");
-    process_exit(1)
-}
-
-ctrlcfn!(ctrlc_exit, callback);
-
 fn main() {
-    let config = args::parse();
+    logger::fun(|| {
+        let config = args::parse();
 
-    debug!("{:?}", config);
-
-    register_ctrlcfn(ctrlc_exit)
-        .map_err(|e| error!("Register CtrlC Signal failed: {:?}", e))
-        .ok();
-
-    let rest = server::run(config);
-
-    debug!("{:?}", rest);
-    if let Err(e) = rest {
-        error!("{}", e);
-        process_exit(1)
-    }
+        debug!("{:?}", config);
+        if let Err(e) = service::run(config) {
+            error!("{}", e);
+            process_exit(1)
+        }
+    })
 }
-
-// htop -p `ps -a|grep fht2p|awk -F ' '  '{print $1}' `

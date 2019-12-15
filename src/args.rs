@@ -11,9 +11,9 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::Path;
 use std::{process, str};
 
-use config::{Auth, Cert, Config, Route};
-use consts::*; // 名字,版本,作者，简介，地址
-use logger::set as logger_set;
+use crate::config::{Auth, Cert, Config, Route};
+use crate::consts::*; // 名字,版本,作者，简介，地址
+                      // use crate::logger::set as logger_set;
 
 /// Get `Config` by `parse` `args`
 pub fn parse() -> Config {
@@ -21,6 +21,8 @@ pub fn parse() -> Config {
     let mut server = Server::default();
     let routes: Vec<String> = vec!["./".to_owned()];
 
+    let default_addr = server.ip.to_string();
+    let default_port = server.port.to_string();
     let app = {
         App::new(NAME)
             .version(VERSION)
@@ -33,45 +35,53 @@ pub fn parse() -> Config {
                     .long("verbose")
                     .multiple(true)
                     .help("Increases logging verbosity each use for up to 2 times(info0_debug1_trace2+)"),
-            ).arg(
+            )
+            .arg(
                 Arg::with_name("config")
                     .long("config")
                     .short("c")
                     .takes_value(true)
                     .help("Set the path to a custom config file"),
-            ).arg(
+            )
+            .arg(
                 Arg::with_name("auth")
                     .long("auth")
                     .short("a")
                     .takes_value(true)
-                    .help("Set the username:password."),
-            ).arg(
+                    .help("Set the username:password"),
+            )
+            .arg(
                 Arg::with_name("cert")
                     .long("cert")
                     .short("C")
                     .takes_value(true)
-                    .help("Set the cert for https,  private_key_file:public_key_file."),
-            ).arg(
+                    .help("Set the cert for https,  private_key_file:public_key_file"),
+            )
+            .arg(
                 Arg::with_name("config-print")
                     .long("config-print")
                     .short("P")
                     .help("Print the default config file"),
-            ).arg(
+            )
+            .arg(
                 Arg::with_name("redircet-html")
                     .long("redircet-html")
                     .short("r")
                     .help("Redirect dir to `index.html/htm`, if it exists"),
-            ).arg(
+            )
+            .arg(
                 Arg::with_name("keepalive")
                     .long("keepalive")
                     .short("k")
                     .help("Close HTTP keep alive"),
-            ).arg(
+            )
+            .arg(
                 Arg::with_name("follow-links")
                     .long("follow-links")
                     .short("f")
                     .help("Whether follow links(default not)"),
-            ).arg(
+            )
+            .arg(
                 Arg::with_name("magic-limit")
                     .long("magic-limit")
                     .short("m")
@@ -80,8 +90,10 @@ pub fn parse() -> Config {
                         s.parse::<u64>()
                             .map(|_| ())
                             .map_err(|e| format!("invalid value for magic-limit: {}", e))
-                    }).help("The limit for detect file ContenType(use 0 to close)"),
-            ).arg(
+                    })
+                    .help("The limit for detect file ContenType(use 0 to close)"),
+            )
+            .arg(
                 Arg::with_name("cache-secs")
                     .long("cache-secs")
                     .short("s")
@@ -90,28 +102,36 @@ pub fn parse() -> Config {
                         s.parse::<u32>()
                             .map(|_| ())
                             .map_err(|e| format!("invalid value for cache-secs: {}", e))
-                    }).help("Set cache secs(use 0 to close)"),
-            ).arg(
+                    })
+                    .help("Set cache secs(use 0 to close)"),
+            )
+            .arg(
                 Arg::with_name("ip")
                     .long("ip")
                     .short("i")
+                    .default_value(&default_addr)
                     .takes_value(true)
                     .validator(|s| {
                         s.parse::<IpAddr>()
                             .map(|_| ())
                             .map_err(|e| format!("invalid value for ip: {}", e))
-                    }).help("Set listenning ip"),
-            ).arg(
+                    })
+                    .help("Set listenning ip"),
+            )
+            .arg(
                 Arg::with_name("port")
                     .long("port")
                     .short("p")
+                    .default_value(&default_port)
                     .takes_value(true)
                     .validator(|s| {
                         s.parse::<u16>()
                             .map(|_| ())
                             .map_err(|e| format!("invalid value for port: {}", e))
-                    }).help("Set listenning port"),
-            ).arg(
+                    })
+                    .help("Set listenning port"),
+            )
+            .arg(
                 Arg::with_name("PATH")
                     .index(1)
                     .multiple(true)
@@ -126,7 +146,7 @@ pub fn parse() -> Config {
         config_print();
     }
 
-    logger_set(matches.occurrences_of("verbose")).expect("Set logger failed.");
+    // logger_set(matches.occurrences_of("verbose")).expect("Set logger failed.");
 
     //-c/--config选项，如果有就载入该文件。
     if let Some(s) = matches.value_of("config") {
@@ -134,7 +154,8 @@ pub fn parse() -> Config {
             .map_err(|e| {
                 error!("{:?}", e);
                 process::exit(1);
-            }).unwrap();
+            })
+            .unwrap();
     }
 
     // 命令行有没有参数？有就解析参数，没有就寻找配置文件，再没有就使用默认配置。
@@ -144,61 +165,72 @@ pub fn parse() -> Config {
                 .map_err(|e| {
                     error!("{:?}", e);
                     process::exit(1);
-                }).unwrap(),
+                })
+                .unwrap(),
             None => Config::load_from_STR(),
         }
     } else {
-        config.addrs.clear();
-
         let redirect_html = matches.is_present("redirect-html");
         let follow_links = matches.is_present("follow-links");
         let authorized = matches.is_present("auth");
 
         matches.value_of("ip").map(|p| server.ip = p.parse().unwrap());
         matches.value_of("port").map(|p| server.port = p.parse().unwrap());
-        config.addrs.push(SocketAddr::new(server.ip, server.port));
+        config.addr = SocketAddr::new(server.ip, server.port);
 
         config.routes = args_paths_to_route(&routes[..], redirect_html, follow_links, authorized)
             .map_err(|e| {
                 error!("{:?}", e);
                 process::exit(1);
-            }).unwrap();
+            })
+            .unwrap();
         config
     };
     conf
 }
 
 #[derive(Debug, Clone)]
-struct Server {
+pub struct Server {
     pub ip: IpAddr,
     pub port: u16,
 }
+
 impl Default for Server {
     fn default() -> Server {
-        Self::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 8081)
+        Self::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 8000)
     }
 }
 impl Server {
     fn new(ip: IpAddr, port: u16) -> Self {
         Server { ip: ip, port: port }
     }
+    fn get_sa() -> SocketAddr {
+        Self::default().into()
+    }
+}
+
+impl Into<SocketAddr> for Server {
+    fn into(self) -> SocketAddr {
+        SocketAddr::new(self.ip, self.port)
+    }
 }
 
 // 关键是结构体的字段名，和 json 的[name]对应
 #[serde(rename_all = "camelCase")]
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Fht2p {
     setting: Setting,
     routes: Map<String, Route>,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Setting {
+    #[serde(default = "Server::get_sa")]
+    addr: SocketAddr,
     keep_alive: bool,
     magic_limit: u64,
     cache_secs: u32,
-    addrs: Vec<SocketAddr>,
     auth: Option<Auth>,
     cert: Option<Cert>,
 }
@@ -214,13 +246,12 @@ impl Config {
     fn load_from_str(file_name: &str, json: &str) -> Result<Config, String> {
         let mut config = Self::default();
         config.routes.clear();
-        config.addrs.clear();
 
         let json: Fht2p = json5::from_str(json).map_err(|e| format!("config file('{}') parse fails: {}", file_name, e))?;
         config.keep_alive = json.setting.keep_alive;
         config.magic_limit = json.setting.magic_limit;
         config.cache_secs = json.setting.cache_secs;
-        config.addrs = json.setting.addrs.clone();
+        config.addr = json.setting.addr;
         config.cert = json.setting.cert.clone();
         config.auth = json.setting.auth.clone();
 
@@ -238,9 +269,6 @@ impl Config {
                     route.authorized,
                 ),
             );
-        }
-        if config.addrs.is_empty() {
-            return Err(format!("'{}''s addrs is empty", file_name));
         }
         if config.routes.is_empty() {
             return Err(format!("'{}''s routes is empty", file_name));
@@ -309,7 +337,8 @@ fn args_paths_to_route(
                     s.push('/');
                 }
                 s
-            }).ok_or_else(|| format!("Path '{}' dost not have name", msg))
+            })
+            .ok_or_else(|| format!("Path '{}' dost not have name", msg))
     }
     Ok(routes)
 }

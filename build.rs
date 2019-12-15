@@ -1,4 +1,3 @@
-extern crate askama;
 extern crate chrono;
 extern crate rsass;
 
@@ -16,8 +15,6 @@ const CSS_PATH: &str = "templates/fht2p.css";
 const CSS_FILE_NAME: &str = "fht2p.css";
 
 fn main() {
-    askama::rerun_if_templates_changed();
-
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     css(&out_dir).unwrap();
     version(&out_dir).unwrap();

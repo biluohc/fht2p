@@ -1,45 +1,76 @@
-use http::Request as HttpRequest;
-use http::Response as HttpResponse;
-use http::StatusCode;
-use hyper::service::Service;
-use hyper::{error, Body, Method};
-
-use futures::{future, Future};
-
-use super::{Request, Response};
+use futures::{future, Future, FutureExt};
+use http;
+use hyper::{header, Body, Request, Response, StatusCode};
+use tokio::{task, time};
+use tower_service;
 
 use std::net::SocketAddr;
+use std::pin::Pin;
+use std::task::{Context, Poll};
+use std::time::Instant;
 
-pub struct BaseService {
-    peer_addr: SocketAddr,
+use crate::service::GlobalState;
+
+pub struct Service {
+    pub(crate) peer_addr: SocketAddr,
+    pub(crate) state: GlobalState,
 }
 
-impl BaseService {
-    pub fn new(peer_addr: SocketAddr) -> Self {
-        BaseService { peer_addr }
+impl Service {
+    pub fn new(peer_addr: SocketAddr, state: GlobalState) -> Self {
+        Self { peer_addr, state }
     }
 }
 
-static INDEX: &'static [u8] = b"Try POST /echo\n";
+impl tower_service::Service<Request<Body>> for Service {
+    type Response = Response<Body>;
+    type Error = http::Error;
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>>;
 
-impl Service for BaseService {
-    type ReqBody = Body;
-    type ResBody = Body;
-    type Error = error::Error;
-    type Future = Box<Future<Item = HttpResponse<Self::ResBody>, Error = Self::Error> + Send + 'static>;
+    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
 
-    fn call(&mut self, req: HttpRequest<Self::ReqBody>) -> Self::Future {
-        // let _req = Request::new(self.peer_addr, req);
+    fn call(&mut self, req: Request<Body>) -> Self::Future {
+        let start = Instant::now();
+
         let addr = self.peer_addr;
+        let method = req.method().clone();
+        let path = req.uri().path().to_string();
 
-        match *req.method() {
-            Method::CONNECT => Box::new(
-                future::ok(HttpResponse::new(Body::empty())).inspect(move |res| info!("[{}]: {}", addr, res.status().as_u16())),
-            ),
-            _ => Box::new(
-                future::ok(HttpResponse::new(Body::from(INDEX)))
-                    .inspect(move |res| info!("[{}]: {}", addr, res.status().as_u16())),
-            ),
-        }
+        future::ok::<_, String>(200u16)
+            .then(move |api| {
+                let (code, body) = match &api {
+                    Ok(code) => (code % 1000, Body::from("()")),
+                    Err(e) => {
+                        error!("serde::to_string() failed: {:?}", e);
+                        (500, Body::empty())
+                    }
+                };
+
+                let code = StatusCode::from_u16(code)
+                    .map_err(|e| error!("invalid error code: {:?} -> {}", api, e))
+                    .unwrap_or_else(|_| StatusCode::from_u16(500).unwrap());
+
+                let targ = format!("{}=x", 1);
+
+                info!(
+                    target: &targ,
+                    "[{} {:?}]: {} {} {}",
+                    addr,
+                    start.elapsed(),
+                    method,
+                    path,
+                    code.as_u16()
+                );
+
+                future::ready(
+                    Response::builder()
+                        .status(code)
+                        .header(header::CONTENT_TYPE, "application/json")
+                        .body(body),
+                )
+            })
+            .boxed()
     }
 }

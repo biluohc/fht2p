@@ -1,8 +1,8 @@
 use systemstat::data::IpAddr as StatIpAddr;
 use systemstat::{Platform, System};
 
-use config::Route;
-use consts;
+use crate::config::Route;
+use crate::consts;
 
 use std::io;
 use std::net::{IpAddr, SocketAddr};
@@ -39,7 +39,8 @@ fn print_addrs(addr: &SocketAddr, proto: &str) -> io::Result<()> {
                 StatIpAddr::V6(ipv6) if addr.is_ipv6() => Some(IpAddr::V6(ipv6)),
                 _ => None,
             })
-        }).collect::<Vec<_>>();
+        })
+        .collect::<Vec<_>>();
 
     adrs.sort();
     adrs.iter()

@@ -21,7 +21,7 @@ pub const HTML_CONTENT_TYPE: &str = "text/html; charset=utf-8";
 use std::cell::UnsafeCell;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
-lazy_static!{
+lazy_static! {
     //  10485760 = 10M
     pub static ref MAGIC_LIMIT: MutStatic<u64> = MutStatic::new(1024*1024*10);
     // pub static ref HTML_HEADERS:  MutStatic<HeaderMap> = {

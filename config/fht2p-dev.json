@@ -3,11 +3,7 @@
         "keepAlive": true,
         "magicLimit": 10485760,
         "cacheSecs": 30,
-        "addrs": [
-            "0.0.0.0:8081",
-            "0.0.0.0:8000",
-            "127.0.0.1:0"
-        ],
+        "addrs": "0.0.0.0:8000",
         "auth": null,
         "cert": {
             "pub": "/Users/biluohc/Documents/git/fht2p/cert/rsa_public_key.pem",
