@@ -1,0 +1,19 @@
+name: Rust
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Update
+      run: rustc -V && rustup update stable && rustup default stable && rustc -V 
+    - name: Build
+      run: cargo build --release
+    - name: Tests
+      run: cargo test --verbose --release
+    # - name: Docs
+    #   run: cargo doc
