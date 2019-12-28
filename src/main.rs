@@ -56,7 +56,7 @@ ARGS:
 #![allow(unknown_lints)]
 #[macro_use]
 pub extern crate nonblock_logger;
-#[macro_use]
+// #[macro_use]
 extern crate clap;
 #[macro_use]
 extern crate lazy_static;
@@ -74,9 +74,12 @@ pub mod args;
 pub mod base;
 pub mod config;
 pub mod consts;
+pub mod content_type;
 pub mod logger;
 pub mod service;
 pub mod stat;
+pub mod tools;
+pub mod typemap;
 
 pub use std::error::Error as StdError;
 pub use std::process::exit as process_exit;

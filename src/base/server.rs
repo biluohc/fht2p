@@ -4,8 +4,9 @@ use tokio::{
     time::{delay_for, timeout},
 };
 
-use crate::{base::Service, service::GlobalState, Error, Result};
 use std::{io, net::SocketAddr, time::Duration};
+
+use crate::{base::Service, service::GlobalState, Error, Result};
 
 pub struct Server;
 
@@ -18,7 +19,7 @@ impl Server {
                 Ok((socket, addr)) => {
                     state.spawn(serve_socket(socket, addr, state).then(move |rest| {
                         if let Err(e) = rest {
-                            error!("client[{}]: {}", addr, e.description());
+                            error!("socket {}: {}", addr, e.description());
                         }
                         future::ready(())
                     }));

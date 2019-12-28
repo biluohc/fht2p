@@ -20,6 +20,22 @@ pub struct Cert {
     pub key: String,
 }
 
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+pub struct ProxyRoute {
+    authorized: bool,
+    // regex string
+    path: String,
+}
+
+impl Into<Route> for &ProxyRoute {
+    fn into(self) -> Route {
+        let mut new = Route::default();
+        new.authorized = self.authorized;
+        new.path = self.path.clone();
+        new
+    }
+}
+
 pub fn load_certs(path: &str) -> Result<Vec<rustls::Certificate>> {
     let certfile = fs::File::open(path).map_err(|e| format_err!("open certificate file({}) failed: {:?}", path, e))?;
     let mut reader = io::BufReader::new(certfile);
@@ -41,7 +57,7 @@ pub struct Route {
     pub path: String,
     #[serde(default)]
     #[serde(skip)]
-    pub url_components: Vec<String>,
+    pub urlcs: usize,
     #[serde(default)]
     #[serde(skip)]
     pub url: String,
@@ -61,7 +77,7 @@ pub struct Route {
 impl Route {
     pub fn new<S: Into<String>>(url: S, path: S, redirect_html: bool, follow_links: bool, authorized: bool) -> Self {
         Self {
-            url_components: Vec::new(),
+            urlcs: 0,
             url: url.into(),
             path: path.into(),
             upload: false,
@@ -82,6 +98,7 @@ impl Default for Config {
             magic_limit: *MAGIC_LIMIT.get(),
             keep_alive: true,
             cache_secs: 60,
+            proxy: None,
             routes: map,
             auth: None,
             cert: None,
@@ -99,6 +116,7 @@ pub struct Config {
     pub routes: Map<String, Route>,
     pub auth: Option<Auth>,
     pub cert: Option<Cert>,
+    pub proxy: Option<Route>,
 }
 
 impl Config {

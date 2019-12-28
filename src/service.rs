@@ -10,7 +10,7 @@ use tokio::{
 };
 
 use crate::{
-    base::Server,
+    base::{Router, Server},
     config::{Config, TlsAcceptor},
     Result,
 };
@@ -19,6 +19,7 @@ pub struct State {
     tls: Option<TlsAcceptor>,
     config: Config,
     runtime: Runtime,
+    router: Router,
     http: Http,
 }
 
@@ -30,11 +31,13 @@ impl State {
     pub fn new(config: Config) -> Result<Self> {
         let tls = config.load_cert()?;
         let http = Http::new();
+        let router = Router::new(&config);
         let runtime = Builder::new().threaded_scheduler().thread_name("tok").enable_all().build()?;
 
         Ok(Self {
             config,
             runtime,
+            router,
             tls,
             http,
         })
@@ -65,6 +68,9 @@ impl State {
     }
     pub fn http(&self) -> &Http {
         &self.http
+    }
+    pub fn router(&self) -> &Router {
+        &self.router
     }
 }
 
