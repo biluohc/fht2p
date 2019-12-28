@@ -14,6 +14,9 @@
         "auth": null,
         "cert": null
     },
+    "proxy": {
+        "path": "github.com"
+    },
     "routes": {
         // ./ is default "/" of, "/" must exist.
         "/": {

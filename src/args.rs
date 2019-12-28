@@ -11,7 +11,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::Path;
 use std::{process, str};
 
-use crate::config::{Auth, Cert, Config, Route};
+use crate::config::{Auth, Cert, Config, ProxyRoute, Route};
 use crate::consts::*; // 名字,版本,作者，简介，地址
                       // use crate::logger::set as logger_set;
 
@@ -220,6 +220,7 @@ impl Into<SocketAddr> for Server {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Fht2p {
     setting: Setting,
+    proxy: Option<ProxyRoute>,
     routes: Map<String, Route>,
 }
 
@@ -254,6 +255,7 @@ impl Config {
         config.addr = json.setting.addr;
         config.cert = json.setting.cert.clone();
         config.auth = json.setting.auth.clone();
+        config.proxy = json.proxy.map(|ref pc|pc.into());
 
         for (url, route) in &json.routes {
             if !Path::new(&route.path).exists() {

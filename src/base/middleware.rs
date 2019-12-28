@@ -21,24 +21,26 @@ impl MiddleWare for Logger {
     fn before(&self, req: &Request<Body>, _addr: &SocketAddr, ctx: &mut Ctx) -> Result<(), Response<Body>> {
         let start = Instant::now();
         let method = req.method().clone();
+        let uri = req.uri().clone();
+
         let path = url_path_decode(req.uri().path()).into_owned();
-        let query: ctxs::ReqQuery = req.uri().query().into();
+        // let query: ctxs::ReqQuery = req.uri().query().into();
 
         ctx.insert(start);
         ctx.insert(method);
         ctx.insert(path);
-        ctx.insert(query);
+        // ctx.insert(query);
+        ctx.insert(uri);
 
         Ok(())
     }
     fn after(&self, resp: &Response<Body>, addr: &SocketAddr, ctx: &mut Ctx) {
         let start = ctx.get::<ctxs::ReqStart>().unwrap();
         let method = ctx.get::<ctxs::ReqMethod>().unwrap();
-        let path = ctx.get::<ctxs::ReqPath>().unwrap();
-        let query = ctx.get::<ctxs::ReqQuery>().unwrap();
+        let uri = ctx.get::<ctxs::ReqUri>().unwrap();
         let code = resp.status().as_u16();
 
-        info!("[{} {:?}]: {} {}{} {}", addr, start.elapsed(), method, path, query, code);
+        info!("[{} {:?}]: {} {} {}", addr, start.elapsed(), method, uri, code);
     }
 }
 

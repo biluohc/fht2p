@@ -22,6 +22,7 @@ pub struct Cert {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct ProxyRoute {
+    #[serde(default)]
     authorized: bool,
     // regex string
     path: String,

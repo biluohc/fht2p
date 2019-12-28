@@ -46,9 +46,9 @@ pub async fn serve_socket(socket: TcpStream, addr: SocketAddr, state: GlobalStat
             .await
             .map_err(|_| format_err!("tls handshake timeout"))
             .and_then(|res| res.map_err(Error::from))?;
-        state.http().serve_connection(socket, service).await?;
+        state.http().serve_connection(socket, service).with_upgrades().await?;
     } else {
-        state.http().serve_connection(socket, service).await?;
+        state.http().serve_connection(socket, service).with_upgrades().await?;
     }
 
     Ok(())

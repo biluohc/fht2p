@@ -10,6 +10,9 @@
             "key": "/Users/biluohc/Documents/git/fht2p/cert/rsa_private_key.pem"
         }
     },
+    "proxy": {
+        "path": "github.com"
+    },
     "routes": {
         "/": {
             "path": "/Users/biluohc/Downloads/tmp",
