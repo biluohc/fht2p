@@ -22,15 +22,12 @@ impl MiddleWare for Logger {
         let start = Instant::now();
         let method = req.method().clone();
         let uri = req.uri().clone();
-
         let path = url_path_decode(req.uri().path()).into_owned();
-        // let query: ctxs::ReqQuery = req.uri().query().into();
 
         ctx.insert(start);
         ctx.insert(method);
-        ctx.insert(path);
-        // ctx.insert(query);
         ctx.insert(uri);
+        ctx.insert(path);
 
         Ok(())
     }

@@ -1,34 +1,34 @@
 use askama::Template;
 
-use consts;
+use crate::consts;
 
-use std::net::SocketAddr;
 use std;
+use std::net::SocketAddr;
 
 #[derive(Template)]
 // #[template(path = "base.html", print = "code", escape= "none")]
-#[template(path = "base.html", print = "none", escape= "none")]
+#[template(path = "base.html", print = "none", escape = "none")]
 pub struct BaseTemplate<'a> {
-    css: &'a str,
-    title: &'a str,
-    h1: &'a str,
-    parent: &'a str,
-    client: &'a SocketAddr,
-    server: &'a SocketAddr,
-    url: &'a str,
-    name: &'a str,
-    version: &'a str,
-    os: &'a str,
-    arch: &'a str,
+    pub css: &'a str,
+    pub title: &'a str,
+    pub h1: &'a str,
+    pub parent: &'a str,
+    pub client: &'a SocketAddr,
+    pub server: &'a SocketAddr,
+    pub url: &'a str,
+    pub name: &'a str,
+    pub version: &'a str,
+    pub os: &'a str,
+    pub arch: &'a str,
 }
-impl<'a> BaseTemplate<'a>{
-    pub fn new(title: &'a str, h1: &'a str, parent: &'a str, client: &'a SocketAddr ) -> Self {
+impl<'a> BaseTemplate<'a> {
+    pub fn new(title: &'a str, h1: &'a str, parent: &'a str, client: &'a SocketAddr) -> Self {
         BaseTemplate {
             title,
             h1,
             parent,
             client,
-            css: include_str!(concat!(env!("OUT_DIR"), "/fht2p.css")),            
+            css: include_str!(concat!(env!("OUT_DIR"), "/fht2p.css")),
             server: consts::SERVER_ADDR.get(),
             url: consts::URL,
             name: consts::NAME,

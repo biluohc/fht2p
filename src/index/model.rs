@@ -1,22 +1,29 @@
 use askama::Template;
 use chrono::{DateTime, Local, TimeZone};
-use hyper::server::Request;
-use hyper_fs::Config;
+use hyper::{Body, Request};
 
-use tools::url_for_parent;
-use views::IndexTemplate;
+use crate::config::Route;
+use crate::tools::url_for_parent;
+use crate::views::IndexTemplate;
 
 use std::cmp::Ordering;
 use std::fmt;
 use std::fs::{self, DirEntry, FileType};
 use std::io;
-use std::path::{Path, PathBuf};
+use std::net::SocketAddr;
+use std::path::Path;
 use std::time;
 
-pub fn render_html(title: &str, index: &PathBuf, req: &Request, order: &EntryOrder, config: &Config) -> io::Result<String> {
-    let metadatas = EntryMetadata::read_dir(index, config.get_follow_links(), config.get_hide_entry(), order)?;
+pub fn render_html(
+    remote_addr: &SocketAddr,
+    title: &str,
+    index: &Path,
+    req: &Request<Body>,
+    order: &EntryOrder,
+    config: &Route,
+) -> io::Result<String> {
+    let metadatas = EntryMetadata::read_dir(index, config.follow_links, config.show_hider, order)?;
     let next_order = order.next();
-    let remote_addr = req.remote_addr().unwrap();
     let parent = url_for_parent(req.uri().path());
     let template = IndexTemplate::new(title, title, &parent, &remote_addr, next_order, &metadatas);
     let html = template.render().unwrap();

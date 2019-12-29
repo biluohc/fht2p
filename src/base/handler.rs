@@ -5,13 +5,14 @@ use hyper::{header, upgrade::Upgraded, Body, Request, Response, StatusCode};
 use tokio::{io, net::TcpStream, task, time};
 
 use std::{
+    // task::{Context, Poll},
     net::SocketAddr,
     pin::Pin,
     time::Duration,
-    // task::{Context, Poll},
 };
 
 use crate::base::ctx::{ctxs, Ctx};
+use crate::index::index_handler;
 
 pub type Responder<'a> = Pin<Box<dyn Future<Output = Result<Response<Body>, http::Error>> + Send + 'a>>;
 pub type Handler = dyn for<'a> Fn(Request<Body>, &'a SocketAddr, &'a mut Ctx) -> Responder<'a> + Send + Sync + 'static;
@@ -30,11 +31,11 @@ pub fn default_handler() -> BoxedHandler {
     })
 }
 
-pub fn exception_handler(
+pub fn exception_handler<'a>(
     code: u16,
     _req: Request<Body>,
-    addr: &SocketAddr,
-    _ctx: &mut Ctx,
+    addr: &'a SocketAddr,
+    _ctx: &'a mut Ctx,
 ) -> impl Future<Output = Result<Response<Body>, http::Error>> {
     future::ready(
         Response::builder()
@@ -102,6 +103,7 @@ pub fn fs_handler() -> BoxedHandler {
                     dest.push('/');
                     return redirect_handler(true, dest, req, addr, ctx).boxed();
                 }
+                return index_handler(route, reqpath, reqpath_fixed, &meta, req, addr, ctx).boxed();
             }
             (false, true) => {
                 if reqpath.ends_with('/') {
@@ -190,6 +192,7 @@ async fn http_tunnel(upgraded: Upgraded, addr: &SocketAddr, mut proxy_socket: Tc
     let upload = io::copy(&mut client_r, &mut proxy_w);
     let download = io::copy(&mut proxy_r, &mut client_w);
 
+    // maybe replace by select, it's close connection slowly
     match future::try_join(upload, download).await {
         Ok((upbs, downbs)) => {
             info!(

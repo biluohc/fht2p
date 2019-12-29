@@ -68,6 +68,8 @@ pub struct Route {
     #[serde(default)]
     pub redirect_html: bool,
     #[serde(default)]
+    pub show_hider: bool,
+    #[serde(default)]
     pub authorized: bool,
     #[serde(default)]
     pub upload: bool,
@@ -76,7 +78,14 @@ pub struct Route {
 }
 
 impl Route {
-    pub fn new<S: Into<String>>(url: S, path: S, redirect_html: bool, follow_links: bool, authorized: bool) -> Self {
+    pub fn new<S: Into<String>>(
+        url: S,
+        path: S,
+        redirect_html: bool,
+        follow_links: bool,
+        show_hider: bool,
+        authorized: bool,
+    ) -> Self {
         Self {
             urlcs: 0,
             url: url.into(),
@@ -85,6 +94,7 @@ impl Route {
             mkdir: false,
             redirect_html,
             follow_links,
+            show_hider,
             authorized,
         }
     }
@@ -93,7 +103,7 @@ impl Route {
 impl Default for Config {
     fn default() -> Self {
         let mut map = Map::new();
-        map.insert("/".to_owned(), Route::new("/", ".", false, false, false));
+        map.insert("/".to_owned(), Route::new("/", ".", false, false, false, false));
         Config {
             addr: Server::default().into(),
             magic_limit: *MAGIC_LIMIT.get(),

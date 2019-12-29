@@ -64,8 +64,6 @@ extern crate lazy_static;
 extern crate anyhow;
 #[macro_use]
 extern crate serde;
-#[macro_use]
-extern crate askama;
 
 pub type Error = anyhow::Error;
 pub type Result<T> = anyhow::Result<T>;
@@ -75,13 +73,14 @@ pub mod base;
 pub mod config;
 pub mod consts;
 pub mod content_type;
+pub mod index;
 pub mod logger;
 pub mod service;
 pub mod stat;
 pub mod tools;
 pub mod typemap;
+pub mod views;
 
-pub use std::error::Error as StdError;
 pub use std::process::exit as process_exit;
 
 fn main() {

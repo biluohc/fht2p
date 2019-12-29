@@ -14,7 +14,7 @@ pub const CONFIG_STR: &str = include_str!("../config/fht2p.json");
 
 pub const CONTENT_TYPE: &str = "Content-Type";
 pub const CHARSET: &str = "charset=utf-8";
-pub const HTML_CONTENT_TYPE: &str = "text/html; charset=utf-8";
+pub const CONTENT_TYPE_HTML: &str = "text/html; charset=utf-8";
 
 // use hyper::header::HeaderMap;
 

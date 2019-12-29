@@ -70,6 +70,12 @@ pub fn parse() -> Config {
                     .help("Redirect dir to `index.html/htm`, if it exists"),
             )
             .arg(
+                Arg::with_name("show-hider")
+                    .long("show-hider")
+                    .short("s")
+                    .help("show entries starts with ."),
+            )
+            .arg(
                 Arg::with_name("keepalive")
                     .long("keepalive")
                     .short("k")
@@ -96,7 +102,6 @@ pub fn parse() -> Config {
             .arg(
                 Arg::with_name("cache-secs")
                     .long("cache-secs")
-                    .short("s")
                     .takes_value(true)
                     .validator(|s| {
                         s.parse::<u32>()
@@ -172,13 +177,14 @@ pub fn parse() -> Config {
     } else {
         let redirect_html = matches.is_present("redirect-html");
         let follow_links = matches.is_present("follow-links");
+        let show_hider = matches.is_present("show-hider");
         let authorized = matches.is_present("auth");
 
         matches.value_of("ip").map(|p| server.ip = p.parse().unwrap());
         matches.value_of("port").map(|p| server.port = p.parse().unwrap());
         config.addr = SocketAddr::new(server.ip, server.port);
 
-        config.routes = args_paths_to_route(&routes[..], redirect_html, follow_links, authorized)
+        config.routes = args_paths_to_route(&routes[..], redirect_html, follow_links, show_hider, authorized)
             .map_err(|e| {
                 error!("{:?}", e);
                 process::exit(1);
@@ -255,7 +261,7 @@ impl Config {
         config.addr = json.setting.addr;
         config.cert = json.setting.cert.clone();
         config.auth = json.setting.auth.clone();
-        config.proxy = json.proxy.map(|ref pc|pc.into());
+        config.proxy = json.proxy.map(|ref pc| pc.into());
 
         for (url, route) in &json.routes {
             if !Path::new(&route.path).exists() {
@@ -268,6 +274,7 @@ impl Config {
                     route.path.as_str(),
                     route.redirect_html,
                     route.follow_links,
+                    route.show_hider,
                     route.authorized,
                 ),
             );
@@ -312,6 +319,7 @@ fn args_paths_to_route(
     map: &[String],
     redirect_html: bool,
     follow_links: bool,
+    show_hider: bool,
     authorized: bool,
 ) -> Result<Map<String, Route>, String> {
     let mut routes = Map::new();
@@ -320,11 +328,25 @@ fn args_paths_to_route(
             warn!("{:?} is not exists", &path);
         }
         if idx == 0 {
-            let route = Route::new("/".to_owned(), path.to_string(), redirect_html, follow_links, authorized);
+            let route = Route::new(
+                "/".to_owned(),
+                path.to_string(),
+                redirect_html,
+                follow_links,
+                show_hider,
+                authorized,
+            );
             routes.insert("/".to_owned(), route);
         } else {
             let route_url = route_name(path)?;
-            let route = Route::new(route_url.clone(), path.to_string(), redirect_html, follow_links, authorized);
+            let route = Route::new(
+                route_url.clone(),
+                path.to_string(),
+                redirect_html,
+                follow_links,
+                show_hider,
+                authorized,
+            );
             if routes.insert(route_url, route).is_some() {
                 return Err(format!("{} already defined", route_name(path).unwrap()));
             }
