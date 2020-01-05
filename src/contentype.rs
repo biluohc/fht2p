@@ -1,12 +1,10 @@
-use hyper::{Body, HeaderMap, Request};
 use mime_guess;
-
-use crate::consts::{MutStatic, CHARSET, CONTENT_TYPE, MAGIC_LIMIT};
-
 use std::fs::{File, Metadata};
 use std::io::{self, Read, Seek, SeekFrom};
-use std::path::PathBuf;
+use std::path::Path;
 use std::{mem, str};
+
+use crate::consts::{MutStatic, CHARSET, MAGIC_LIMIT};
 
 /**
 `Content-Type`
@@ -17,31 +15,25 @@ use std::{mem, str};
 
 [`mime_guess`](https://github.com/abonander/mime_guess/blob/master/src/mime_types.rs)
 */
-pub fn headers_maker(
-    file: &mut File,
-    metadata: &Metadata,
-    path: &PathBuf,
-    _req: &Request<Body>,
-    headers: &mut HeaderMap,
-) -> io::Result<()> {
-    if let Some(mime) = mime_guess::from_path(path).first() {
-        let mime = if mime.type_() == "text" {
+pub fn guess_contentype(file: &mut File, metadata: &Metadata, path: &Path) -> io::Result<String> {
+    let str = if let Some(mime) = mime_guess::from_path(path).first() {
+        if mime.type_() == "text" {
             format!("{}/{};{}", mime.type_(), mime.subtype(), CHARSET)
         } else {
             format!("{}/{}", mime.type_(), mime.subtype())
-        };
-        headers.insert(CONTENT_TYPE, mime.parse().unwrap());
+        }
     } else if *MAGIC_LIMIT.get() > metadata.len() {
         let (is_text, _offset) = is_text(file)?;
         if is_text {
-            headers.insert(CONTENT_TYPE, format!("text/plain; {}", CHARSET).parse().unwrap());
+            format!("text/plain; {}", CHARSET)
         } else {
-            headers.insert(CONTENT_TYPE, "application/octet-stream".parse().unwrap());
+            "application/octet-stream".to_owned()
         }
     } else {
-        headers.insert(CONTENT_TYPE, "application/octet-stream".parse().unwrap());
-    }
-    Ok(())
+        "application/octet-stream".to_owned()
+    };
+
+    Ok(str)
 }
 
 /// the length of `tls Buffer`
@@ -49,8 +41,7 @@ pub const BUF_LEN: usize = 1024; // fsblock..
 
 thread_local!(
     /// `tls Buffer`
-    #[allow(deprecated)]
-    pub static BUF: MutStatic<[u8;BUF_LEN]>=  MutStatic::new(unsafe {mem::uninitialized()})
+    pub static BUF: MutStatic<[u8;BUF_LEN]>=  MutStatic::new(unsafe {mem::zeroed()})
 );
 
 /// (is utf-8 text, BUF's offset(consider file's magic number in the future?))

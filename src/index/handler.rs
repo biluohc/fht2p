@@ -6,9 +6,10 @@ use hyper::{header, Body, Method, Request, Response, StatusCode};
 use std::{fs, io, net::SocketAddr, path::Path};
 
 use super::model::{render_html, EntryOrder};
-use crate::base::ctx::{ctxs, Ctx};
+use crate::base::ctx::ctxs;
 use crate::config::Route;
 use crate::consts::CONTENT_TYPE_HTML;
+use crate::service::GlobalState;
 
 pub fn index_handler(
     route: &Route,
@@ -17,15 +18,13 @@ pub fn index_handler(
     meta: &fs::Metadata,
     req: Request<Body>,
     addr: &SocketAddr,
-    ctx: &Ctx,
+    state: GlobalState,
 ) -> impl Future<Output = Result<Response<Body>, http::Error>> {
-    let state = ctx.get::<ctxs::State>().unwrap();
-
     if ![Method::GET, Method::HEAD].contains(req.method()) {
         return future::ready(Response::builder().status(405).body(Body::empty()));
     }
 
-    match index_handler2(route, reqpath, path, meta, state, req, addr) {
+    match index_handler2(route, reqpath, path, meta, req, addr, state) {
         Ok(resp) => future::ready(resp),
         Err(e) => {
             error!("index_handler2 faield: {:?}", e);
@@ -39,9 +38,9 @@ pub fn index_handler2(
     reqpath: &str,
     path: &Path,
     meta: &fs::Metadata,
-    state: ctxs::State,
     req: Request<Body>,
     addr: &SocketAddr,
+    state: ctxs::State,
 ) -> io::Result<Result<Response<Body>, http::Error>> {
     let mut resp = Response::builder();
     let cache_secs = state.config().cache_secs;
@@ -79,6 +78,7 @@ pub fn index_handler2(
                 .map(|v| v.timestamp() <= last_modified.timestamp())
                 .unwrap_or_default()
         {
+            // 304
             return Ok(resp.status(StatusCode::NOT_MODIFIED).body(Body::empty()));
         }
         resp = resp.header(header::CACHE_CONTROL, format!("public, max-age={}", cache_secs).as_str());
@@ -88,10 +88,12 @@ pub fn index_handler2(
 
     let html = render_html(addr, reqpath, path, &req, &entry_order, route)?;
     resp = resp.header(header::CONTENT_TYPE, CONTENT_TYPE_HTML);
+    resp = resp.header(header::CONTENT_LENGTH, html.len());
 
     match *req.method() {
         Method::GET => Ok(resp.body(html.into())),
-        Method::HEAD => Ok(resp.body(Body::empty())),
+        // 204： curl -Lv -X HEAD "0.0.0.0:8000/src/main.rs"
+        Method::HEAD => Ok(resp.status(StatusCode::NO_CONTENT).body(Body::empty())),
         _ => unreachable!(),
     }
 }

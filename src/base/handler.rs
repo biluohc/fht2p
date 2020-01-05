@@ -12,6 +12,7 @@ use std::{
 };
 
 use crate::base::ctx::{ctxs, Ctx};
+use crate::file::file_handler;
 use crate::index::index_handler;
 
 pub type Responder<'a> = Pin<Box<dyn Future<Output = Result<Response<Body>, http::Error>> + Send + 'a>>;
@@ -64,11 +65,14 @@ pub fn redirect_handler<S: Into<String>>(
     )
 }
 
-pub fn fs_handler() -> BoxedHandler {
+pub fn fs_handler<'a>() -> BoxedHandler {
     use std::path::Path;
 
-    fn fs_handler2<'a>(req: Request<Body>, addr: &'a SocketAddr, ctx: &'a mut Ctx) -> Responder<'a> {
-        // let state = ctx.get::<ctxs::State>().unwrap();
+    async fn fs_handler2<'a>(
+        req: Request<Body>,
+        addr: &'a SocketAddr,
+        ctx: &'a mut Ctx,
+    ) -> Result<Response<Body>, http::Error> {
         let route = ctx.get::<ctxs::Route>().unwrap();
         let reqpath = ctx.get::<ctxs::ReqPath>().unwrap();
         let reqpathcs = ctx.get::<ctxs::ReqPathCs>().unwrap();
@@ -93,22 +97,24 @@ pub fn fs_handler() -> BoxedHandler {
         } {
             meta
         } else {
-            return exception_handler(404, req, addr, ctx).boxed();
+            return exception_handler(404, req, addr, ctx).await;
         };
 
+        let state = ctx.get::<ctxs::State>().unwrap();
         match (meta.is_dir(), meta.is_file()) {
             (true, false) => {
                 if !reqpath.ends_with('/') {
                     let mut dest = reqpath.to_owned();
                     dest.push('/');
-                    return redirect_handler(true, dest, req, addr, ctx).boxed();
+                    return redirect_handler(true, dest, req, addr, ctx).await;
                 }
-                return index_handler(route, reqpath, reqpath_fixed, &meta, req, addr, ctx).boxed();
+                return index_handler(route, reqpath, reqpath_fixed, &meta, req, addr, state).await;
             }
             (false, true) => {
                 if reqpath.ends_with('/') {
-                    return redirect_handler(true, reqpath.trim_end_matches('/').to_owned(), req, addr, ctx).boxed();
+                    return redirect_handler(true, reqpath.trim_end_matches('/').to_owned(), req, addr, ctx).await;
                 }
+                return file_handler(route, reqpath, reqpath_fixed, &meta, req, addr, state).await;
             }
             (d, f) => {
                 error!(
@@ -120,22 +126,12 @@ pub fn fs_handler() -> BoxedHandler {
                     f,
                     meta.file_type().is_symlink()
                 );
-                return exception_handler(403, req, addr, ctx).boxed();
+                return exception_handler(403, req, addr, ctx).await;
             }
         }
-
-        info!("reqpath: {}, fixed: {}", reqpath, reqpath_fixed.display());
-
-        future::ready(
-            Response::builder()
-                .status(StatusCode::from_u16(200).unwrap())
-                .header(header::CONTENT_TYPE, "application/json")
-                .body(Body::from(format!("{{\"socket\": \"{}\"}}", addr))),
-        )
-        .boxed()
     }
 
-    Box::new(fs_handler2)
+    Box::new(|req: Request<Body>, addr: &SocketAddr, ctx: &mut Ctx| fs_handler2(req, addr, ctx).boxed())
 }
 
 pub fn proxy_handler<'a>() -> BoxedHandler {
