@@ -1,30 +1,31 @@
 use chrono::{offset::Local, DateTime};
 use futures::{future, Future};
 use http;
-use hyper::{header, Body, Method, Request, Response, StatusCode};
+use hyper::{header, Body, Method, StatusCode};
 
 use std::{fs, io, net::SocketAddr, path::Path};
 
-use super::model::{render_html, EntryOrder};
 use crate::base::ctx::ctxs;
+use crate::base::{response, Request, Response};
 use crate::config::Route;
 use crate::consts::CONTENT_TYPE_HTML;
 use crate::service::GlobalState;
+use crate::views::{EntryMetadata, EntryOrder};
 
 pub fn index_handler(
     route: &Route,
     reqpath: &str,
     path: &Path,
     meta: &fs::Metadata,
-    req: Request<Body>,
+    req: Request,
     addr: &SocketAddr,
     state: GlobalState,
-) -> impl Future<Output = Result<Response<Body>, http::Error>> {
+) -> impl Future<Output = Result<Response, http::Error>> {
     match index_handler2(route, reqpath, path, meta, req, addr, state) {
         Ok(resp) => future::ready(resp),
         Err(e) => {
             error!("index_handler2 faield: {:?}", e);
-            future::ready(Response::builder().status(500).body(Body::empty()))
+            future::ready(response().status(500).body(Body::empty()))
         }
     }
 }
@@ -34,11 +35,11 @@ pub fn index_handler2(
     reqpath: &str,
     path: &Path,
     meta: &fs::Metadata,
-    req: Request<Body>,
+    req: Request,
     addr: &SocketAddr,
     state: ctxs::State,
-) -> io::Result<Result<Response<Body>, http::Error>> {
-    let mut resp = Response::builder();
+) -> io::Result<Result<Response, http::Error>> {
+    let mut resp = response();
     let cache_secs = state.config().cache_secs;
 
     let entry_order = EntryOrder::new(req.uri().query());
@@ -92,4 +93,25 @@ pub fn index_handler2(
         Method::HEAD => Ok(resp.status(StatusCode::NO_CONTENT).body(Body::empty())),
         _ => unreachable!(),
     }
+}
+
+use crate::tools::url_for_parent;
+use crate::views::IndexTemplate;
+use askama::Template;
+
+pub fn render_html(
+    remote_addr: &SocketAddr,
+    title: &str,
+    index: &Path,
+    req: &Request,
+    order: &EntryOrder,
+    config: &Route,
+) -> io::Result<String> {
+    let metadatas = EntryMetadata::read_dir(index, config.follow_links, config.show_hider, order)?;
+    let next_order = order.next();
+    let parent = url_for_parent(req.uri().path());
+    let template = IndexTemplate::new(title, title, &parent, &remote_addr, next_order, &metadatas);
+    let html = template.render().unwrap();
+
+    Ok(html)
 }

@@ -1,6 +1,6 @@
 use chrono::{offset::Local, DateTime};
 use http;
-use hyper::{header, Body, Method, Request, Response, StatusCode};
+use hyper::{header, Body, Method, StatusCode};
 use tokio::task;
 
 use std::{
@@ -13,6 +13,7 @@ use std::{
 use super::ranges::{RangesForm, RangesResp};
 use super::send::send_resp;
 use crate::base::ctx::ctxs;
+use crate::base::{response, Request, Response};
 use crate::config::Route;
 use crate::contentype::guess_contentype;
 use crate::service::GlobalState;
@@ -22,15 +23,15 @@ pub async fn file_handler<'a>(
     reqpath: &'a str,
     path: &'a Path,
     meta: &'a fs::Metadata,
-    req: Request<Body>,
+    req: Request,
     addr: &'a SocketAddr,
     state: GlobalState,
-) -> Result<Response<Body>, http::Error> {
+) -> Result<Response, http::Error> {
     match file_handler2(route, reqpath, path, meta, state, req, addr) {
         Ok(resp) => resp,
         Err(e) => {
             error!("file_handler2 faield: {:?}", e);
-            Response::builder().status(500).body(Body::empty())
+            response().status(500).body(Body::empty())
         }
     }
 }
@@ -42,10 +43,10 @@ pub fn file_handler2(
     path: &Path,
     meta: &fs::Metadata,
     state: ctxs::State,
-    req: Request<Body>,
+    req: Request,
     addr: &SocketAddr,
-) -> io::Result<Result<Response<Body>, http::Error>> {
-    let mut resp = Response::builder();
+) -> io::Result<Result<Response, http::Error>> {
+    let mut resp = response();
     let cache_secs = state.config().cache_secs;
 
     if cache_secs > 0 {

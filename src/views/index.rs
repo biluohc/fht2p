@@ -5,7 +5,7 @@ use chrono::offset::Local;
 use chrono::DateTime;
 
 use super::base::*;
-use crate::index::model::EntryMetadata;
+use super::EntryMetadata;
 use crate::tools::url_for_path;
 
 use std::net::SocketAddr;

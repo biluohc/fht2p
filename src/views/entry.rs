@@ -1,35 +1,10 @@
-use askama::Template;
 use chrono::{DateTime, Local, TimeZone};
-use hyper::{Body, Request};
-
-use crate::config::Route;
-use crate::tools::url_for_parent;
-use crate::views::IndexTemplate;
-
 use std::cmp::Ordering;
 use std::fmt;
 use std::fs::{self, DirEntry, FileType};
 use std::io;
-use std::net::SocketAddr;
 use std::path::Path;
 use std::time;
-
-pub fn render_html(
-    remote_addr: &SocketAddr,
-    title: &str,
-    index: &Path,
-    req: &Request<Body>,
-    order: &EntryOrder,
-    config: &Route,
-) -> io::Result<String> {
-    let metadatas = EntryMetadata::read_dir(index, config.follow_links, config.show_hider, order)?;
-    let next_order = order.next();
-    let parent = url_for_parent(req.uri().path());
-    let template = IndexTemplate::new(title, title, &parent, &remote_addr, next_order, &metadatas);
-    let html = template.render().unwrap();
-
-    Ok(html)
-}
 
 pub struct EntryMetadata {
     pub name: String,

@@ -1,13 +1,18 @@
 use http;
-use hyper::{Body, Method, Request, Response};
+use hyper::Method;
 
 use std::net::SocketAddr;
 
 use crate::{
-    base::ctx::{ctxs, Ctx},
-    base::handler::{default_handler, fs_handler, proxy_handler, BoxedHandler},
-    base::middleware::{Authenticator, Logger, MiddleWares, PathNormalizer},
+    base::{
+        ctx::{ctxs, Ctx},
+        handler::{default_handler, BoxedHandler},
+        middleware::MiddleWares,
+        Request, Response,
+    },
     config::{Config, Route},
+    handlers::{fs_handler, proxy_handler},
+    middlewares::{auth::Authenticator, logger::Logger, path::PathNormalizer},
     service::GlobalState,
 };
 
@@ -69,7 +74,7 @@ impl Router {
         }
     }
 
-    pub async fn call(addr: SocketAddr, req: Request<Body>, state: GlobalState) -> Result<Response<Body>, http::Error> {
+    pub async fn call(addr: SocketAddr, req: Request, state: GlobalState) -> Result<Response, http::Error> {
         let this = state.router();
 
         let mut ctx = Ctx::with_capacity(ctxs::CAPACITY);

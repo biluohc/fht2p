@@ -53,38 +53,11 @@ ARGS:
    <PATH>["./"]     Sets the paths to share
 ```
 */
-#![allow(unknown_lints)]
 #[macro_use]
 pub extern crate nonblock_logger;
-#[macro_use]
-extern crate nom;
-extern crate clap;
-#[macro_use]
-extern crate lazy_static;
-#[macro_use]
-extern crate anyhow;
-#[macro_use]
-extern crate serde;
+pub extern crate libfht2p;
 
-pub mod how {
-    pub type Error = anyhow::Error;
-    pub type Result<T> = anyhow::Result<T>;
-}
-
-pub mod args;
-pub mod base;
-pub mod config;
-pub mod consts;
-pub mod contentype;
-pub mod file;
-pub mod file_upload;
-pub mod index;
-pub mod logger;
-pub mod service;
-pub mod stat;
-pub mod tools;
-pub mod typemap;
-pub mod views;
+use libfht2p::{args, logger, service};
 
 pub use std::process::exit as process_exit;
 

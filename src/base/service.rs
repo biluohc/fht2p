@@ -1,13 +1,15 @@
 use futures::{Future, FutureExt};
 use http;
-use hyper::{Body, Request, Response};
 use tower_service::Service as TowerService;
 
 use std::net::SocketAddr;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use crate::{base::Router, service::GlobalState};
+use crate::{
+    base::{Request, Response, Router},
+    service::GlobalState,
+};
 
 pub struct Service {
     pub(crate) peer_addr: SocketAddr,
@@ -20,8 +22,8 @@ impl Service {
     }
 }
 
-impl TowerService<Request<Body>> for Service {
-    type Response = Response<Body>;
+impl TowerService<Request> for Service {
+    type Response = Response;
     type Error = http::Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>>;
 
@@ -29,7 +31,7 @@ impl TowerService<Request<Body>> for Service {
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: Request<Body>) -> Self::Future {
+    fn call(&mut self, req: Request) -> Self::Future {
         Router::call(self.peer_addr, req, self.state).boxed()
     }
 }
