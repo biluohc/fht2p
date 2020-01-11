@@ -56,7 +56,8 @@ ARGS:
 #![allow(unknown_lints)]
 #[macro_use]
 pub extern crate nonblock_logger;
-// #[macro_use]
+#[macro_use]
+extern crate nom;
 extern crate clap;
 #[macro_use]
 extern crate lazy_static;
@@ -65,8 +66,10 @@ extern crate anyhow;
 #[macro_use]
 extern crate serde;
 
-pub type Error = anyhow::Error;
-pub type Result<T> = anyhow::Result<T>;
+pub mod how {
+    pub type Error = anyhow::Error;
+    pub type Result<T> = anyhow::Result<T>;
+}
 
 pub mod args;
 pub mod base;
@@ -74,6 +77,7 @@ pub mod config;
 pub mod consts;
 pub mod contentype;
 pub mod file;
+pub mod file_upload;
 pub mod index;
 pub mod logger;
 pub mod service;

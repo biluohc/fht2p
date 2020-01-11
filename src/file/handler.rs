@@ -26,10 +26,6 @@ pub async fn file_handler<'a>(
     addr: &'a SocketAddr,
     state: GlobalState,
 ) -> Result<Response<Body>, http::Error> {
-    if ![Method::GET, Method::HEAD].contains(req.method()) {
-        return Response::builder().status(405).body(Body::empty());
-    }
-
     match file_handler2(route, reqpath, path, meta, state, req, addr) {
         Ok(resp) => resp,
         Err(e) => {

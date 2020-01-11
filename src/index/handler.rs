@@ -20,10 +20,6 @@ pub fn index_handler(
     addr: &SocketAddr,
     state: GlobalState,
 ) -> impl Future<Output = Result<Response<Body>, http::Error>> {
-    if ![Method::GET, Method::HEAD].contains(req.method()) {
-        return future::ready(Response::builder().status(405).body(Body::empty()));
-    }
-
     match index_handler2(route, reqpath, path, meta, req, addr, state) {
         Ok(resp) => future::ready(resp),
         Err(e) => {

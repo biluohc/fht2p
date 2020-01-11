@@ -3,9 +3,7 @@ pub use tokio_rustls::TlsAcceptor;
 
 use std::{collections::BTreeMap as Map, fs, io, net::SocketAddr, sync::Arc};
 
-use crate::args::Server;
-use crate::consts::*;
-use crate::Result;
+use crate::{args::Server, consts::*, how::Result};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Auth {

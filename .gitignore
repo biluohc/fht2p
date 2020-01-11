@@ -2,3 +2,4 @@
 *.bk
 *target
 *main.html
+*.DS_Store

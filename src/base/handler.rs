@@ -1,7 +1,7 @@
 use bytesize::ByteSize;
 use futures::{future, Future, FutureExt};
 use http;
-use hyper::{header, upgrade::Upgraded, Body, Request, Response, StatusCode};
+use hyper::{header, upgrade::Upgraded, Body, Method, Request, Response, StatusCode};
 use tokio::{io, net::TcpStream, task, time};
 
 use std::{
@@ -13,6 +13,7 @@ use std::{
 
 use crate::base::ctx::{ctxs, Ctx};
 use crate::file::file_handler;
+use crate::file_upload::file_upload_handler;
 use crate::index::index_handler;
 
 pub type Responder<'a> = Pin<Box<dyn Future<Output = Result<Response<Body>, http::Error>> + Send + 'a>>;
@@ -76,6 +77,7 @@ pub fn fs_handler<'a>() -> BoxedHandler {
         let route = ctx.get::<ctxs::Route>().unwrap();
         let reqpath = ctx.get::<ctxs::ReqPath>().unwrap();
         let reqpathcs = ctx.get::<ctxs::ReqPathCs>().unwrap();
+        let state = ctx.get::<ctxs::State>().unwrap();
 
         let mut reqpath_fixed = Path::new(&route.path);
         let mut reqpathbuf_fixed;
@@ -90,6 +92,14 @@ pub fn fs_handler<'a>() -> BoxedHandler {
             reqpath_fixed = reqpathbuf_fixed.as_path();
         }
 
+        if req.method() == Method::POST {
+            return file_upload_handler(route, reqpath, reqpath_fixed, req, addr, state).await;
+        };
+
+        if ![Method::GET, Method::HEAD].contains(req.method()) {
+            return exception_handler(405, req, addr, ctx).await;
+        }
+
         let meta = if let Ok(meta) = if route.follow_links {
             reqpath_fixed.metadata()
         } else {
@@ -100,7 +110,6 @@ pub fn fs_handler<'a>() -> BoxedHandler {
             return exception_handler(404, req, addr, ctx).await;
         };
 
-        let state = ctx.get::<ctxs::State>().unwrap();
         match (meta.is_dir(), meta.is_file()) {
             (true, false) => {
                 if !reqpath.ends_with('/') {

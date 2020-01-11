@@ -6,7 +6,11 @@ use tokio::{
 
 use std::{io, net::SocketAddr, time::Duration};
 
-use crate::{base::Service, service::GlobalState, Error, Result};
+use crate::{
+    base::Service,
+    how::{Error, Result},
+    service::GlobalState,
+};
 
 pub struct Server;
 
