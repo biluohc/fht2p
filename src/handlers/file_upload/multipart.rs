@@ -2,7 +2,12 @@ use bytes::BytesMut;
 use futures::StreamExt;
 use hyper::{body::Bytes, header, HeaderMap};
 
-use std::str;
+use std::{
+    fs::{self, File},
+    io::Write,
+    path::Path,
+    str,
+};
 
 use crate::{base::Body, how::Error};
 
@@ -86,7 +91,7 @@ impl MultiPart {
                 }
             };
 
-            info!(
+            debug!(
                 "len: {}, remains: {}. finame: {}, ct: {}",
                 self.buf.len(),
                 remain_bytes,
@@ -99,11 +104,11 @@ impl MultiPart {
             } else {
                 let advance_bytes = self.buf.len() - remain_bytes;
                 let _consumed = self.buf.split_to(advance_bytes);
-                info!(
-                    "consumed: {}\nremains: {}",
-                    std::str::from_utf8(_consumed.as_ref()).unwrap(),
-                    std::str::from_utf8(self.buf.as_ref()).unwrap()
-                );
+                // info!(
+                //     "consumed: {}\nremains: {}",
+                //     std::str::from_utf8(_consumed.as_ref()).unwrap(),
+                //     std::str::from_utf8(self.buf.as_ref()).unwrap()
+                // );
             }
 
             return Some(Ok(Part {
@@ -185,6 +190,34 @@ impl<'a> Part<'a> {
     pub fn contentype(&self) -> &str {
         self.contentype.as_str()
     }
+    pub async fn save(&mut self, path: &Path) -> Result<u64, Error> {
+        if path.exists() {
+            return Err(format_err!("File already exists"));
+        }
+
+        let mut bytesc = 0usize;
+        let mut file = File::create(path)?;
+
+        while let Some(chunk) = self.next_chunk().await {
+            match chunk.and_then(|chunk| {
+                // info!("{}", std::str::from_utf8(bytes.as_ref()).unwrap());
+                file.write(chunk.as_ref()).map(|wc| (wc, chunk)).map_err(Error::from)
+            }) {
+                Ok((wc, chunk)) => {
+                    debug_assert_eq!(wc, chunk.len());
+                    bytesc += wc;
+                }
+                Err(e) => {
+                    fs::remove_file(path)
+                        .map_err(|ee| error!("remove(cause of upload error) {} file {} failed: {:?}", e, path.display(), ee))
+                        .ok();
+                    return Err(e);
+                }
+            }
+        }
+
+        Ok(bytesc as _)
+    }
     pub async fn next_chunk(&mut self) -> Option<Result<Bytes, Error>> {
         if self.complete {
             return None;
@@ -198,7 +231,7 @@ impl<'a> Part<'a> {
             } else {
                 match self.multi.body.next().await {
                     Some(Ok(chunk)) => {
-                        info!("last: {:?}, chunk {}: {:?}", last_chunk, chunk.len(), chunk);
+                        // info!("last: {:?}, chunk {}: {:?}", last_chunk, chunk.len(), chunk);
                         self.multi.offset += chunk.len() as u64;
                         if last_chunk.is_empty() {
                             chunk

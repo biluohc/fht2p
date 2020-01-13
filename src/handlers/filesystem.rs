@@ -33,14 +33,6 @@ pub fn fs_handler<'a>() -> BoxedHandler {
             reqpath_fixed = reqpathbuf_fixed.as_path();
         }
 
-        if req.method() == Method::POST {
-            return file_upload_handler(route, reqpath, reqpath_fixed, req, addr, state).await;
-        };
-
-        if ![Method::GET, Method::HEAD].contains(req.method()) {
-            return exception_handler(405, req, addr, ctx).await;
-        }
-
         let meta = if let Ok(meta) = if route.follow_links {
             reqpath_fixed.metadata()
         } else {
@@ -58,12 +50,26 @@ pub fn fs_handler<'a>() -> BoxedHandler {
                     dest.push('/');
                     return redirect_handler(true, dest, req, addr, ctx).await;
                 }
+
+                if req.method() == Method::POST {
+                    return file_upload_handler(route, reqpath, reqpath_fixed, req, addr, state).await;
+                };
+
+                if ![Method::GET, Method::HEAD].contains(req.method()) {
+                    return exception_handler(405, req, addr, ctx).await;
+                }
+
                 return index_handler(route, reqpath, reqpath_fixed, &meta, req, addr, state).await;
             }
             (false, true) => {
                 if reqpath.ends_with('/') {
                     return redirect_handler(true, reqpath.trim_end_matches('/').to_owned(), req, addr, ctx).await;
                 }
+
+                if ![Method::GET, Method::HEAD].contains(req.method()) {
+                    return exception_handler(405, req, addr, ctx).await;
+                }
+
                 return file_handler(route, reqpath, reqpath_fixed, &meta, req, addr, state).await;
             }
             (d, f) => {

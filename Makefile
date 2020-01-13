@@ -21,7 +21,7 @@ a:
 	make br && echo -n && make b && echo -n && make d
 
 c: 
-	cargo clean
+	rm -frv tests/upload/*.rs
 
 t: 
 	cargo test -- --nocapture 

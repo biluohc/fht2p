@@ -1,4 +1,4 @@
-use futures::{future, FutureExt};
+use futures::FutureExt;
 use tokio::{
     net::{TcpListener, TcpStream},
     time::{delay_for, timeout},
@@ -21,11 +21,10 @@ impl Server {
         loop {
             match tcp.accept().await.and_then(|(s, sa)| s.set_nodelay(true).map(|_| (s, sa))) {
                 Ok((socket, addr)) => {
-                    state.spawn(serve_socket(socket, addr, state).then(move |rest| {
+                    state.spawn(serve_socket(socket, addr, state).map(move |rest| {
                         if let Err(e) = rest {
                             error!("socket {}: {}", addr, e.description());
                         }
-                        future::ready(())
                     }));
                 }
                 Err(e) => {

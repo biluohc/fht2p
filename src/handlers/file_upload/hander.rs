@@ -1,12 +1,7 @@
+use bytesize::ByteSize;
 use http;
-use hyper::{Body, StatusCode};
 
-use std::{
-    // fs::{self, File},
-    // io,
-    net::SocketAddr,
-    path::Path,
-};
+use std::{net::SocketAddr, path::Path};
 
 // use crate::base::ctx::ctxs;
 use crate::base::{response, Request, Response};
@@ -19,21 +14,13 @@ use super::multipart::MultiPart;
 // curl  -F "filename=@pkg.jl" -F "filename=@pkg.jl"  0.0.0.0:8000/src/up.jl
 // curl  -F "filename=@pkg.jl" -F "filename=@log.jl"  0.0.0.0:8000/src/up.jl
 pub async fn file_upload_handler<'a>(
-    route: &'a Route,
-    reqpath: &'a str,
+    _route: &'a Route,
+    _reqpath: &'a str,
     path: &'a Path,
     req: Request,
     addr: &'a SocketAddr,
-    state: GlobalState,
+    _state: GlobalState,
 ) -> Result<Response, http::Error> {
-    info!(
-        "{}'s reqpath: {}, path: {}, header: {:?}",
-        addr,
-        reqpath,
-        path.display(),
-        req.headers()
-    );
-
     let (parts, body) = req.into_parts();
 
     let f = |code: u16, s: &'static str| response().status(code).body(s.into());
@@ -41,31 +28,55 @@ pub async fn file_upload_handler<'a>(
     let mut ps = match MultiPart::new(body, &parts.headers) {
         Ok(ps) => ps,
         Err(e) => {
-            error!("MultiPart::new(body, &parts.headers): {:?}", e);
+            error!("MultiPart::new() failed: {:?}", e);
             return f(400, "MultiPart::new");
         }
     };
 
-    'w0: while let Some(part) = ps.next_part().await {
+    while let Some(part) = ps.next_part().await {
         match part {
             Ok(mut part) => {
-                info!("part: {}, {}", part.filename(), part.contentype());
-                while let Some(chunk) = part.next_chunk().await {
-                    match chunk {
-                        Ok(bytes) => info!("{}", std::str::from_utf8(bytes.as_ref()).unwrap()),
-                        Err(e) => {
-                            error!("chunk error: {:?}", e);
-                            break 'w0;
-                        }
+                let file = path.join(part.filename());
+                warn!(
+                    "addr: {}, part.filename: {}, conetentype: {}, will save to {}",
+                    addr,
+                    part.filename(),
+                    part.contentype(),
+                    file.display()
+                );
+
+                match part.save(file.as_path()).await {
+                    Ok(writec) => {
+                        let size = ByteSize::b(writec).to_string_as(true);
+                        warn!(
+                            "addr: {}, part.filename: {}, conetentype: {}, saved to {} ok: {}",
+                            addr,
+                            part.filename(),
+                            part.contentype(),
+                            file.display(),
+                            size
+                        );
+                    }
+                    Err(e) => {
+                        warn!(
+                            "addr: {}, part.filename: {}, conetentype: {}, saved to {} error: {:?}",
+                            addr,
+                            part.filename(),
+                            part.contentype(),
+                            file.display(),
+                            e
+                        );
+
+                        return f(400, "upload save error");
                     }
                 }
             }
             Err(e) => {
-                error!("nextpart: {:?}", e);
-                break;
+                error!("{} nextpart error: {:?}", addr, e);
+                return f(400, "upload nextpart error");
             }
         }
     }
 
-    response().status(200).body(Body::empty())
+    f(200, "upload ok")
 }

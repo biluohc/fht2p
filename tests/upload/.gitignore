@@ -1,0 +1,5 @@
+# 忽略所有，然后不忽略个条目
+*
+!.gitignore
+!upload.htm
+

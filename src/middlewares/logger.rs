@@ -32,6 +32,9 @@ impl MiddleWare for Logger {
         let uri = ctx.get::<ctxs::ReqUri>().unwrap();
         let code = resp.status().as_u16();
 
+        let uristr = uri.to_string();
+        let uri = url_path_decode(&uristr);
+
         info!("[{} {:?}]: {} {} {}", addr, start.elapsed(), method, uri, code);
     }
 }

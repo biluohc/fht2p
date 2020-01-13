@@ -84,7 +84,7 @@ const PATH_ENCODE_SET: &AsciiSet = &CONTROLS
     .add(0x1f) // 31
     .add(0x20) // 32
     // .add(0x21) // 33 !
-    // .add(0x22) // 34 "
+    .add(0x22) // 34 "
     .add(0x23) // 35 #
     // .add(0x24) // 36 $
     .add(0x25) // 37 %
