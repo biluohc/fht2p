@@ -19,6 +19,7 @@ opt-level = 3
 # debug = true 
 
 [dev-dependencies]
+walkdir = "2.3.1"
 reqwest = { version = "0.10.0", default-features = false, features = ["rustls-tls", "cookies", "stream", "gzip"] }
 
 [build-dependencies]
