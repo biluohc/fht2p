@@ -75,9 +75,9 @@ pub fn file_handler2(
             .map(|v| v.with_timezone(&Local));
 
         if etag.as_str() == http_etag
-            || if_modified_since
-                .map(|v| v.timestamp() <= last_modified.timestamp())
-                .unwrap_or_default()
+            && if_modified_since
+                .map(|v| v.timestamp() == last_modified.timestamp())
+                .unwrap_or(true)
         {
             // 304
             return Ok(resp.status(StatusCode::NOT_MODIFIED).body(Body::empty()));
