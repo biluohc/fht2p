@@ -14,9 +14,9 @@ pub struct EntryMetadata {
 }
 
 impl EntryMetadata {
-    pub fn new(d: &DirEntry, follow_links: bool, hide_entry: bool) -> Option<Self> {
+    pub fn new(d: &DirEntry, follow_links: bool, show_hider: bool) -> Option<Self> {
         let name = d.file_name().to_string_lossy().into_owned().to_owned();
-        if hide_entry && name.starts_with('.') {
+        if !show_hider && name.starts_with('.') {
             return None;
         }
         let metadata = d.metadata().ok();
@@ -36,12 +36,12 @@ impl EntryMetadata {
             }),
         })
     }
-    pub fn read_dir<P: AsRef<Path>>(dir: P, follow_links: bool, hide_entry: bool, order: &EntryOrder) -> io::Result<Vec<Self>> {
+    pub fn read_dir<P: AsRef<Path>>(dir: P, follow_links: bool, show_hider: bool, order: &EntryOrder) -> io::Result<Vec<Self>> {
         let entries = fs::read_dir(dir)?;
         let mut entries_vec = Vec::new();
         // let mut name_len_max = 0;
         entries.into_iter().filter_map(|e| e.ok()).for_each(|e| {
-            if let Some(d) = EntryMetadata::new(&e, follow_links, hide_entry) {
+            if let Some(d) = EntryMetadata::new(&e, follow_links, show_hider) {
                 entries_vec.push(d)
             }
         });

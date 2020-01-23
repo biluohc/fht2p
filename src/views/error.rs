@@ -14,7 +14,7 @@ pub struct ErrorTemplate<'a> {
 impl<'a> ErrorTemplate<'a> {
     pub fn new(title: &'a str, h1: &'a str, parent: &'a str, client: &'a SocketAddr) -> Self {
         ErrorTemplate {
-            _parent: BaseTemplate::new(title, h1, parent, client),
+            _parent: BaseTemplate::new(title, h1, parent, client, false, false),
         }
     }
 }

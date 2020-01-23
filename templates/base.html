@@ -11,6 +11,14 @@
         <span id="client" class="pre">        {{ client }}        </span>
         <a href="{{ parent }}">{{ h1|e }}</a>
     </h1>
+    {% if upload -%}
+    <h2 >
+        <form action="." target="" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" multiple />
+            <input type="submit" value="Upload"></button>
+        </form>
+    </h2>
+    {% endif -%}
     {%- block content %}{% endblock -%}
 </body>
 <address>

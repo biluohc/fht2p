@@ -20,14 +20,18 @@ pub struct BaseTemplate<'a> {
     pub version: &'a str,
     pub os: &'a str,
     pub arch: &'a str,
+    pub upload: bool,
+    pub mkdir: bool,
 }
 impl<'a> BaseTemplate<'a> {
-    pub fn new(title: &'a str, h1: &'a str, parent: &'a str, client: &'a SocketAddr) -> Self {
+    pub fn new(title: &'a str, h1: &'a str, parent: &'a str, client: &'a SocketAddr, upload: bool, mkdir: bool) -> Self {
         BaseTemplate {
             title,
             h1,
             parent,
             client,
+            upload,
+            mkdir,
             css: include_str!(concat!(env!("OUT_DIR"), "/fht2p.css")),
             server: consts::SERVER_ADDR.get(),
             url: consts::URL,

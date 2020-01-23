@@ -12,8 +12,7 @@ use std::path::Path;
 use std::{process, str};
 
 use crate::config::{Auth, Cert, Config, ProxyRoute, Route};
-use crate::consts::*; // 名字,版本,作者，简介，地址
-                      // use crate::logger::set as logger_set;
+use crate::consts::*;
 
 /// Get `Config` by `parse` `args`
 pub fn parse() -> Config {
@@ -55,7 +54,7 @@ pub fn parse() -> Config {
                     .long("cert")
                     .short("C")
                     .takes_value(true)
-                    .help("Set the cert for https,  private_key_file:public_key_file"),
+                    .help("Set the cert for https,  public_key_file:private_key_file"),
             )
             .arg(
                 Arg::with_name("config-print")
@@ -86,6 +85,17 @@ pub fn parse() -> Config {
                     .long("follow-links")
                     .short("f")
                     .help("Whether follow links(default not)"),
+            )
+            .arg(
+                Arg::with_name("upload")
+                    .long("upload")
+                    .short("u")
+                    .help("Whether enable upload(default not)"),
+            )
+            .arg(
+                Arg::with_name("mkdir")
+                    .long("mkdir")
+                    .help("Whether enable mkdir(default not)"),
             )
             .arg(
                 Arg::with_name("magic-limit")
@@ -178,18 +188,28 @@ pub fn parse() -> Config {
         let redirect_html = matches.is_present("redirect-html");
         let follow_links = matches.is_present("follow-links");
         let show_hider = matches.is_present("show-hider");
+        let upload = matches.is_present("upload");
+        let mkdir = matches.is_present("mkdir");
         let authorized = matches.is_present("auth");
 
         matches.value_of("ip").map(|p| server.ip = p.parse().unwrap());
         matches.value_of("port").map(|p| server.port = p.parse().unwrap());
         config.addr = SocketAddr::new(server.ip, server.port);
 
-        config.routes = args_paths_to_route(&routes[..], redirect_html, follow_links, show_hider, authorized)
-            .map_err(|e| {
-                error!("{:?}", e);
-                process::exit(1);
-            })
-            .unwrap();
+        config.routes = args_paths_to_route(
+            &routes[..],
+            redirect_html,
+            follow_links,
+            show_hider,
+            upload,
+            mkdir,
+            authorized,
+        )
+        .map_err(|e| {
+            error!("{:?}", e);
+            process::exit(1);
+        })
+        .unwrap();
         config
     };
     conf
@@ -275,6 +295,8 @@ impl Config {
                     route.redirect_html,
                     route.follow_links,
                     route.show_hider,
+                    route.upload,
+                    route.mkdir,
                     route.authorized,
                 ),
             );
@@ -320,6 +342,8 @@ fn args_paths_to_route(
     redirect_html: bool,
     follow_links: bool,
     show_hider: bool,
+    upload: bool,
+    mkdir: bool,
     authorized: bool,
 ) -> Result<Map<String, Route>, String> {
     let mut routes = Map::new();
@@ -334,6 +358,8 @@ fn args_paths_to_route(
                 redirect_html,
                 follow_links,
                 show_hider,
+                upload,
+                mkdir,
                 authorized,
             );
             routes.insert("/".to_owned(), route);
@@ -345,6 +371,8 @@ fn args_paths_to_route(
                 redirect_html,
                 follow_links,
                 show_hider,
+                upload,
+                mkdir,
                 authorized,
             );
             if routes.insert(route_url, route).is_some() {

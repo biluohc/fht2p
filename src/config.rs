@@ -82,17 +82,19 @@ impl Route {
         redirect_html: bool,
         follow_links: bool,
         show_hider: bool,
+        upload: bool,
+        mkdir: bool,
         authorized: bool,
     ) -> Self {
         Self {
             urlcs: 0,
             url: url.into(),
             path: path.into(),
-            upload: false,
-            mkdir: false,
             redirect_html,
             follow_links,
             show_hider,
+            upload,
+            mkdir,
             authorized,
         }
     }
@@ -101,7 +103,7 @@ impl Route {
 impl Default for Config {
     fn default() -> Self {
         let mut map = Map::new();
-        map.insert("/".to_owned(), Route::new("/", ".", false, false, false, false));
+        map.insert("/".to_owned(), Route::new("/", ".", false, false, false, false, false, false));
         Config {
             addr: Server::default().into(),
             magic_limit: *MAGIC_LIMIT.get(),

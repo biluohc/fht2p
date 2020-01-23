@@ -110,7 +110,17 @@ pub fn render_html(
     let metadatas = EntryMetadata::read_dir(index, config.follow_links, config.show_hider, order)?;
     let next_order = order.next();
     let parent = url_for_parent(req.uri().path());
-    let template = IndexTemplate::new(title, title, &parent, &remote_addr, next_order, &metadatas);
+
+    let template = IndexTemplate::new(
+        title,
+        title,
+        &parent,
+        &remote_addr,
+        next_order,
+        &metadatas,
+        config.upload,
+        config.mkdir,
+    );
     let html = template.render().unwrap();
 
     Ok(html)

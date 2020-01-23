@@ -73,10 +73,12 @@ impl<'a> IndexTemplate<'a> {
         client: &'a SocketAddr,
         next: (&'static str, &'static str, &'static str),
         entries: &'a Vec<EntryMetadata>,
+        upload: bool,
+        mkdir: bool,
     ) -> Self {
         IndexTemplate {
             next,
-            _parent: BaseTemplate::new(title, h1, parent, client),
+            _parent: BaseTemplate::new(title, h1, parent, client, upload, mkdir),
             entries: entries.iter().map(|entry| Entry::new(entry)).collect::<Vec<Entry<'a>>>(),
         }
     }
