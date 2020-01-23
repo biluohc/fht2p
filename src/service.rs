@@ -30,7 +30,8 @@ pub type GlobalState = &'static State;
 impl State {
     pub fn new(config: Config) -> Result<Self> {
         let tls = config.load_cert()?;
-        let http = Http::new();
+        let mut http = Http::new();
+        http.keep_alive(config.keep_alive);
         let router = Router::new(&config);
         let runtime = Builder::new().threaded_scheduler().thread_name("tok").enable_all().build()?;
 

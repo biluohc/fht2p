@@ -1,9 +1,43 @@
 use tokio_rustls::rustls::{self, internal::pemfile};
 pub use tokio_rustls::TlsAcceptor;
 
-use std::{collections::BTreeMap as Map, fs, io, net::SocketAddr, sync::Arc};
+use std::{collections::BTreeMap as Map, fs, io, net::SocketAddr, str::FromStr, sync::Arc};
 
-use crate::{args::Server, consts::*, how::Result};
+use crate::{
+    args::Server,
+    consts::*,
+    how::{Error, Result},
+};
+
+fn kv_parser(input: &str) -> Result<(&str, &str)> {
+    use nom::{
+        bytes::complete::{is_not, tag},
+        error::ErrorKind,
+        sequence::separated_pair,
+    };
+
+    separated_pair(is_not(":"), tag(":"), is_not(":"))(input)
+        .map_err(|e: nom::Err<(&str, ErrorKind)>| format_err!("kv-parse failed: {:?}", e))
+        .map(|(_remains, (k, v))| (k.trim(), v.trim()))
+        .and_then(|(k, v)| {
+            if !k.is_empty() && !v.is_empty() {
+                Ok((k, v))
+            } else {
+                Err(format_err!("empty key or value"))
+            }
+        })
+}
+
+#[test]
+fn kv_parser_test() {
+    assert!(kv_parser(":").is_err());
+    assert!(kv_parser("ab").is_err());
+    assert!(kv_parser("ab:").is_err());
+    assert!(kv_parser(":cd").is_err());
+    assert_eq!(kv_parser("a:b").unwrap(), ("a", "b"));
+    assert_eq!(kv_parser("a : b").unwrap(), ("a", "b"));
+    assert_eq!(kv_parser("a/b/c:/d/e/f").unwrap(), ("a/b/c", "/d/e/f"));
+}
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Auth {
@@ -11,11 +45,29 @@ pub struct Auth {
     pub password: String,
 }
 
+impl FromStr for Auth {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let (username, password) = kv_parser(s).map(|(k, v)| (k.to_owned(), v.to_owned()))?;
+        Ok(Self { username, password })
+    }
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Cert {
     #[serde(rename = "pub")]
     pub pub_: String,
     pub key: String,
+}
+
+impl FromStr for Cert {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let (pub_, key) = kv_parser(s).map(|(k, v)| (k.to_owned(), v.to_owned()))?;
+        Ok(Self { pub_, key })
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
@@ -46,7 +98,7 @@ pub fn load_private_key(path: &str) -> Result<rustls::PrivateKey> {
     let mut reader = io::BufReader::new(keyfile);
     let mut keys =
         pemfile::rsa_private_keys(&mut reader).map_err(|e| format_err!("load private key({}) failed: {:?}", path, e))?;
-    assert!(keys.len() == 1);
+    assert_eq!(keys.len(), 1);
     Ok(keys.remove(0))
 }
 

@@ -47,14 +47,24 @@ pub fn parse() -> Config {
                     .long("auth")
                     .short("a")
                     .takes_value(true)
-                    .help("Set the username:password"),
+                    .help("Set the username:password")
+                    .validator(|s| {
+                        s.parse::<Auth>()
+                            .map(|_| ())
+                            .map_err(|e| format!("invalid value for auth: {}", e))
+                    }),
             )
             .arg(
                 Arg::with_name("cert")
                     .long("cert")
                     .short("C")
                     .takes_value(true)
-                    .help("Set the cert for https,  public_key_file:private_key_file"),
+                    .help("Set the cert for https,  public_key_file:private_key_file")
+                    .validator(|s| {
+                        s.parse::<Cert>()
+                            .map(|_| ())
+                            .map_err(|e| format!("invalid value for cert: {}", e))
+                    }),
             )
             .arg(
                 Arg::with_name("config-print")
@@ -66,13 +76,13 @@ pub fn parse() -> Config {
                 Arg::with_name("redircet-html")
                     .long("redircet-html")
                     .short("r")
-                    .help("Redirect dir to `index.html/htm`, if it exists"),
+                    .help("Redirect dir to `index.html` or `index.htm` if it exists"),
             )
             .arg(
                 Arg::with_name("show-hider")
                     .long("show-hider")
                     .short("s")
-                    .help("show entries starts with ."),
+                    .help("show entries starts with '.'"),
             )
             .arg(
                 Arg::with_name("keepalive")
@@ -102,23 +112,23 @@ pub fn parse() -> Config {
                     .long("magic-limit")
                     .short("m")
                     .takes_value(true)
+                    .help("The limit for detect file ContenType(use 0 to close)")
                     .validator(|s| {
                         s.parse::<u64>()
                             .map(|_| ())
                             .map_err(|e| format!("invalid value for magic-limit: {}", e))
-                    })
-                    .help("The limit for detect file ContenType(use 0 to close)"),
+                    }),
             )
             .arg(
                 Arg::with_name("cache-secs")
                     .long("cache-secs")
                     .takes_value(true)
+                    .help("Set cache secs(use 0 to close)")
                     .validator(|s| {
                         s.parse::<u32>()
                             .map(|_| ())
                             .map_err(|e| format!("invalid value for cache-secs: {}", e))
-                    })
-                    .help("Set cache secs(use 0 to close)"),
+                    }),
             )
             .arg(
                 Arg::with_name("ip")
@@ -126,12 +136,12 @@ pub fn parse() -> Config {
                     .short("i")
                     .default_value(&default_addr)
                     .takes_value(true)
+                    .help("Set listenning ip")
                     .validator(|s| {
                         s.parse::<IpAddr>()
                             .map(|_| ())
                             .map_err(|e| format!("invalid value for ip: {}", e))
-                    })
-                    .help("Set listenning ip"),
+                    }),
             )
             .arg(
                 Arg::with_name("port")
@@ -139,12 +149,12 @@ pub fn parse() -> Config {
                     .short("p")
                     .default_value(&default_port)
                     .takes_value(true)
+                    .help("Set listenning port")
                     .validator(|s| {
                         s.parse::<u16>()
                             .map(|_| ())
                             .map_err(|e| format!("invalid value for port: {}", e))
-                    })
-                    .help("Set listenning port"),
+                    }),
             )
             .arg(
                 Arg::with_name("PATH")
@@ -195,6 +205,9 @@ pub fn parse() -> Config {
         matches.value_of("ip").map(|p| server.ip = p.parse().unwrap());
         matches.value_of("port").map(|p| server.port = p.parse().unwrap());
         config.addr = SocketAddr::new(server.ip, server.port);
+        config.auth = matches.value_of("auth").map(|cp| cp.parse::<Auth>().unwrap());
+        config.cert = matches.value_of("cert").map(|cp| cp.parse::<Cert>().unwrap());
+        config.keep_alive = !matches.is_present("keepalive");
 
         config.routes = args_paths_to_route(
             &routes[..],
