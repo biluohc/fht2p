@@ -1,4 +1,3 @@
-use http;
 use hyper::Method;
 
 use std::net::SocketAddr;
@@ -7,6 +6,7 @@ use crate::{
     base::{
         ctx::{ctxs, Ctx},
         handler::{default_handler, BoxedHandler},
+        http,
         middleware::MiddleWares,
         Request, Response,
     },

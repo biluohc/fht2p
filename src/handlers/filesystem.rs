@@ -1,14 +1,18 @@
 use futures::FutureExt;
-use http;
 use hyper::Method;
 
 use std::net::SocketAddr;
 
-use super::{file::file_handler, file_upload::file_upload_handler, index::index_handler};
+use super::{
+    file::file_handler,
+    file_upload::file_upload_handler,
+    index::index_handler,
+    mkdir::{method_maybe_mkdir, mkdir_handler},
+};
 use crate::base::{
     ctx::{ctxs, Ctx},
     handler::{exception_handler, redirect_handler, BoxedHandler},
-    Request, Response,
+    http, Request, Response,
 };
 
 pub fn fs_handler<'a>() -> BoxedHandler {
@@ -52,6 +56,9 @@ pub fn fs_handler<'a>() -> BoxedHandler {
                 }
 
                 if req.method() == Method::POST {
+                    if method_maybe_mkdir(&req) {
+                        return mkdir_handler(route, reqpath, reqpath_fixed, req, addr, state).await;
+                    }
                     return file_upload_handler(route, reqpath, reqpath_fixed, req, addr, state).await;
                 };
 

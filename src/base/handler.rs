@@ -1,5 +1,4 @@
 use futures::{future, Future, FutureExt};
-use http;
 use hyper::{header, Body, StatusCode};
 
 use std::{
@@ -9,7 +8,7 @@ use std::{
 };
 
 use crate::base::ctx::Ctx;
-use crate::base::{response, Request, Response};
+use crate::base::{http, response, Request, Response};
 
 pub type Responder<'a> = Pin<Box<dyn Future<Output = Result<Response, http::Error>> + Send + 'a>>;
 pub type Handler = dyn for<'a> Fn(Request, &'a SocketAddr, &'a mut Ctx) -> Responder<'a> + Send + Sync + 'static;

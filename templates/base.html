@@ -11,8 +11,16 @@
         <span id="client" class="pre">        {{ client }}        </span>
         <a href="{{ parent }}">{{ h1|e }}</a>
     </h1>
+    {% if mkdir -%}
+    <h2>
+        <form action=".?method=mkdir" target="" method="post" enctype="application/x-www-urlencoded">
+            <input type="text" name="mkdir" />
+            <input type="submit" value="Makedir"></button>
+        </form>
+    </h2>
+    {% endif -%}
     {% if upload -%}
-    <h2 >
+    <h2>
         <form action="." target="" method="post" enctype="multipart/form-data">
             <input type="file" name="file" multiple />
             <input type="submit" value="Upload"></button>

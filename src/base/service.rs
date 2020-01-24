@@ -1,5 +1,4 @@
 use futures::{Future, FutureExt};
-use http;
 use tower_service::Service as TowerService;
 
 use std::net::SocketAddr;
@@ -7,7 +6,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use crate::{
-    base::{Request, Response, Router},
+    base::{http, Request, Response, Router},
     service::GlobalState,
 };
 

@@ -48,6 +48,7 @@ hyper = { version = "0.13.1", features = ["stream"] }
 bytesize = "1.0.0"
 bytes = "0.5"
 percent-encoding = "2.1.0"
+serde_urlencoded = "0.6.1"
 tower-service = "0.3.0"
 mime_guess = "2.0.1"
 askama = "0.8.0"

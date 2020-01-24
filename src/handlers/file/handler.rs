@@ -1,5 +1,4 @@
 use chrono::{offset::Local, DateTime};
-use http;
 use hyper::{header, Body, Method, StatusCode};
 use tokio::task;
 
@@ -13,7 +12,7 @@ use std::{
 use super::ranges::{RangesForm, RangesResp};
 use super::send::send_resp;
 use crate::base::ctx::ctxs;
-use crate::base::{response, Request, Response};
+use crate::base::{http, response, Request, Response};
 use crate::config::Route;
 use crate::contentype::guess_contentype;
 use crate::service::GlobalState;

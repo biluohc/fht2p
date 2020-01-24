@@ -1,6 +1,5 @@
 use bytesize::ByteSize;
 use futures::{future, FutureExt};
-use http;
 use hyper::{upgrade::Upgraded, Body};
 use tokio::{io, net::TcpStream, task, time};
 
@@ -13,7 +12,7 @@ use std::{
 use crate::base::{
     ctx::Ctx,
     handler::{exception_handler, BoxedHandler},
-    response, Request, Response,
+    http, response, Request, Response,
 };
 
 pub fn proxy_handler<'a>() -> BoxedHandler {
