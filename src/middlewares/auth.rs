@@ -1,5 +1,5 @@
 use base64::{decode_config, URL_SAFE};
-use hyper::header;
+use hyper::{header, Method};
 
 use std::{net::SocketAddr, str};
 
@@ -19,6 +19,8 @@ impl Authenticator {
     }
 }
 
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication
+
 // HTTP/1.0 401 Authorization Required
 // WWW-Authenticate: Basic realm="Secure Area"
 
@@ -30,29 +32,36 @@ impl MiddleWare for Authenticator {
         // info!("url: {:?}", req.uri());
         // info!("header: {:?}", req.headers());
 
-        let f = move |code, desc: &'static str| {
+        let method_is_connect = *req.method() == Method::CONNECT;
+
+        let (authorization, code, authenticate) = if method_is_connect {
+            (header::PROXY_AUTHORIZATION, 407, header::PROXY_AUTHENTICATE)
+        } else {
+            (header::AUTHORIZATION, 401, header::WWW_AUTHENTICATE)
+        };
+
+        let f = move |desc: &'static str| {
             response()
                 .status(code)
-                .header(header::WWW_AUTHENTICATE, "Basic realm=\"User:Password\"")
+                .header(authenticate, "Basic realm=\"User:Password\"")
                 .body(desc.into())
                 .unwrap()
         };
 
         let www = req
             .headers()
-            .get(header::AUTHORIZATION)
+            .get(authorization)
             .and_then(|v| v.to_str().ok())
             .unwrap_or_default();
 
         let auth = match www_base64_to_auth(www) {
             Ok(a) => a,
-            Err(e) => return Err(f(401, e)),
+            Err(e) => return Err(f(e)),
         };
-
         debug!("www: {}, auth: {:?}", www, auth);
 
         if auth != self.auth {
-            return Err(f(401, "wrong username or password"));
+            return Err(f("wrong username or password"));
         }
 
         Ok(())

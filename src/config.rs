@@ -78,6 +78,15 @@ pub struct ProxyRoute {
     path: String,
 }
 
+impl ProxyRoute {
+    pub fn new<S: Into<String>>(authorized: bool, path: S) -> Self {
+        Self {
+            authorized,
+            path: path.into(),
+        }
+    }
+}
+
 impl Into<Route> for &ProxyRoute {
     fn into(self) -> Route {
         let mut new = Route::default();

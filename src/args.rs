@@ -1,10 +1,10 @@
 use clap::{App, Arg};
 use json5;
+use regex::Regex;
 
 use std;
 use std::collections::BTreeMap as Map;
 use std::env;
-use std::error::Error;
 use std::fs::File;
 use std::io::Read;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -47,7 +47,7 @@ pub fn parse() -> Config {
                     .long("auth")
                     .short("a")
                     .takes_value(true)
-                    .help("Set the username:password")
+                    .help("Set the username:password for authorization")
                     .validator(|s| {
                         s.parse::<Auth>()
                             .map(|_| ())
@@ -69,7 +69,6 @@ pub fn parse() -> Config {
             .arg(
                 Arg::with_name("config-print")
                     .long("config-print")
-                    .short("P")
                     .help("Print the default config file"),
             )
             .arg(
@@ -104,13 +103,14 @@ pub fn parse() -> Config {
             )
             .arg(
                 Arg::with_name("mkdir")
+                    .short("m")
                     .long("mkdir")
                     .help("Whether enable mkdir(default not)"),
             )
             .arg(
                 Arg::with_name("magic-limit")
                     .long("magic-limit")
-                    .short("m")
+                    .short("M")
                     .takes_value(true)
                     .help("The limit for detect file ContenType(use 0 to close)")
                     .validator(|s| {
@@ -128,6 +128,19 @@ pub fn parse() -> Config {
                         s.parse::<u32>()
                             .map(|_| ())
                             .map_err(|e| format!("invalid value for cache-secs: {}", e))
+                    }),
+            )
+            .arg(
+                Arg::with_name("proxy")
+                    .long("proxy")
+                    .short("P")
+                    // .default_value("")
+                    .takes_value(true)
+                    .help("Enable http tunnel proxy(CONNECT)")
+                    .validator(|s| {
+                        Regex::new(&s)
+                            .map(|_| ())
+                            .map_err(|e| format!("invalid value for proxy: {}", e))
                     }),
             )
             .arg(
@@ -207,6 +220,7 @@ pub fn parse() -> Config {
         config.addr = SocketAddr::new(server.ip, server.port);
         config.auth = matches.value_of("auth").map(|cp| cp.parse::<Auth>().unwrap());
         config.cert = matches.value_of("cert").map(|cp| cp.parse::<Cert>().unwrap());
+        config.proxy = matches.value_of("proxy").map(|s| (&ProxyRoute::new(true, s)).into());
         config.keep_alive = !matches.is_present("keepalive");
 
         config.routes = args_paths_to_route(
@@ -278,9 +292,9 @@ pub struct Setting {
 impl Config {
     fn load_from_file(path: &str) -> Result<Self, String> {
         let mut str = String::new();
-        let mut file = File::open(path).map_err(|e| format!("config file('{}') open fails: {}", path, e.description()))?;
+        let mut file = File::open(path).map_err(|e| format!("config file('{}') open fails: {}", path, e))?;
         file.read_to_string(&mut str)
-            .map_err(|e| format!("config file('{}') read fails: {}", path, e.description()))?;
+            .map_err(|e| format!("config file('{}') read fails: {}", path, e))?;
         Self::load_from_str(path, &str)
     }
     fn load_from_str(file_name: &str, json: &str) -> Result<Config, String> {

@@ -68,7 +68,7 @@ impl Router {
 
                         middlewares
                     },
-                    proxy_handler(),
+                    proxy_handler(&route.path),
                 )
             }),
         }
@@ -92,21 +92,21 @@ impl Router {
         }
 
         let reqpath = ctx.get::<ctxs::ReqPath>().unwrap();
-        let mut matched = this.routes.iter().find(|&(route, _, _)| {
-            reqpath.starts_with(&route.url)
-                && (reqpath.ends_with('/')
-                    || reqpath.len() == route.url.len()
-                    || reqpath.as_bytes()[route.url.len() - 1] == b'/')
-        });
-
-        if *req.method() == Method::CONNECT {
-            matched = this.proxy.as_ref();
-        }
+        let matched = if *req.method() == Method::CONNECT {
+            this.proxy.as_ref()
+        } else {
+            this.routes.iter().find(|&(route, _, _)| {
+                reqpath.starts_with(&route.url)
+                    && (reqpath.ends_with('/')
+                        || reqpath.len() == route.url.len()
+                        || reqpath.as_bytes()[route.url.len() - 1] == b'/')
+            })
+        };
 
         debug!(
             "matched: {} -> {:?}",
             reqpath,
-            matched.as_ref().map(|m| m.0.url.as_str()).unwrap_or("")
+            matched.as_ref().map(|m| m.0.url.as_str()) // .unwrap_or("")
         );
 
         let resp = if let Some((route, middlewares, handler)) = matched {

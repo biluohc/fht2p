@@ -23,7 +23,7 @@ impl Server {
                 Ok((socket, addr)) => {
                     state.spawn(serve_socket(socket, addr, state).map(move |rest| {
                         if let Err(e) = rest {
-                            error!("socket {}: {}", addr, e.description());
+                            error!("socket {}: {}", addr, e);
                         }
                     }));
                 }
