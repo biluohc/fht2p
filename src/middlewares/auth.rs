@@ -27,7 +27,10 @@ impl Authenticator {
 
 impl MiddleWare for Authenticator {
     fn before(&self, req: &Request, _addr: &SocketAddr, _ctx: &mut Ctx) -> Result<(), Response> {
-        let f = |code, desc: &'static str| {
+        // info!("url: {:?}", req.uri());
+        // info!("header: {:?}", req.headers());
+
+        let f = move |code, desc: &'static str| {
             response()
                 .status(code)
                 .header(header::WWW_AUTHENTICATE, "Basic realm=\"User:Password\"")

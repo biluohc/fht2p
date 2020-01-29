@@ -1,7 +1,7 @@
 use tokio_rustls::rustls::{self, internal::pemfile};
 pub use tokio_rustls::TlsAcceptor;
 
-use std::{collections::BTreeMap as Map, fs, io, net::SocketAddr, str::FromStr, sync::Arc};
+use std::{collections::BTreeMap as Map, fs, io, io::Seek, net::SocketAddr, str::FromStr, sync::Arc};
 
 use crate::{
     args::Server,
@@ -97,7 +97,14 @@ pub fn load_private_key(path: &str) -> Result<rustls::PrivateKey> {
     let keyfile = fs::File::open(path).map_err(|e| format_err!("open private key file({}) failed: {:?}", path, e))?;
     let mut reader = io::BufReader::new(keyfile);
     let mut keys =
-        pemfile::rsa_private_keys(&mut reader).map_err(|e| format_err!("load private key({}) failed: {:?}", path, e))?;
+        pemfile::rsa_private_keys(&mut reader).map_err(|e| format_err!("load private key(rsa: {}) failed: {:?}", path, e))?;
+
+    if keys.is_empty() {
+        reader.seek(io::SeekFrom::Start(0))?;
+        keys = pemfile::pkcs8_private_keys(&mut reader)
+            .map_err(|e| format_err!("load private key(pkcs8: {}) failed: {:?}", path, e))?;
+    }
+
     assert_eq!(keys.len(), 1);
     Ok(keys.remove(0))
 }
