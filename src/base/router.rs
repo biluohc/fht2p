@@ -42,7 +42,7 @@ impl Router {
             })
             .collect::<Vec<(Route, _, _)>>();
 
-        routes.sort_by(|a, b| a.0.urlcs.cmp(&b.0.urlcs));
+        routes.sort_by(|a, b| b.0.urlcs.cmp(&a.0.urlcs));
 
         let mut global_middlewares = MiddleWares::with_capacity(2);
         global_middlewares.push(Logger);
@@ -94,10 +94,8 @@ impl Router {
             this.proxy.as_ref()
         } else {
             this.routes.iter().find(|&(route, _, _)| {
-                reqpath.starts_with(&route.url)
-                    && (reqpath.ends_with('/')
-                        || reqpath.len() == route.url.len()
-                        || reqpath.as_bytes()[route.url.len() - 1] == b'/')
+                reqpath.starts_with(&route.url) && (route.url.ends_with('/') || reqpath.len() == route.url.len())
+                    || reqpath.trim_end_matches("/") == route.url.trim_end_matches("/")
             })
         };
 
