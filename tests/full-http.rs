@@ -20,7 +20,7 @@ use tokio::{
 };
 use walkdir::WalkDir;
 
-const ARGS: &[&str] = &["run", "--release", "--", "-p", "9000"];
+const ARGS: &[&str] = &["run", "--release", "--", "-p", "9000", "-r", "-v"];
 
 fn uri(pq: &str) -> String {
     format!("http://127.0.0.1:{}/{}", ARGS[4], pq)
@@ -56,6 +56,20 @@ async fn httpt() {
     let get = get_text("/", &client)
         .await
         .map_err(|e| eprintln!("get // failed: {:?}", e))
+        .unwrap();
+    assert!(get.0.is_redirection());
+    assert!(get.1.len() < 1);
+
+    let get = get_text("tests/dir/index.html/", &client)
+        .await
+        .map_err(|e| eprintln!("get /tests/dir/index.html/ failed: {:?}", e))
+        .unwrap();
+    assert!(get.0.is_redirection());
+    assert!(get.1.len() < 1);
+
+    let get = get_text("tests/dir/index.htm/", &client)
+        .await
+        .map_err(|e| eprintln!("get /tests/dir/index.htm/ failed: {:?}", e))
         .unwrap();
     assert!(get.0.is_redirection());
     assert!(get.1.len() < 1);

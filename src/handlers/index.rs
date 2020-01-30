@@ -39,9 +39,9 @@ pub fn index_handler2(
     state: ctxs::State,
 ) -> io::Result<Result<Response, http::Error>> {
     let mut resp = response();
-    let cache_secs = state.config().cache_secs;
 
     let entry_order = EntryOrder::new(req.uri().query());
+    let cache_secs = state.config().cache_secs;
 
     if cache_secs > 0 {
         let last_modified = meta.modified()?;

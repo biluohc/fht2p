@@ -21,7 +21,7 @@ use crate::{
 pub fn parse() -> (Config, JoinHandle) {
     let mut config = Config::default();
     let mut server = Server::default();
-    let routes: Vec<String> = vec!["./".to_owned()];
+    let mut routes: Vec<String> = vec!["./".to_owned()];
 
     let default_addr = server.ip.to_string();
     let default_port = server.port.to_string();
@@ -74,8 +74,8 @@ pub fn parse() -> (Config, JoinHandle) {
                     .help("Print the default config file"),
             )
             .arg(
-                Arg::with_name("redircet-html")
-                    .long("redircet-html")
+                Arg::with_name("redirect-html")
+                    .long("redirect-html")
                     .short("r")
                     .help("Redirect dir to `index.html` or `index.htm` if it exists"),
             )
@@ -225,6 +225,7 @@ pub fn parse() -> (Config, JoinHandle) {
         config.cert = matches.value_of("cert").map(|cp| cp.parse::<Cert>().unwrap());
         config.proxy = matches.value_of("proxy").map(|s| (&ProxyRoute::new(true, s)).into());
         config.keep_alive = !matches.is_present("keepalive");
+        matches.values_of_lossy("PATH").map(|args| routes = args);
 
         config.routes = args_paths_to_route(
             &routes[..],

@@ -1,7 +1,7 @@
 use futures::FutureExt;
 use hyper::Method;
 
-use std::net::SocketAddr;
+use std::{net::SocketAddr, path::PathBuf};
 
 use super::{
     file::file_handler,
@@ -64,6 +64,25 @@ pub fn fs_handler<'a>() -> BoxedHandler {
 
                 if ![Method::GET, Method::HEAD].contains(req.method()) {
                     return exception_handler(405, req, addr, ctx).await;
+                }
+
+                if route.redirect_html {
+                    let mut file = "index.html";
+                    let mut fp = reqpath_fixed.join(file);
+
+                    let fm_is_file = move |f: PathBuf| f.metadata().map(|m| m.is_file()).unwrap_or(false);
+                    let mut fm = fm_is_file(fp);
+
+                    if !fm {
+                        file = "index.htm";
+                        fp = reqpath_fixed.join(file);
+                        fm = fm_is_file(fp);
+                    }
+
+                    if fm {
+                        let dest = format!("{}{}", reqpath, file);
+                        return redirect_handler(true, dest, req, addr, ctx).await;
+                    }
                 }
 
                 return index_handler(route, reqpath, reqpath_fixed, &meta, req, addr, state).await;
