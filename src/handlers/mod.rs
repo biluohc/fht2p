@@ -6,4 +6,4 @@ pub mod mkdir;
 pub mod proxy;
 
 pub use filesystem::fs_handler;
-pub use proxy::proxy_handler;
+pub use proxy::{method_maybe_proxy, proxy_handler};

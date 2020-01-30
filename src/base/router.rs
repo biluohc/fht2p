@@ -1,5 +1,3 @@
-use hyper::Method;
-
 use std::net::SocketAddr;
 
 use crate::{
@@ -11,7 +9,7 @@ use crate::{
         Request, Response,
     },
     config::{Config, Route},
-    handlers::{fs_handler, proxy_handler},
+    handlers::{fs_handler, method_maybe_proxy, proxy_handler},
     middlewares::{auth::Authenticator, logger::Logger, path::PathNormalizer},
     service::GlobalState,
 };
@@ -92,7 +90,7 @@ impl Router {
         }
 
         let reqpath = ctx.get::<ctxs::ReqPath>().unwrap();
-        let matched = if *req.method() == Method::CONNECT {
+        let matched = if method_maybe_proxy(&req).is_some() {
             this.proxy.as_ref()
         } else {
             this.routes.iter().find(|&(route, _, _)| {

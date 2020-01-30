@@ -1,11 +1,12 @@
 use base64::{decode_config, URL_SAFE};
-use hyper::{header, Method};
+use hyper::header;
 
 use std::{net::SocketAddr, str};
 
 use crate::{
     base::{ctx::Ctx, middleware::MiddleWare, response, Request, Response},
     config::Auth,
+    handlers::method_maybe_proxy,
 };
 
 #[derive(Debug, Clone)]
@@ -28,13 +29,13 @@ impl Authenticator {
 // tips: base64encode(Aladdin:open sesame)=QWxhZGRpbjpvcGVuIHNlc2FtZQ==
 
 impl MiddleWare for Authenticator {
-    fn before(&self, req: &Request, _addr: &SocketAddr, _ctx: &mut Ctx) -> Result<(), Response> {
+    fn before(&self, req: &Request, addr: &SocketAddr, _ctx: &mut Ctx) -> Result<(), Response> {
         // info!("url: {:?}", req.uri());
         // info!("header: {:?}", req.headers());
 
-        let method_is_connect = *req.method() == Method::CONNECT;
+        let method_is_proxy = method_maybe_proxy(req).is_some();
 
-        let (authorization, code, authenticate) = if method_is_connect {
+        let (authorization, code, authenticate) = if method_is_proxy {
             (header::PROXY_AUTHORIZATION, 407, header::PROXY_AUTHENTICATE)
         } else {
             (header::AUTHORIZATION, 401, header::WWW_AUTHENTICATE)
@@ -58,7 +59,7 @@ impl MiddleWare for Authenticator {
             Ok(a) => a,
             Err(e) => return Err(f(e)),
         };
-        debug!("www: {}, auth: {:?}", www, auth);
+        debug!("addr: {}, www: {}, auth: {:?}", addr, www, auth);
 
         if auth != self.auth {
             return Err(f("wrong username or password"));

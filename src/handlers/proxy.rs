@@ -1,72 +1,62 @@
 use bytesize::ByteSize;
 use futures::{future, FutureExt};
-use hyper::{upgrade::Upgraded, Body};
+use http::request::Parts;
+use hyper::{header, upgrade::Upgraded, Body, Method};
 use regex::Regex;
 use tokio::{io, net::TcpStream, task, time};
 
-use std::{
-    // task::{Context, Poll},
-    net::SocketAddr,
-    time::Duration,
-};
+use std::{net::SocketAddr, time::Duration};
 
 use crate::base::{
-    ctx::Ctx,
+    ctx::{ctxs, Ctx},
     handler::{exception_handler, BoxedHandler},
     http, response, Request, Response,
 };
+
+pub fn method_maybe_proxy(req: &Request) -> Option<bool> {
+    // info!("url-maybe: {:?}, authority: {:?}, host: {:?}", req.uri(), req.uri().authority(), req.uri().host());
+
+    if *req.method() == Method::CONNECT {
+        Some(true)
+    } else if req.uri().authority().is_some() {
+        Some(false)
+    } else {
+        None
+    }
+}
 
 pub fn proxy_handler<'a>(path: &str) -> BoxedHandler {
     let reg = Regex::new(path).expect("proxy_handler<'a>().Regex::new");
 
     Box::new(move |req: Request, addr: &SocketAddr, ctx: &mut Ctx| {
         let reg = &reg;
-        connect_handler(unsafe { std::mem::transmute(reg) }, req, addr, ctx).boxed()
+        proxy_handler2(unsafe { std::mem::transmute(reg) }, req, addr, ctx).boxed()
     })
 }
 
-pub async fn connect_handler<'a>(
+// timeout:
+// curl --proxy http://www:yos@127.0.0.1:8000 127.0.0.0:8080/
+// normal:
+// curl --proxy http://www:yos@127.0.0.1:8000 127.0.0.1:8080/
+// tunnel:
+// curl --proxy http://www:yos@127.0.0.1:8000 https://tools.ietf.org/favicon.ico
+pub async fn proxy_handler2<'a>(
     reg: &'a Regex,
     req: Request,
     addr: &'a SocketAddr,
     ctx: &'a mut Ctx,
 ) -> Result<Response, http::Error> {
-    let dest_addr = host_addr(req.uri()).and_then(|uri| if reg.is_match(&uri) { Some(uri) } else { None });
-
-    if let Some(dest_addr) = dest_addr {
-        let proxy_socket = time::timeout(Duration::from_millis(5000), TcpStream::connect(dest_addr)).await;
-
-        match proxy_socket {
-            Ok(Ok(proxy_socket)) => {
-                info!(
-                    "[{} -> {}] connect ok: {}",
-                    addr,
-                    dest_addr,
-                    proxy_socket.peer_addr().expect("proxy_socket.peer_addr()")
-                );
-
-                let addr = *addr;
-                let dest_addr = dest_addr.to_owned();
-
-                task::spawn(async move {
-                    match req.into_body().on_upgrade().await {
-                        Ok(upgraded) => {
-                            http_tunnel(upgraded, &addr, proxy_socket, &dest_addr).await;
-                        }
-                        Err(e) => error!("[{} -> {}] upgrade error: {}", addr, dest_addr, e),
-                    }
-                });
-                response().body(Body::empty())
-            }
-            Ok(Err(e)) => {
-                error!("[{} -> {}] connect error: {}", addr, dest_addr, e);
-                exception_handler(502, req, addr, ctx).await
-            }
-            Err(e) => {
-                error!("[{} -> {}] connect error: {}", addr, dest_addr, e);
-                exception_handler(504, req, addr, ctx).await
-            }
-        }
+    if req.method() == Method::CONNECT {
+        http_proxy_tunnel(reg, req, addr, ctx).await
+    } else if req.method() != Method::CONNECT
+        && req
+            .uri()
+            .authority()
+            .map(|a| a.as_str())
+            .map(|h| reg.is_match(h))
+            .unwrap_or(false)
+    {
+        http_proxy_normal(req, addr, ctx).await
     } else {
         exception_handler(400, req, addr, ctx).await
     }
@@ -98,6 +88,86 @@ async fn http_tunnel(upgraded: Upgraded, addr: &SocketAddr, mut proxy_socket: Tc
             error!("[{} -> {}] tunnel error: {}", addr, dest_addr, e);
         }
     }
+}
+
+async fn http_proxy_tunnel<'a>(
+    reg: &'a Regex,
+    req: Request,
+    addr: &'a SocketAddr,
+    ctx: &'a mut Ctx,
+) -> Result<Response, http::Error> {
+    let dest_addr = match host_addr(req.uri()).and_then(|uri| if reg.is_match(&uri) { Some(uri) } else { None }) {
+        Some(da) => da,
+        None => return response().status(400).body("connect addr exception".into()),
+    };
+    let proxy_socket = time::timeout(Duration::from_millis(5000), TcpStream::connect(dest_addr)).await;
+
+    match proxy_socket {
+        Ok(Ok(proxy_socket)) => {
+            info!(
+                "[{} -> {}] connect ok: {}",
+                addr,
+                dest_addr,
+                proxy_socket.peer_addr().expect("proxy_socket.peer_addr()")
+            );
+
+            let addr = *addr;
+            let dest_addr = dest_addr.to_owned();
+
+            task::spawn(async move {
+                match req.into_body().on_upgrade().await {
+                    Ok(upgraded) => {
+                        http_tunnel(upgraded, &addr, proxy_socket, &dest_addr).await;
+                    }
+                    Err(e) => error!("[{} -> {}] upgrade error: {}", addr, dest_addr, e),
+                }
+            });
+            response().body(Body::empty())
+        }
+        Ok(Err(e)) => {
+            error!("[{} -> {}] connect error: {}", addr, dest_addr, e);
+            exception_handler(502, req, addr, ctx).await
+        }
+        Err(e) => {
+            error!("[{} -> {}] connect error: {}", addr, dest_addr, e);
+            exception_handler(504, req, addr, ctx).await
+        }
+    }
+}
+async fn http_proxy_normal<'a>(mut req: Request, addr: &'a SocketAddr, ctx: &'a mut Ctx) -> Result<Response, http::Error> {
+    let header = req.headers_mut();
+    header.remove(header::PROXY_AUTHORIZATION);
+    header.remove("proxy-connection");
+
+    // info!("url: {:?}", req.uri());
+    // info!("header: {:?}", req.headers());
+
+    let state = ctx.get::<ctxs::State>().unwrap();
+
+    let (
+        Parts {
+            method, uri, headers, ..
+        },
+        body,
+    ) = req.into_parts();
+
+    let uris = uri.to_string();
+    let uri = uris.parse::<reqwest::Url>().expect("hyper's Url to url::Url");
+    let mut req2 = reqwest::Request::new(method, uri);
+    *req2.headers_mut() = headers;
+    *req2.body_mut() = Some(reqwest::Body::wrap_stream(body));
+
+    let resp2 = match state.client().execute(req2).await {
+        Ok(res) => res,
+        Err(e) => {
+            error!("[{} -> {}] reqwest error: {}", addr, uris, e);
+            return response().status(502).body(format!("{:?}", e).into());
+        }
+    };
+
+    let mut resp = response().status(resp2.status());
+    *resp.headers_mut().expect("*resp.headers_mut()") = resp2.headers().clone();
+    resp.body(Body::wrap_stream(resp2.bytes_stream()))
 }
 
 #[test]

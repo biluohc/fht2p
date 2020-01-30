@@ -1,11 +1,7 @@
 use futures::{future, Future, FutureExt};
 use hyper::{header, Body, StatusCode};
 
-use std::{
-    // task::{Context, Poll},
-    net::SocketAddr,
-    pin::Pin,
-};
+use std::{net::SocketAddr, pin::Pin};
 
 use crate::base::ctx::Ctx;
 use crate::base::{http, response, Request, Response};

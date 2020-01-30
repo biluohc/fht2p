@@ -3,11 +3,14 @@ use futures::{
     Future, FutureExt,
 };
 use hyper::server::conn::Http;
+use reqwest::Client;
 use tokio::{
     runtime::{Builder, Runtime},
     signal::ctrl_c,
     task::{JoinHandle, LocalSet},
 };
+
+use std::time::Duration;
 
 use crate::{
     base::{Router, Server},
@@ -20,6 +23,7 @@ pub struct State {
     config: Config,
     runtime: Runtime,
     router: Router,
+    client: Client,
     http: Http,
 }
 
@@ -34,11 +38,17 @@ impl State {
         http.keep_alive(config.keep_alive);
         let router = Router::new(&config);
         let runtime = Builder::new().threaded_scheduler().thread_name("tok").enable_all().build()?;
+        let client = Client::builder()
+            .use_rustls_tls()
+            .timeout(Duration::from_secs(10))
+            .build()
+            .expect("Client::builder().use_rustls_tls().build()");
 
         Ok(Self {
             config,
             runtime,
             router,
+            client,
             tls,
             http,
         })
@@ -72,6 +82,9 @@ impl State {
     }
     pub fn router(&self) -> &Router {
         &self.router
+    }
+    pub fn client(&self) -> &Client {
+        &self.client
     }
 }
 
