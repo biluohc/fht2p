@@ -16,6 +16,7 @@ use crate::{
     base::{Router, Server},
     config::{Config, TlsAcceptor},
     how::Result,
+    stat::stat_print,
 };
 
 pub struct State {
@@ -89,6 +90,8 @@ impl State {
 }
 
 pub fn run(config: Config) -> Result<()> {
+    stat_print(&config.addr, config.cert.is_some(), config.routes.values());
+
     let state = State::new(config)?.into_global();
     let mut rt = Builder::new().basic_scheduler().enable_all().build()?;
     let local = LocalSet::new();

@@ -29,3 +29,5 @@ t:
 tr: 
 	cargo test --release -- --nocapture 
 
+readme.md:
+	cargo readme -i src/main.rs > readme.md

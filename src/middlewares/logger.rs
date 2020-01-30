@@ -1,3 +1,4 @@
+use chrono::Local;
 use std::{net::SocketAddr, time::Instant};
 
 use crate::{
@@ -6,6 +7,7 @@ use crate::{
         middleware::MiddleWare,
         Request, Response,
     },
+    logger::{current_thread_name, log_enabled_info},
     tools::url_path_decode,
 };
 
@@ -35,6 +37,18 @@ impl MiddleWare for Logger {
         let uristr = uri.to_string();
         let uri = url_path_decode(&uristr);
 
-        info!("[{} {:?}]: {} {} {}", addr, start.elapsed(), method, uri, code);
+        // info!("[{} {:?}]: {} {} {}", addr, start.elapsed(), method, uri, code);
+        if log_enabled_info(module_path!()) {
+            println!(
+                "{} [{} {} {:?}]: {} {} {}",
+                Local::now().format("%Y-%m%d %H:%M:%S"),
+                current_thread_name(),
+                addr,
+                start.elapsed(),
+                method,
+                uri,
+                code
+            );
+        }
     }
 }

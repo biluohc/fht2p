@@ -11,11 +11,14 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::Path;
 use std::{process, str};
 
-use crate::config::{Auth, Cert, Config, ProxyRoute, Route};
-use crate::consts::*;
+use crate::{
+    config::{Auth, Cert, Config, ProxyRoute, Route},
+    consts::*,
+    logger::{logger_init, JoinHandle},
+};
 
 /// Get `Config` by `parse` `args`
-pub fn parse() -> Config {
+pub fn parse() -> (Config, JoinHandle) {
     let mut config = Config::default();
     let mut server = Server::default();
     let routes: Vec<String> = vec!["./".to_owned()];
@@ -31,9 +34,8 @@ pub fn parse() -> Config {
             .arg(
                 Arg::with_name("verbose")
                     .short("v")
-                    .long("verbose")
                     .multiple(true)
-                    .help("Increases logging verbosity each use for up to 2 times(info0_debug1_trace2+)"),
+                    .help("Increases logging verbosity each use for up to 3 times(warn0_info1_debug2_trace3+)"),
             )
             .arg(
                 Arg::with_name("config")
@@ -177,23 +179,24 @@ pub fn parse() -> Config {
             )
     };
 
-    let matches = app.clone().get_matches();
+    let matches = app.get_matches();
 
     // -P/--config-print
     if matches.is_present("config-print") {
         config_print();
     }
 
-    // logger_set(matches.occurrences_of("verbose")).expect("Set logger failed.");
+    let join_handle = logger_init(matches.occurrences_of("verbose"));
 
     //-c/--config选项，如果有就载入该文件。
     if let Some(s) = matches.value_of("config") {
-        return Config::load_from_file(&s)
+        let config = Config::load_from_file(&s)
             .map_err(|e| {
                 error!("{:?}", e);
                 process::exit(1);
             })
             .unwrap();
+        return (config, join_handle);
     }
 
     // 命令行有没有参数？有就解析参数，没有就寻找配置文件，再没有就使用默认配置。
@@ -239,7 +242,8 @@ pub fn parse() -> Config {
         .unwrap();
         config
     };
-    conf
+
+    (conf, join_handle)
 }
 
 #[derive(Debug, Clone)]

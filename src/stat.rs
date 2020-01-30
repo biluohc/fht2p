@@ -9,7 +9,7 @@ use std::net::{IpAddr, SocketAddr};
 
 const TIP: &str = "You can visit:";
 
-pub fn print(addr: &SocketAddr, proto: &str, routes: Vec<Route>) {
+pub fn stat_print<'a>(addr: &SocketAddr, tls: bool, routes: impl Iterator<Item = &'a Route>) {
     println!(
         "{}/{} Serving at {}:{} for:",
         consts::NAME,
@@ -18,10 +18,11 @@ pub fn print(addr: &SocketAddr, proto: &str, routes: Vec<Route>) {
         addr.port()
     );
 
-    routes.iter().for_each(|r| println!("   {:?} -> {:?}", r.url, r.path));
+    routes.for_each(|r| println!("   {:?} -> {:?}", r.url, r.path));
 
     println!("{}", TIP);
 
+    let proto = if tls { "https" } else { "http" };
     print_addrs(addr, proto)
         .map_err(|e| error!("print_addrs faield: {:?}", e))
         .unwrap_or_else(|_| println!("{}{}://{}:{}", " ".repeat(TIP.len()), proto, addr.ip(), addr.port()))

@@ -1,18 +1,15 @@
 // crate's info
-pub const NAME: &str = env!("CARGO_PKG_NAME");
+// pub const NAME: &str = env!("CARGO_PKG_NAME");
+pub const NAME: &str = "fht2p";
 // pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const VERSION: &str = include_str!(concat!(env!("OUT_DIR"), "/fht2p.txt"));
-pub const AUTHOR: &str = "Wspsxing";
-pub const EMAIL: &str = "biluohc@qq.com";
 pub const DESC: &str = env!("CARGO_PKG_DESCRIPTION");
-pub const URL_NAME: &str = "Github";
 pub const URL: &str = "https://github.com/biluohc/fht2p";
 
 // config file
 pub const CONFIG_STR_PATH: &str = "fht2p.json";
 pub const CONFIG_STR: &str = include_str!("../config/fht2p.json");
 
-pub const CONTENT_TYPE: &str = "Content-Type";
 pub const CHARSET: &str = "charset=utf-8";
 pub const CONTENT_TYPE_HTML: &str = "text/html; charset=utf-8";
 

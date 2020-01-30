@@ -1,6 +1,6 @@
+pub use nonblock_logger::{current_thread_name, JoinHandle};
 use nonblock_logger::{
-    current_thread_name,
-    log::{LevelFilter, Record},
+    log::{log_enabled, Level::Info, LevelFilter, Record},
     BaseFilter, BaseFormater, FixedLevel, NonblockLogger,
 };
 
@@ -21,13 +21,20 @@ pub fn format(base: &BaseFormater, record: &Record) -> String {
     )
 }
 
-pub fn fun<F>(f: F)
-where
-    F: FnOnce(),
-{
+pub fn log_enabled_info(target: &str) -> bool {
+    log_enabled!(target: target, Info)
+}
+
+pub fn logger_init(verbose: u64) -> JoinHandle {
     let pkg = env!("CARGO_PKG_NAME");
-    let log = LevelFilter::Debug;
-    println!("{}: {:?}", pkg, log);
+    let log = match verbose {
+        0 => LevelFilter::Warn,
+        1 => LevelFilter::Info,
+        2 => LevelFilter::Debug,
+        _more => LevelFilter::Trace,
+    };
+
+    debug!("logger_init: pkg: {}, level: {:?}", pkg, log);
 
     let formater = BaseFormater::new().local(true).color(true).level(4).formater(format);
     let filter = BaseFilter::new()
@@ -39,12 +46,11 @@ where
         .chain("hyper", LevelFilter::Info)
         .chain("mio", LevelFilter::Info);
 
-    let _handle = NonblockLogger::new()
+    NonblockLogger::new()
         .formater(formater)
         .filter(filter)
         .expect("add filiter failed")
         .log_to_stdout()
         .map_err(|e| eprintln!("failed to init nonblock_logger: {:?}", e))
-        .unwrap();
-    f()
+        .unwrap()
 }
