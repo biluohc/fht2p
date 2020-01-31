@@ -28,7 +28,7 @@
 
 ## Help
 ```sh
-fht2p 0.9.0 (8fe4f69b-modified@0.9 rustc1.40.0 2020-01-30~13:04:13UTC)
+fht2p 0.9.0 (857a9fc7@0.9 rustc1.40.0 2020-01-31~11:12:54UTC)
 Wspsxing <biluohc@qq.com>
 A HTTP Server for Static File written with Rust
 
@@ -41,21 +41,21 @@ FLAGS:
     -h, --help             Prints help information
     -k, --keepalive        Close HTTP keep alive
     -m, --mkdir            Whether enable mkdir(default not)
-    -r, --redircet-html    Redirect dir to `index.html` or `index.htm` if it exists
+    -r, --redirect-html    Redirect dir to `index.html` or `index.htm` if it exists
     -s, --show-hider       show entries starts with '.'
     -u, --upload           Whether enable upload(default not)
     -V, --version          Prints version information
-    -v                     Increases logging verbosity each use for up to 2 times(info0_debug1_trace2+)
+    -v                     Increases logging verbosity each use for up to 3 times(warn0_info1_debug2_trace3+)
 
 OPTIONS:
     -a, --auth <auth>                  Set the username:password for authorization
-        --cache-secs <cache-secs>      Set cache secs(use 0 to close)
+        --cache-secs <cache-secs>      Set cache secs(use 0 to close) [default: 60]
     -C, --cert <cert>                  Set the cert for https,  public_key_file:private_key_file
     -c, --config <config>              Set the path to a custom config file
     -i, --ip <ip>                      Set listenning ip [default: 0.0.0.0]
     -M, --magic-limit <magic-limit>    The limit for detect file ContenType(use 0 to close)
     -p, --port <port>                  Set listenning port [default: 8000]
-    -P, --proxy <proxy>                Enable http tunnel proxy(CONNECT)
+    -P, --proxy <proxy>                Enable http proxy function
 
 ARGS:
     <PATH>...    Set the paths to share
