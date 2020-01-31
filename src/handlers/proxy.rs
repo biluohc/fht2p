@@ -3,16 +3,13 @@ use futures::{future, FutureExt};
 use http::request::Parts;
 use hyper::{header, upgrade::Upgraded, Body, Method};
 use regex::Regex;
+use reqwest::Client;
 use tokio::{io, net::TcpStream, task, time};
 
 use std::{net::SocketAddr, time::Duration};
 
 use super::exception::exception_handler_sync;
-use crate::base::{
-    ctx::{ctxs, Ctx},
-    handler::BoxedHandler,
-    http, response, Request, Response,
-};
+use crate::base::{ctx::Ctx, handler::BoxedHandler, http, response, Request, Response};
 
 pub fn method_maybe_proxy(req: &Request) -> Option<bool> {
     // info!("url-maybe: {:?}, authority: {:?}, host: {:?}", req.uri(), req.uri().authority(), req.uri().host());
@@ -28,10 +25,21 @@ pub fn method_maybe_proxy(req: &Request) -> Option<bool> {
 
 pub fn proxy_handler<'a>(path: &str) -> BoxedHandler {
     let reg = Regex::new(path).expect("proxy_handler<'a>().Regex::new");
+    let client = Client::builder()
+        .use_rustls_tls()
+        .timeout(Duration::from_secs(10))
+        .build()
+        .expect("Client::builder().use_rustls_tls().build()");
 
     Box::new(move |req: Request, addr: &SocketAddr, ctx: &mut Ctx| {
-        let reg = &reg;
-        proxy_handler2(unsafe { std::mem::transmute(reg) }, req, addr, ctx).boxed()
+        proxy_handler2(
+            unsafe { std::mem::transmute(&reg) },
+            unsafe { std::mem::transmute(&client) },
+            req,
+            addr,
+            ctx,
+        )
+        .boxed()
     })
 }
 
@@ -43,6 +51,7 @@ pub fn proxy_handler<'a>(path: &str) -> BoxedHandler {
 // curl --proxy http://www:yos@127.0.0.1:8000 https://tools.ietf.org/favicon.ico
 pub async fn proxy_handler2<'a>(
     reg: &'a Regex,
+    client: &'a Client,
     req: Request,
     addr: &'a SocketAddr,
     ctx: &'a mut Ctx,
@@ -57,7 +66,7 @@ pub async fn proxy_handler2<'a>(
             .map(|h| reg.is_match(h))
             .unwrap_or(false)
     {
-        http_proxy_normal(req, addr, ctx).await
+        http_proxy_normal(client, req, addr, ctx).await
     } else {
         exception_handler_sync(400, None, &req, addr)
     }
@@ -135,15 +144,18 @@ async fn http_proxy_tunnel<'a>(
         }
     }
 }
-async fn http_proxy_normal<'a>(mut req: Request, addr: &'a SocketAddr, ctx: &'a mut Ctx) -> Result<Response, http::Error> {
+async fn http_proxy_normal<'a>(
+    client: &'a Client,
+    mut req: Request,
+    addr: &'a SocketAddr,
+    _ctx: &'a mut Ctx,
+) -> Result<Response, http::Error> {
     let header = req.headers_mut();
     header.remove(header::PROXY_AUTHORIZATION);
     header.remove("proxy-connection");
 
     // info!("url: {:?}", req.uri());
     // info!("header: {:?}", req.headers());
-
-    let state = ctx.get::<ctxs::State>().unwrap();
 
     let (
         Parts {
@@ -158,7 +170,7 @@ async fn http_proxy_normal<'a>(mut req: Request, addr: &'a SocketAddr, ctx: &'a 
     *req2.headers_mut() = headers;
     *req2.body_mut() = Some(reqwest::Body::wrap_stream(body));
 
-    let resp2 = match state.client().execute(req2).await {
+    let resp2 = match client.execute(req2).await {
         Ok(res) => res,
         Err(e) => {
             error!("[{} -> {}] reqwest error: {}", addr, uris, e);
