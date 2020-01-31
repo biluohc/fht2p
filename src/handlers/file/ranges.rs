@@ -7,14 +7,14 @@ use std::{
 };
 
 // [s, e, partial-header)
-pub type Range = (u64, u64, String);
-pub type Ranges = Vec<Range>;
+pub type RangeUnit = (u64, u64, String);
+pub type RangeUnits = Vec<RangeUnit>;
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct RangesForm {
     partail: bool,
     boundary: u128,
-    ranges: Ranges,
+    ranges: RangeUnits,
     content_type: String,
     offset: usize,
 }
@@ -35,7 +35,7 @@ impl RangesForm {
 
     // (content's len) -> (Content-Length, Range)
     pub fn build(&mut self, len: u64, typo: &mut String) -> Result<(u64, String), &'static str> {
-        fn rangefc(p: &mut (u64, u64, String), len: u64) -> Result<(), &'static str> {
+        fn rangefc(p: &mut RangeUnit, len: u64) -> Result<(), &'static str> {
             if p.1 == u64::max_value() && len > 0 {
                 p.1 = len - 1;
             }
@@ -123,7 +123,7 @@ impl FromStr for RangesForm {
 
         let s = &s["bytes=".len()..];
 
-        fn parse_pair(s: &str) -> Result<(u64, u64, String), &'static str> {
+        fn parse_pair(s: &str) -> Result<RangeUnit, &'static str> {
             let mut iters = s.split('-');
             let start = iters.next().ok_or("s.split('-')s failed")?.trim();
             let start = if start.is_empty() {
@@ -159,8 +159,7 @@ impl FromStr for RangesForm {
         Ok(ranges.into())
     }
 }
-
-impl Into<RangesForm> for Ranges {
+impl Into<RangesForm> for RangeUnits {
     fn into(self) -> RangesForm {
         RangesForm {
             content_type: String::new(),
@@ -204,7 +203,7 @@ impl<C> RangesResp<C> {
 }
 
 impl Index<usize> for RangesForm {
-    type Output = Range;
+    type Output = RangeUnit;
 
     fn index(&self, idx: usize) -> &Self::Output {
         &self.ranges[self.offset + idx]
@@ -212,7 +211,7 @@ impl Index<usize> for RangesForm {
 }
 
 impl IndexMut<usize> for RangesForm {
-    fn index_mut(&mut self, idx: usize) -> &mut Range {
+    fn index_mut(&mut self, idx: usize) -> &mut RangeUnit {
         &mut self.ranges[self.offset + idx]
     }
 }
