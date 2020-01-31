@@ -3,13 +3,13 @@ use std::net::SocketAddr;
 use crate::{
     base::{
         ctx::{ctxs, Ctx},
-        handler::{default_handler, BoxedHandler},
+        handler::BoxedHandler,
         http,
         middleware::MiddleWares,
         Request, Response,
     },
     config::{Config, Route},
-    handlers::{fs_handler, method_maybe_proxy, proxy_handler},
+    handlers::{fs_handler, method_maybe_proxy, notfound_handler, proxy_handler},
     middlewares::{auth::Authenticator, logger::Logger, path::PathNormalizer},
     service::GlobalState,
 };
@@ -51,7 +51,7 @@ impl Router {
         Self {
             routes,
             global_middlewares,
-            notfound: default_handler(),
+            notfound: notfound_handler(),
             proxy: config.proxy.as_ref().map(|route| {
                 (
                     route.clone(),

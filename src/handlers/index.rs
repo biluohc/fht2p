@@ -11,6 +11,8 @@ use crate::consts::CONTENT_TYPE_HTML;
 use crate::service::GlobalState;
 use crate::views::{EntryMetadata, EntryOrder};
 
+use super::exception::io_exception_handler_sync;
+
 pub fn index_handler(
     route: &Route,
     reqpath: &str,
@@ -20,13 +22,15 @@ pub fn index_handler(
     addr: &SocketAddr,
     state: GlobalState,
 ) -> impl Future<Output = Result<Response, http::Error>> {
-    match index_handler2(route, reqpath, path, meta, req, addr, state) {
-        Ok(resp) => future::ready(resp),
+    let resp = match index_handler2(route, reqpath, path, meta, &req, addr, state) {
+        Ok(resp) => resp,
         Err(e) => {
             error!("index_handler2 faield: {:?}", e);
-            future::ready(response().status(500).body(Body::empty()))
+            io_exception_handler_sync(e, &req, addr)
         }
-    }
+    };
+
+    future::ready(resp)
 }
 
 pub fn index_handler2(
@@ -34,7 +38,7 @@ pub fn index_handler2(
     reqpath: &str,
     path: &Path,
     meta: &fs::Metadata,
-    req: Request,
+    req: &Request,
     addr: &SocketAddr,
     state: ctxs::State,
 ) -> io::Result<Result<Response, http::Error>> {

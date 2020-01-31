@@ -179,7 +179,10 @@ pub fn parse() -> (Config, JoinHandle) {
             )
     };
 
-    let matches = app.get_matches();
+    // clap's NOTE: The first argument will be parsed as the binary name unless AppSettings::NoBinaryName is used
+    let args = env::args_os().collect::<Vec<_>>();
+    let args_is_empty = args.len() <= 1;
+    let matches = app.get_matches_from(args);
 
     // -P/--config-print
     if matches.is_present("config-print") {
@@ -200,7 +203,7 @@ pub fn parse() -> (Config, JoinHandle) {
     }
 
     // 命令行有没有参数？有就解析参数，没有就寻找配置文件，再没有就使用默认配置。
-    let conf = if env::args().skip(1).len() == 0 {
+    let conf = if args_is_empty {
         match get_config_path() {
             Some(s) => Config::load_from_file(&s)
                 .map_err(|e| {

@@ -1,12 +1,12 @@
-use hyper::{header, Body, StatusCode};
 use std::net::SocketAddr;
 
 use crate::{
     base::{
         ctx::{ctxs, Ctx},
         middleware::MiddleWare,
-        response, Request, Response,
+        Request, Response,
     },
+    handlers::exception::redirect_handler_sync,
     tools::url_for_path,
 };
 
@@ -53,13 +53,7 @@ impl MiddleWare for PathNormalizer {
                 reqpath_expected.push_str(query);
             }
 
-            let resp = response()
-                .status(StatusCode::MOVED_PERMANENTLY)
-                .header(header::LOCATION, reqpath_expected)
-                .body(Body::empty())
-                .unwrap();
-
-            return Err(resp);
+            return Err(redirect_handler_sync(true, reqpath_expected).unwrap());
         }
 
         let reqpath_components = reqpath_components.into_iter().map(|c| c.to_owned()).collect::<Vec<String>>();

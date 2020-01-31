@@ -4,14 +4,16 @@ use hyper::Method;
 use std::{net::SocketAddr, path::PathBuf};
 
 use super::{
+    exception::{exception_handler_sync, redirect_handler_sync},
     file::file_handler,
     file_upload::file_upload_handler,
     index::index_handler,
     mkdir::{method_maybe_mkdir, mkdir_handler},
 };
+
 use crate::base::{
     ctx::{ctxs, Ctx},
-    handler::{exception_handler, redirect_handler, BoxedHandler},
+    handler::BoxedHandler,
     http, Request, Response,
 };
 
@@ -44,7 +46,7 @@ pub fn fs_handler<'a>() -> BoxedHandler {
         } {
             meta
         } else {
-            return exception_handler(404, req, addr, ctx).await;
+            return exception_handler_sync(404, None, &req, addr);
         };
 
         match (meta.is_dir(), meta.is_file()) {
@@ -52,7 +54,7 @@ pub fn fs_handler<'a>() -> BoxedHandler {
                 if !reqpath.ends_with('/') {
                     let mut dest = reqpath.to_owned();
                     dest.push('/');
-                    return redirect_handler(true, dest, req, addr, ctx).await;
+                    return redirect_handler_sync(true, dest);
                 }
 
                 if req.method() == Method::POST {
@@ -63,7 +65,7 @@ pub fn fs_handler<'a>() -> BoxedHandler {
                 };
 
                 if ![Method::GET, Method::HEAD].contains(req.method()) {
-                    return exception_handler(405, req, addr, ctx).await;
+                    return exception_handler_sync(405, None, &req, addr);
                 }
 
                 if route.redirect_html {
@@ -81,7 +83,7 @@ pub fn fs_handler<'a>() -> BoxedHandler {
 
                     if fm {
                         let dest = format!("{}{}", reqpath, file);
-                        return redirect_handler(true, dest, req, addr, ctx).await;
+                        return redirect_handler_sync(true, dest);
                     }
                 }
 
@@ -89,11 +91,11 @@ pub fn fs_handler<'a>() -> BoxedHandler {
             }
             (false, true) => {
                 if reqpath.ends_with('/') {
-                    return redirect_handler(true, reqpath.trim_end_matches('/').to_owned(), req, addr, ctx).await;
+                    return redirect_handler_sync(true, reqpath.trim_end_matches('/'));
                 }
 
                 if ![Method::GET, Method::HEAD].contains(req.method()) {
-                    return exception_handler(405, req, addr, ctx).await;
+                    return exception_handler_sync(405, None, &req, addr);
                 }
 
                 return file_handler(route, reqpath, reqpath_fixed, &meta, req, addr, state).await;
@@ -108,7 +110,7 @@ pub fn fs_handler<'a>() -> BoxedHandler {
                     f,
                     meta.file_type().is_symlink()
                 );
-                return exception_handler(403, req, addr, ctx).await;
+                return exception_handler_sync(403, None, &req, addr);
             }
         }
     }

@@ -90,8 +90,9 @@ impl ProxyRoute {
 impl Into<Route> for &ProxyRoute {
     fn into(self) -> Route {
         let mut new = Route::default();
-        new.authorized = self.authorized;
+        new.url = "proxy".to_owned();
         new.path = self.path.clone();
+        new.authorized = self.authorized;
         new
     }
 }

@@ -17,6 +17,8 @@ use crate::config::Route;
 use crate::contentype::guess_contentype;
 use crate::service::GlobalState;
 
+use crate::handlers::exception::io_exception_handler_sync;
+
 pub async fn file_handler<'a>(
     route: &'a Route,
     reqpath: &'a str,
@@ -26,11 +28,11 @@ pub async fn file_handler<'a>(
     addr: &'a SocketAddr,
     state: GlobalState,
 ) -> Result<Response, http::Error> {
-    match file_handler2(route, reqpath, path, meta, state, req, addr) {
+    match file_handler2(route, reqpath, path, meta, state, &req, addr) {
         Ok(resp) => resp,
         Err(e) => {
             error!("file_handler2 faield: {:?}", e);
-            response().status(500).body(Body::empty())
+            io_exception_handler_sync(e, &req, addr)
         }
     }
 }
@@ -42,7 +44,7 @@ pub fn file_handler2(
     path: &Path,
     meta: &fs::Metadata,
     state: ctxs::State,
-    req: Request,
+    req: &Request,
     addr: &SocketAddr,
 ) -> io::Result<Result<Response, http::Error>> {
     let mut resp = response();

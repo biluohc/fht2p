@@ -3,6 +3,10 @@ use std::borrow::Cow;
 
 // 以后应该自己组结构体，Hyper 的 Url new方法都没, md 一个 path 都改不了，只能反复 decode..
 pub fn url_for_parent(path: &str) -> String {
+    if path.trim().is_empty() {
+        return "/".to_owned();
+    }
+
     let req_path_dec = url_path_decode(path);
     let cow_str = req_path_dec.as_ref();
 
@@ -31,6 +35,8 @@ pub fn url_component_encode(input: &str) -> PercentEncode {
 #[test]
 fn test_url_for_parent() {
     vec![
+        ("", "/"),
+        (" ", "/"),
         ("/", "/"),
         ("/abc", "/"),
         ("/abc/", "/"),

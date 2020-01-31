@@ -27,7 +27,7 @@ pub async fn file_upload_handler<'a>(
         Ok(ps) => ps,
         Err(e) => {
             error!("MultiPart::new() failed: {:?}", e);
-            return f(400, "MultiPart::new");
+            return f(400, "MultiPart parse");
         }
     };
 

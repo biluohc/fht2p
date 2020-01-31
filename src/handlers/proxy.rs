@@ -7,9 +7,10 @@ use tokio::{io, net::TcpStream, task, time};
 
 use std::{net::SocketAddr, time::Duration};
 
+use super::exception::exception_handler_sync;
 use crate::base::{
     ctx::{ctxs, Ctx},
-    handler::{exception_handler, BoxedHandler},
+    handler::BoxedHandler,
     http, response, Request, Response,
 };
 
@@ -58,7 +59,7 @@ pub async fn proxy_handler2<'a>(
     {
         http_proxy_normal(req, addr, ctx).await
     } else {
-        exception_handler(400, req, addr, ctx).await
+        exception_handler_sync(400, None, &req, addr)
     }
 }
 
@@ -94,7 +95,7 @@ async fn http_proxy_tunnel<'a>(
     reg: &'a Regex,
     req: Request,
     addr: &'a SocketAddr,
-    ctx: &'a mut Ctx,
+    _ctx: &'a mut Ctx,
 ) -> Result<Response, http::Error> {
     let dest_addr = match host_addr(req.uri()).and_then(|uri| if reg.is_match(&uri) { Some(uri) } else { None }) {
         Some(da) => da,
@@ -126,11 +127,11 @@ async fn http_proxy_tunnel<'a>(
         }
         Ok(Err(e)) => {
             error!("[{} -> {}] connect error: {}", addr, dest_addr, e);
-            exception_handler(502, req, addr, ctx).await
+            exception_handler_sync(502, None, &req, addr)
         }
         Err(e) => {
             error!("[{} -> {}] connect error: {}", addr, dest_addr, e);
-            exception_handler(504, req, addr, ctx).await
+            exception_handler_sync(504, None, &req, addr)
         }
     }
 }
