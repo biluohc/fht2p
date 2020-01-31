@@ -34,7 +34,12 @@ impl State {
         let mut http = Http::new();
         http.keep_alive(config.keep_alive);
         let router = Router::new(&config);
-        let runtime = Builder::new().threaded_scheduler().thread_name("tok").enable_all().build()?;
+        let runtime = Builder::new()
+            .threaded_scheduler()
+            .core_threads(num_cpus::get() * 2 + 1)
+            .thread_name("tok")
+            .enable_all()
+            .build()?;
 
         Ok(Self {
             config,
