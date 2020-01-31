@@ -25,6 +25,7 @@ pub fn parse() -> (Config, JoinHandle) {
 
     let default_addr = server.ip.to_string();
     let default_port = server.port.to_string();
+    let default_cache = config.cache_secs.to_string();
     let app = {
         App::new(NAME)
             .version(VERSION)
@@ -125,6 +126,7 @@ pub fn parse() -> (Config, JoinHandle) {
                 Arg::with_name("cache-secs")
                     .long("cache-secs")
                     .takes_value(true)
+                    .default_value(&default_cache)
                     .help("Set cache secs(use 0 to close)")
                     .validator(|s| {
                         s.parse::<u32>()
@@ -138,7 +140,7 @@ pub fn parse() -> (Config, JoinHandle) {
                     .short("P")
                     // .default_value("")
                     .takes_value(true)
-                    .help("Enable http tunnel proxy(CONNECT)")
+                    .help("Enable http proxy function")
                     .validator(|s| {
                         Regex::new(&s)
                             .map(|_| ())
@@ -223,6 +225,10 @@ pub fn parse() -> (Config, JoinHandle) {
 
         matches.value_of("ip").map(|p| server.ip = p.parse().unwrap());
         matches.value_of("port").map(|p| server.port = p.parse().unwrap());
+        matches
+            .value_of("cache-secs")
+            .map(|cs| config.cache_secs = cs.parse::<u32>().unwrap());
+
         config.addr = SocketAddr::new(server.ip, server.port);
         config.auth = matches.value_of("auth").map(|cp| cp.parse::<Auth>().unwrap());
         config.cert = matches.value_of("cert").map(|cp| cp.parse::<Cert>().unwrap());
