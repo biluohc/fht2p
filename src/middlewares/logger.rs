@@ -41,7 +41,7 @@ impl MiddleWare for Logger {
         if log_enabled_info(module_path!()) {
             println!(
                 "{} [{} {} {:?}]: {} {} {}",
-                Local::now().format("%Y-%m%d %H:%M:%S"),
+                Local::now().format("%Y-%m-%d %H:%M:%S.%3f"),
                 current_thread_name(),
                 addr,
                 start.elapsed(),
