@@ -95,7 +95,7 @@ impl Router {
         } else {
             this.routes.iter().find(|&(route, _, _)| {
                 reqpath.starts_with(&route.url) && (route.url.ends_with('/') || reqpath.len() == route.url.len())
-                    || reqpath.trim_end_matches("/") == route.url.trim_end_matches("/")
+                    || reqpath.trim_end_matches('/') == route.url.trim_end_matches('/')
             })
         };
 
@@ -120,10 +120,10 @@ impl Router {
                 }
             }
 
-            let resp = if resp.is_none() {
-                (*handler)(req, &addr, &mut ctx).await?
+            let resp = if let Some(resp) = resp {
+                resp
             } else {
-                resp.unwrap()
+                (*handler)(req, &addr, &mut ctx).await?
             };
 
             for lm in middlewares.as_ref().iter().rev() {

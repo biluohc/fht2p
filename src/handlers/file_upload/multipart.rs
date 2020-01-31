@@ -26,7 +26,7 @@ impl MultiPart {
         let (contentype, boundary) = headers
             .get(header::CONTENT_TYPE)
             .and_then(|v| v.to_str().ok())
-            .ok_or(format_err!("without content-type"))
+            .ok_or_else(|| format_err!("without content-type"))
             .and_then(|str| contentype_and_boundary(str).map_err(|e| format_err!(e)))?;
 
         if contentype.to_lowercase().as_str() != "multipart/form-data" {
@@ -155,7 +155,7 @@ fn filename_and_contentype<'a>(input: &'a [u8], boundary: &str) -> Result<(&'a [
         preceded(headerp, crlf2)(input)
     }
 
-    let (b, header) = fac(input, boundary.as_ref()).map_err(|_e| "Invalid part header")?;
+    let (b, header) = fac(input, boundary).map_err(|_e| "Invalid part header")?;
 
     // debug!("b: {:?}\nheader: {:?}", str::from_utf8(b), str::from_utf8(header));
 

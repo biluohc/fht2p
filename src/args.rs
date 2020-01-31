@@ -269,7 +269,7 @@ impl Default for Server {
 }
 impl Server {
     fn new(ip: IpAddr, port: u16) -> Self {
-        Server { ip: ip, port: port }
+        Server { ip, port }
     }
     fn get_sa() -> SocketAddr {
         Self::default().into()

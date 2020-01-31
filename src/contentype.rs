@@ -56,7 +56,7 @@ pub fn is_text(f: &mut File) -> io::Result<(bool, usize)> {
         match len {
             BUF_LEN => {
                 let mut new_char_idx = 0;
-                for idx in (0..4).into_iter().rev().map(|i| BUF_LEN - 1 - i) {
+                for idx in (0..4).rev().map(|i| BUF_LEN - 1 - i) {
                     // ascii is one u8, 0..(0-128),
                     // !ascii is n(2-4) u8: 1(n).., 10..(n-1)
                     let ones = leading_ones(buf[idx]);

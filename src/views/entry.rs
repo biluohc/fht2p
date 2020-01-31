@@ -15,7 +15,7 @@ pub struct EntryMetadata {
 
 impl EntryMetadata {
     pub fn new(d: &DirEntry, follow_links: bool, show_hider: bool) -> Option<Self> {
-        let name = d.file_name().to_string_lossy().into_owned().to_owned();
+        let name = d.file_name().to_string_lossy().into_owned();
         if !show_hider && name.starts_with('.') {
             return None;
         }
@@ -40,7 +40,7 @@ impl EntryMetadata {
         let entries = fs::read_dir(dir)?;
         let mut entries_vec = Vec::new();
         // let mut name_len_max = 0;
-        entries.into_iter().filter_map(|e| e.ok()).for_each(|e| {
+        entries.filter_map(|e| e.ok()).for_each(|e| {
             if let Some(d) = EntryMetadata::new(&e, follow_links, show_hider) {
                 entries_vec.push(d)
             }

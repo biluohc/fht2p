@@ -86,7 +86,7 @@ impl<'a> IndexTemplate<'a> {
 
 pub fn size_view(size: &Option<u64>) -> Option<String> {
     // B，KB，MB，GB，TB，PB，EB，ZB，YB，BB
-    static UNITS: &[&'static str] = &["", "K", "M", "G", "T", "P", "E", "Z", "Y", "B"];
+    static UNITS: &[&str] = &["", "K", "M", "G", "T", "P", "E", "Z", "Y", "B"];
     size.as_ref().map(|s| {
         let mut count = 0usize;
         let mut s = *s as f64;

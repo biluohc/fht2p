@@ -150,10 +150,10 @@ impl FromStr for RangesForm {
 
         if s.contains(',') {
             for p in s.split(',') {
-                parse_pair(p).map(|p| ranges.push(p.into()))?;
+                parse_pair(p).map(|p| ranges.push(p))?;
             }
         } else {
-            parse_pair(s).map(|p| ranges.push(p.into()))?;
+            parse_pair(s).map(|p| ranges.push(p))?;
         }
 
         Ok(ranges.into())

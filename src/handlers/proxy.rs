@@ -23,7 +23,7 @@ pub fn method_maybe_proxy(req: &Request) -> Option<bool> {
     }
 }
 
-pub fn proxy_handler<'a>(path: &str) -> BoxedHandler {
+pub fn proxy_handler(path: &str) -> BoxedHandler {
     let reg = Regex::new(path).expect("proxy_handler<'a>().Regex::new");
     let client = Client::builder()
         .use_rustls_tls()

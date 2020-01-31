@@ -55,7 +55,7 @@ async fn body_to_mkdir(body: Body) -> Result<String, &'static str> {
 
     let text = str::from_utf8(body.as_ref()).map_err(|_| "invalid string")?;
 
-    str_to_mkdir(text).map(|s| s.to_owned())
+    str_to_mkdir(text)
 }
 
 fn str_to_mkdir(input: &str) -> Result<String, &'static str> {

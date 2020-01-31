@@ -87,7 +87,7 @@ pub fn fs_handler<'a>() -> BoxedHandler {
                     }
                 }
 
-                return index_handler(route, reqpath, reqpath_fixed, &meta, req, addr, state).await;
+                index_handler(route, reqpath, reqpath_fixed, &meta, req, addr, state).await
             }
             (false, true) => {
                 if reqpath.ends_with('/') {
@@ -98,7 +98,7 @@ pub fn fs_handler<'a>() -> BoxedHandler {
                     return exception_handler_sync(405, None, &req, addr);
                 }
 
-                return file_handler(route, reqpath, reqpath_fixed, &meta, req, addr, state).await;
+                file_handler(route, reqpath, reqpath_fixed, &meta, req, addr, state).await
             }
             (d, f) => {
                 error!(
@@ -110,7 +110,7 @@ pub fn fs_handler<'a>() -> BoxedHandler {
                     f,
                     meta.file_type().is_symlink()
                 );
-                return exception_handler_sync(403, None, &req, addr);
+                exception_handler_sync(403, None, &req, addr)
             }
         }
     }

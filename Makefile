@@ -31,3 +31,7 @@ tr:
 
 readme.md:
 	cargo readme -i src/main.rs > readme.md
+
+clippy:
+	cargo clippy
+
