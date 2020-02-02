@@ -19,7 +19,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 lazy_static! {
     //  10485760 = 10M
     pub static ref MAGIC_LIMIT: MutStatic<u64> = MutStatic::new(1024*1024*10);
-    pub static ref SERVER_ADDR: MutStatic<SocketAddr> = MutStatic::new(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 8080));
+    pub static ref SERVER_ADDR: MutStatic<SocketAddr> = MutStatic::new(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8000));
 }
 
 /// it's unsync, but only modify it before read it concurrent, lazy to use `RwLock`..

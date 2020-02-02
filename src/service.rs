@@ -12,6 +12,7 @@ use tokio::{
 use crate::{
     base::{Router, Server},
     config::{Config, TlsAcceptor},
+    consts,
     how::Result,
     stat::stat_print,
 };
@@ -82,6 +83,8 @@ impl State {
 }
 
 pub fn run(config: Config) -> Result<()> {
+    consts::SERVER_ADDR.set(config.addr);
+    consts::MAGIC_LIMIT.set(config.magic_limit);
     stat_print(&config.addr, config.cert.is_some(), config.routes.values());
 
     let state = State::new(config)?.into_global();

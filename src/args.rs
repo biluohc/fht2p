@@ -7,7 +7,7 @@ use std::collections::BTreeMap as Map;
 use std::env;
 use std::fs::File;
 use std::io::Read;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, SocketAddr};
 use std::path::Path;
 use std::{process, str};
 
@@ -264,7 +264,8 @@ pub struct Server {
 
 impl Default for Server {
     fn default() -> Server {
-        Self::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 8000)
+        let addr = SERVER_ADDR.get();
+        Self::new(addr.ip(), addr.port())
     }
 }
 impl Server {
