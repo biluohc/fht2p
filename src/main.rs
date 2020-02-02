@@ -74,7 +74,7 @@ fn main() {
 
     trace!("{:?}\n", &config);
     if let Err(e) = service::run(config) {
-        error!("{}", e);
+        eprintln!("{}", e);
         process_exit(1)
     }
 }

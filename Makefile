@@ -29,7 +29,7 @@ t:
 tr: 
 	cargo test --release -- --nocapture 
 
-readme.md:
+readme:
 	cargo readme -i src/main.rs > readme.md
 
 clippy:

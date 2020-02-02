@@ -364,14 +364,9 @@ fn get_config_path() -> Option<String> {
     // using the home_dir function from https://crates.io/crates/dirs instead.
     #[allow(deprecated)]
     let home = std::env::home_dir()?;
-    if home.as_path().join(".config/fht2p").join(CONFIG_STR_PATH).exists() {
-        Some(
-            home.as_path()
-                .join(".config/fht2p")
-                .join(CONFIG_STR_PATH)
-                .to_string_lossy()
-                .into_owned(),
-        )
+    let confp = home.as_path().join(".config/fht2p").join(CONFIG_STR_PATH);
+    if confp.exists() {
+        Some(confp.to_string_lossy().into_owned())
     } else {
         None
     }

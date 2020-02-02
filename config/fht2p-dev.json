@@ -2,27 +2,31 @@
     "setting": {
         "keepAlive": true,
         "magicLimit": 10485760,
-        "cacheSecs": 30,
-        "addrs": "0.0.0.0:8000",
-        "auth": null,
+        "cacheSecs": 60,
+        "addr": "0.0.0.0:8001",
+        "auth": {
+            "username": "www",
+            "password": "basic"
+        },
         "cert": {
-            "pub": "/Users/biluohc/Documents/git/fht2p/cert/rsa_public_key.pem",
-            "key": "/Users/biluohc/Documents/git/fht2p/cert/rsa_private_key.pem"
+            "pub": "cert/rsa_public_key.pem",
+            "key": "cert/rsa_private_key.pem"
         }
     },
     "proxy": {
-        "path": "github.com"
+        "authorized": true,
+        "path": ""
     },
     "routes": {
         "/": {
-            "path": "/Users/biluohc/Downloads/tmp",
+            "path": "./target/",
             "redirectHtml": false,
             "authorized": false,
             "upload": false,
             "mkdir": false
         },
-        "/cargo/": {
-            "path": "/Users/biluohc/Downloads/tmp/cargo/",
+        "/doc/": {
+            "path": "./target/doc/",
             "redirectHtml": true,
             "authorized": false,
             "upload": false,

@@ -1,0 +1,24 @@
+[Unit]
+Description=fht2p - A HTTP Server for Static File written with Rust
+Documentation=https://github.com/biluohc/fht2p
+After=network.target remote-fs.target nss-lookup.target
+
+[Service]
+Type=simple
+User=yos
+Group=users
+ExecStart=/home/yos/.cargo/bin/fht2p
+ExecStop=/bin/kill -s 2 $MAINPID
+
+[Install]
+WantedBy=multi-user.target
+
+# cp config/fht2p.json ~/.config/fht2p/fht2p.json
+# sudo cp config/fht2p.service /etc/systemd/system/fht2p.service
+# sudo systemctl enable fht2p.service
+# sudo systemctl disable fht2p.service
+# sudo systemctl start fht2p.service
+# sudo systemctl stop fht2p.service
+# sudo systemctl status fht2p.service
+# sudo systemctl restart fht2p.service
+# sudo journalctl -u fht2p.service
