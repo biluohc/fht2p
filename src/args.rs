@@ -182,8 +182,9 @@ pub fn parse() -> (Config, JoinHandle) {
     };
 
     // clap's NOTE: The first argument will be parsed as the binary name unless AppSettings::NoBinaryName is used
-    let args = env::args_os().collect::<Vec<_>>();
-    let args_is_empty = args.len() <= 1;
+    let args = env::args().collect::<Vec<_>>();
+    // --version will exit early, so not contains other than -v*
+    let args_is_empty = args.iter().skip(1).all(|arg| arg.starts_with("-v"));
     let matches = app.get_matches_from(args);
 
     // -P/--config-print
