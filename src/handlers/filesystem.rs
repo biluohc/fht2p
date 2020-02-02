@@ -59,7 +59,13 @@ pub fn fs_handler<'a>() -> BoxedHandler {
 
                 if req.method() == Method::POST {
                     if method_maybe_mkdir(&req) {
+                        if !route.mkdir {
+                            return exception_handler_sync(403, None, &req, addr);
+                        }
                         return mkdir_handler(route, reqpath, reqpath_fixed, req, addr, state).await;
+                    }
+                    if !route.upload {
+                        return exception_handler_sync(403, None, &req, addr);
                     }
                     return file_upload_handler(route, reqpath, reqpath_fixed, req, addr, state).await;
                 };

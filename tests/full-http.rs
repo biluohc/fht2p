@@ -20,7 +20,7 @@ use tokio::{
 };
 use walkdir::WalkDir;
 
-const ARGS: &[&str] = &["run", "--release", "--", "-p", "9000", "-r", "-v"];
+const ARGS: &[&str] = &["run", "--release", "--", "-p", "9000", "-u", "-m", "-r", "-vvv"];
 
 fn uri(pq: &str) -> String {
     format!("http://127.0.0.1:{}/{}", ARGS[4], pq)
