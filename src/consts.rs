@@ -1,6 +1,5 @@
 // crate's info
-// pub const NAME: &str = env!("CARGO_PKG_NAME");
-pub const NAME: &str = "fht2p";
+pub const NAME: &str = env!("CARGO_PKG_NAME");
 // pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const VERSION: &str = include_str!(concat!(env!("OUT_DIR"), "/fht2p.txt"));
 pub const DESC: &str = env!("CARGO_PKG_DESCRIPTION");
@@ -44,3 +43,8 @@ impl<T> MutStatic<T> {
 
 unsafe impl<T> Send for MutStatic<T> {}
 unsafe impl<T> Sync for MutStatic<T> {}
+
+#[test]
+fn consts_test() {
+    assert_eq!(NAME, "fht2p");
+}

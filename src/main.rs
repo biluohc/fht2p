@@ -63,9 +63,9 @@ ARGS:
 */
 #[macro_use]
 pub extern crate nonblock_logger;
-pub extern crate libfht2p;
+pub extern crate fht2plib;
 
-use libfht2p::{args, service};
+use fht2plib::{args, service};
 
 pub use std::process::exit as process_exit;
 

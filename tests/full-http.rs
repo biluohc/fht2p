@@ -1,6 +1,6 @@
-extern crate libfht2p;
+extern crate fht2plib;
 
-use libfht2p::how;
+use fht2plib::how;
 use std::{
     env,
     fs::{read_to_string, remove_file},

@@ -26,7 +26,7 @@ pub fn log_enabled_info(target: &str) -> bool {
 }
 
 pub fn logger_init(verbose: u64) -> JoinHandle {
-    let pkg = env!("CARGO_PKG_NAME");
+    let pkg = crate::consts::NAME;
     let log = match verbose {
         0 => LevelFilter::Warn,
         1 => LevelFilter::Info,
@@ -34,7 +34,9 @@ pub fn logger_init(verbose: u64) -> JoinHandle {
         _more => LevelFilter::Trace,
     };
 
-    debug!("logger_init: pkg: {}, level: {:?}", pkg, log);
+    if verbose > 2 {
+        println!("logger_init: pkg: {}, level: {:?}", pkg, log)
+    };
 
     let formater = BaseFormater::new().local(true).color(true).level(4).formater(format);
     let filter = BaseFilter::new()
