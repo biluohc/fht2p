@@ -3,7 +3,7 @@
         "keepAlive": true,
         "magicLimit": 10485760,
         "cacheSecs": 60,
-        "addr": "0.0.0.0:8001",
+        "addr": "0.0.0.0:9000",
         "auth": {
             "username": "www",
             "password": "basic"

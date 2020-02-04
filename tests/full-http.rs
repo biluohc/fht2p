@@ -20,7 +20,19 @@ use tokio::{
 };
 use walkdir::WalkDir;
 
-const ARGS: &[&str] = &["run", "--release", "--", "-p", "9000", "-u", "-m", "-r", "-vvv"];
+const ARGS: &[&str] = &[
+    "run",
+    "--release",
+    "--",
+    "-p",
+    "9000",
+    "-u",
+    "-m",
+    "-r",
+    "-vvv",
+    ".",
+    ".gitignore",
+];
 
 fn uri(pq: &str) -> String {
     format!("http://127.0.0.1:{}/{}", ARGS[4], pq)
@@ -73,6 +85,14 @@ async fn httpt() {
         .unwrap();
     assert!(get.0.is_redirection());
     assert!(get.1.len() < 1);
+
+    // the path of route is file
+    let get = get_text(".gitignore", &client)
+        .await
+        .map_err(|e| eprintln!("get /tests/dir/index.htm/ failed: {:?}", e))
+        .unwrap();
+    assert!(get.0.is_success());
+    assert_eq!(get.1.as_str(), include_str!("../.gitignore"));
 
     #[cfg(unix)]
     for entry in WalkDir::new("../../src/base")

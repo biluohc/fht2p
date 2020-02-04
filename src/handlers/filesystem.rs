@@ -30,14 +30,17 @@ pub fn fs_handler<'a>() -> BoxedHandler {
         let mut reqpathbuf_fixed;
 
         let reqpathcs_remaining = &reqpathcs[route.urlcs..];
+        let reqpathcs_remaining_is_empty = reqpathcs_remaining.is_empty();
 
-        if !reqpathcs_remaining.is_empty() {
+        if !reqpathcs_remaining_is_empty {
             reqpathbuf_fixed = reqpath_fixed.to_owned();
             for cs in reqpathcs_remaining {
                 reqpathbuf_fixed.push(cs);
             }
             reqpath_fixed = reqpathbuf_fixed.as_path();
         }
+
+        debug!("reqpath: {}, route: {:?}", reqpath, route);
 
         let meta = if let Ok(meta) = if route.follow_links {
             reqpath_fixed.metadata()
@@ -96,7 +99,8 @@ pub fn fs_handler<'a>() -> BoxedHandler {
                 index_handler(route, reqpath, reqpath_fixed, &meta, req, addr, state).await
             }
             (false, true) => {
-                if reqpath.ends_with('/') {
+                // route is a file.. &&
+                if !reqpathcs_remaining_is_empty && reqpath.ends_with('/') {
                     return redirect_handler_sync(true, reqpath.trim_end_matches('/'));
                 }
 
