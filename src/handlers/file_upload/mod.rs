@@ -1,4 +1,4 @@
-pub mod hander;
+pub mod handler;
 pub mod multipart;
 
-pub use hander::file_upload_handler;
+pub use handler::file_upload_handler;
