@@ -4,6 +4,7 @@
 // desc: "A HTTP Server for Static File written with Rust",
 // repo: "https://github.com/biluohc/fht2p",
 // encoding: "utf8",
+// path: ~/.config/fht2p/fht2p.json
 {
     "setting": {
         "keepAlive": true,
