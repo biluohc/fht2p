@@ -12,9 +12,12 @@ pub fn method_maybe_mkdir(req: &Request) -> bool {
         .unwrap_or(false)
 }
 
-// text-plain
+// text-plain X: ascii only
 // application/x-www-urlencoded
 // multipart/form-data  X
+
+// curl "0.0.0.0:9000/?method=mkdir" -d "mkdir=new%E5%B0%8Ffile"
+// curl "0.0.0.0:9000/?method=mkdir" --data "mkdir=new%E5%B0%8Ffile" -X POST
 pub async fn mkdir_handler<'a>(
     _route: &'a Route,
     _reqpath: &'a str,
