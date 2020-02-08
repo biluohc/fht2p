@@ -1,6 +1,5 @@
 use chrono::{offset::Local, DateTime};
 use hyper::{header, Body, Method, StatusCode};
-use tokio::task;
 
 use std::{
     fs::{self, File},
@@ -130,7 +129,7 @@ pub fn file_handler2(
             };
             let body = if contentlen > 0 {
                 let (sender, body) = Body::channel();
-                task::spawn(send_resp(RangesResp::new(rangesform, file), sender, *addr));
+                state.spawn(send_resp(RangesResp::new(rangesform, file), sender, *addr));
                 body
             } else {
                 Body::empty()

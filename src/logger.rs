@@ -1,6 +1,6 @@
 pub use nonblock_logger::{current_thread_name, JoinHandle};
 use nonblock_logger::{
-    log::{log_enabled, Level::Info, LevelFilter, Record},
+    log::{Level::Info, LevelFilter, Record},
     BaseFilter, BaseFormater, FixedLevel, NonblockLogger,
 };
 

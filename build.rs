@@ -74,5 +74,5 @@ fn rustc_version() -> io::Result<String> {
 }
 
 fn decode(bytes: &[u8]) -> String {
-    String::from_utf8_lossy(bytes).into_owned().to_owned()
+    String::from_utf8_lossy(bytes).into_owned()
 }

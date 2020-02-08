@@ -33,19 +33,18 @@ serde = { version = "1.0.102", features = ["derive"] }
 chrono = { version = "0.4.10", features = ["serde"] }
 json5 = "0.2.5"
 systemstat = "0.1.5"
-lazy_static = "1.3.0"
+lazy_static = "1.4.0"
 thiserror = "1.0.9"
 anyhow = "1.0.25"
 
 reqwest = { version = "0.10.0", default-features = false, features = ["rustls-tls", "cookies", "stream", "gzip"] }
-tokio = { version = "0.2.5", features = ["full"] }
+tokio = { version = "0.2.5", features = [ "blocking", "dns", "rt-threaded", "tcp", "time", "sync", "process"] }
 tokio-rustls = "0.12.1"
-futures = "0.3.1"
-num_cpus = "1.11.1"
+futures = "0.3.2"
+num_cpus = "1.12"
 
 http = "0.2.0"
-httparse = "1.3.4"
-hyper = { version = "0.13.1", features = ["stream"] }
+hyper = { version = "0.13.2", features = ["stream"] }
 bytesize = "1.0.0"
 bytes = "0.5"
 percent-encoding = "2.1.0"
@@ -53,7 +52,7 @@ serde_urlencoded = "0.6.1"
 tower-service = "0.3.0"
 mime_guess = "2.0.1"
 base64 = "0.11.0"
-askama = "0.8.0"
+askama = "0.9.0"
 regex = "1.3.1"
 rand = "0.7.2"
 nom = "5.0.1"

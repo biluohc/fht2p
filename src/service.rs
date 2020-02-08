@@ -6,7 +6,7 @@ use hyper::server::conn::Http;
 use tokio::{
     runtime::{Builder, Runtime},
     signal::ctrl_c,
-    task::{JoinHandle, LocalSet},
+    task::JoinHandle,
 };
 
 use crate::{
@@ -89,9 +89,8 @@ pub fn run(config: Config) -> Result<()> {
 
     let state = State::new(config)?.into_global();
     let mut rt = Builder::new().basic_scheduler().enable_all().build()?;
-    let local = LocalSet::new();
 
-    local.block_on(&mut rt, async move {
+    rt.block_on(async move {
         let http = Server::run(state);
         let ctrlc = ctrl_c();
 
