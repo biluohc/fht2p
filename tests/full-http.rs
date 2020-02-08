@@ -6,7 +6,7 @@ use std::{
     fs::{read_to_string, remove_file},
     io,
     panic::catch_unwind,
-    path::Path,
+    path::{Path, PathBuf},
     thread,
     time::Duration,
 };
@@ -102,6 +102,10 @@ async fn httpt() {
 }
 
 async fn dir_post_files(dir: &str, client: &Client) {
+    println!("dir_post_files: {}", dir);
+
+    let mut files = vec![];
+
     for entry in WalkDir::new(dir)
         .max_depth(1)
         .into_iter()
@@ -116,7 +120,11 @@ async fn dir_post_files(dir: &str, client: &Client) {
         println!("{}: {}: {}", path.display(), fina, url);
 
         post_file(&path, &fina, &upa, &url, client).await.unwrap();
+        files.push((path.to_path_buf(), fina.to_owned(), upa));
     }
+
+    // upload multi files once
+    post_files(dir, files, client).await
 }
 
 async fn post_file(path: &Path, fina: &str, upa: &str, url: &str, client: &Client) -> io::Result<()> {
@@ -131,7 +139,7 @@ async fn post_file(path: &Path, fina: &str, upa: &str, url: &str, client: &Clien
     let fina_arg = path.to_str().unwrap();
     let fina_arg = format!("filename=@{}", fina_arg);
     let es = Command::new("curl")
-        .args(&["curl", "-vF", fina_arg.as_str(), url])
+        .args(&["-vF", fina_arg.as_str(), url])
         .spawn()
         .unwrap()
         .await
@@ -143,16 +151,73 @@ async fn post_file(path: &Path, fina: &str, upa: &str, url: &str, client: &Clien
     let get = get_text(upa, client).await.unwrap();
     assert_eq!(get.0.as_u16(), 200);
 
-    let fc = read_to_string(fina).unwrap();
-    assert_eq!(get.1, fc);
-
-    let after = get_text(CURDIR, client).await.unwrap();
-
-    assert_eq!(after.0, 200);
+    let upfc = read_to_string(fina).unwrap();
+    assert_eq!(get.1, upfc);
+    let rawfc = read_to_string(path).unwrap();
+    assert_eq!(get.1, rawfc);
 
     remove_file(fina).ok();
 
+    let after = get_text(CURDIR, client).await.unwrap();
+    assert_eq!(after.0, 200);
+    assert_eq!(before.1, after.1);
+
     Ok(())
+}
+
+async fn post_files(dir: &str, files: Vec<(PathBuf, String, String)>, client: &Client) {
+    println!("post_files: {}", dir);
+
+    let before = get_text(CURDIR, client).await.unwrap();
+    assert_eq!(before.0, 200);
+
+    let mut fina_args = vec![];
+
+    for (path, fina, upa) in &files {
+        remove_file(fina).ok();
+
+        let get = get_text(upa, client).await.unwrap();
+        assert_eq!(get.0.as_u16(), 404);
+
+        let fina_arg = path.to_str().unwrap();
+        let fina_arg = format!("filename=@{}", fina_arg);
+        fina_args.push(fina_arg);
+    }
+
+    let url = uri(CURDIR);
+    let mut args = vec!["-v", url.as_str()];
+    fina_args.iter().for_each(|arg| {
+        args.push("-F");
+        args.push(arg.as_str());
+    });
+
+    let es = Command::new("curl")
+        .args(&args)
+        .spawn()
+        .unwrap()
+        .await
+        .expect("exec curl failed0");
+    if !es.success() {
+        panic!("exec curl failed1");
+    }
+
+    for (path, fina, upa) in &files {
+        let get = get_text(upa, client).await.unwrap();
+        assert_eq!(get.0.as_u16(), 200);
+
+        let upfc = read_to_string(fina).unwrap();
+        assert_eq!(get.1, upfc);
+
+        let rawfc = read_to_string(path).unwrap();
+        assert_eq!(get.1, rawfc);
+
+        remove_file(fina).ok();
+    }
+
+    let after = get_text(CURDIR, client).await.unwrap();
+    assert_eq!(after.0, 200);
+
+    assert_eq!(before.1, after.1);
 }
 
 async fn get_text(path: &str, client: &Client) -> Result<(StatusCode, String), how::Error> {
