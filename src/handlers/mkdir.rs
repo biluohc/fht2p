@@ -70,7 +70,7 @@ fn str_to_mkdir(input: &str) -> Result<String, &'static str> {
     serde_urlencoded::from_str::<MkdirForm>(input)
         .map_err(|_| "invalid form")
         .and_then(|s| {
-            if s.mkdir.contains('/') || s.mkdir.contains('\\') {
+            if s.mkdir.trim().is_empty() || s.mkdir.contains('/') || s.mkdir.contains('\\') {
                 Err("invalid dirname")
             } else {
                 Ok(s.mkdir)

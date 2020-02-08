@@ -200,11 +200,11 @@ fn filename_and_contentype<'a>(input: &'a [u8], boundary: &str) -> Result<(&'a [
     .map_err(|_: nom::Err<()>| "Invalid filename=")?;
 
     let filename = str::from_utf8(o).map_err(|_| "invalid str filename")?;
+
+    let filename = filename.replace('\\', "");
     if filename.trim().is_empty() {
         return Err("invalid empty filename");
     }
-
-    let filename = filename.replace('\\', "");
 
     Ok((b, filename, ""))
 }
