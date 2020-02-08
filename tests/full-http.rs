@@ -95,7 +95,15 @@ async fn httpt() {
     assert_eq!(get.1.as_str(), include_str!("../.gitignore"));
 
     #[cfg(unix)]
-    for entry in WalkDir::new("../../src/base")
+    {
+        dir_post_files("../../src/base", &client).await;
+        dir_post_files("../dir", &client).await;
+    }
+}
+
+async fn dir_post_files(dir: &str, client: &Client) {
+    for entry in WalkDir::new(dir)
+        .max_depth(1)
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|p| p.file_type().is_file())
@@ -107,7 +115,7 @@ async fn httpt() {
 
         println!("{}: {}: {}", path.display(), fina, url);
 
-        post_file(&path, &fina, &upa, &url, &client).await.unwrap();
+        post_file(&path, &fina, &upa, &url, client).await.unwrap();
     }
 }
 

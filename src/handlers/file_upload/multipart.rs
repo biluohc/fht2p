@@ -121,14 +121,45 @@ impl MultiPart {
     }
 }
 
-fn filename_and_contentype<'a>(input: &'a [u8], boundary: &str) -> Result<(&'a [u8], &'a str, &'a str), &'static str> {
+fn filename_and_contentype<'a>(input: &'a [u8], boundary: &str) -> Result<(&'a [u8], String, &'a str), &'static str> {
     use nom::{
-        bytes::complete::{is_not, tag, take_until},
+        bytes::complete::{tag, take_until},
         character::complete::char,
         error::ErrorKind,
         sequence::{delimited, preceded, separated_pair},
         IResult,
     };
+
+    // G: Fn(I) -> IResult<I, O2, E>,
+    fn is_not_double_quote(input: &[u8]) -> IResult<&[u8], &[u8], ()> {
+        for idx in 0..input.len() {
+            let b = input[idx];
+            if b == b'"' {
+                if idx == 0 {
+                    return Ok((input, &[]));
+                }
+                let prev = input[idx - 1];
+                if prev != b'\\' {
+                    return Ok((&input[idx..], &input[0..idx]));
+                }
+            }
+        }
+        // Err(nom::Err::Error((input, ErrorKind::IsNot)))
+        Err(nom::Err::Error(()))
+    }
+
+    // fn is_not_double_quote(input: &[u8]) -> IResult<&[u8], &[u8], ()> {
+    //     let res = is_not_double_quote2(input);
+    //     println!(
+    //         "input: {:?}\ninput_str: {}\nres: {:?}\nres_str: {:?}",
+    //         input,
+    //         str::from_utf8(input).unwrap(),
+    //         res,
+    //         res.as_ref()
+    //             .map(|(i, o)| (str::from_utf8(i).unwrap(), str::from_utf8(o).unwrap()))
+    //     );
+    //     res
+    // }
 
     fn fac<'a>(input: &'a [u8], boundary: &str) -> IResult<&'a [u8], &'a [u8], (&'a [u8], ErrorKind)> {
         let headerp = move |inp: &'a [u8]| {
@@ -161,18 +192,34 @@ fn filename_and_contentype<'a>(input: &'a [u8], boundary: &str) -> Result<(&'a [
 
     let (i, _) = take_until::<_, _, (&[u8], ErrorKind)>("filename=")(header).map_err(|_: nom::Err<_>| "Invalid filename")?;
 
-    let (_i1, (_i2, o)) = separated_pair(tag("filename"), tag("="), delimited(char('"'), is_not("\""), char('"')))(i)
-        .map_err(|_: nom::Err<()>| "Invalid filename=")?;
+    let (_i1, (_i2, o)) = separated_pair(
+        tag("filename"),
+        tag("="),
+        delimited(char('"'), is_not_double_quote, char('"')),
+    )(i)
+    .map_err(|_: nom::Err<()>| "Invalid filename=")?;
 
     let filename = str::from_utf8(o).map_err(|_| "invalid str filename")?;
+    if filename.trim().is_empty() {
+        return Err("invalid empty filename");
+    }
+
+    let filename = filename.replace('\\', "");
 
     Ok((b, filename, ""))
 }
 
 #[test]
 fn filename_and_contentype_test() {
-    assert!(filename_and_contentype("--------------------------7adee9ed033d3a54\r\nContent-Disposition: form-data; name=\"filename\"; filename=\"pkg.jl\"\r\nContent-Type: application/octet-stream\r\n\r\n".as_bytes(), 
-    "------------------------7adee9ed033d3a54").is_ok())
+    assert_eq!(filename_and_contentype("--------------------------7adee9ed033d3a54\r\nContent-Disposition: form-data; name=\"filename\"; filename=\"pkg.jl\"\r\nContent-Type: application/octet-stream\r\n\r\n".as_bytes(), 
+    "------------------------7adee9ed033d3a54").unwrap().1, "pkg.jl");
+
+    assert_eq!("ls\"sl.rs", r#"ls"sl.rs"#);
+    assert_eq!(filename_and_contentype("--------------------------7adee9ed033d3a54\r\nContent-Disposition: form-data; name=\"filename\"; filename=\"pk\\\"g.htm\"\r\nContent-Type: application/octet-stream\r\n\r\n".as_bytes(), 
+    "------------------------7adee9ed033d3a54").unwrap().1, r#"pk"g.htm"#);
+
+    assert_eq!(filename_and_contentype("--------------------------7adee9ed033d3a54\r\nContent-Disposition: form-data; name=\"filename\"; filename=\"中文 空格.htm\"\r\nContent-Type: application/octet-stream\r\n\r\n".as_bytes(), 
+    "------------------------7adee9ed033d3a54").unwrap().1, "中文 空格.htm");
 }
 
 #[derive(Debug)]
