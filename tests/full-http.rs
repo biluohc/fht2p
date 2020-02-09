@@ -376,6 +376,8 @@ async fn httpt_get_proxy_with_auth() {
                 USER_PASSWORD,
                 "--proxy",
                 &uri(""),
+                "--output",
+                "-",
                 "https://tools.ietf.org/favicon.ico",
             ])
             .spawn()
