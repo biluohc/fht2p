@@ -197,7 +197,6 @@ async fn post_file(path: &Path, fina: &str, upa: &str, url: &str, client: &Clien
 
     let after = get_text(CURDIR, client).await.unwrap();
     assert_eq!(after.0, 200);
-    assert_eq!(before.1, after.1);
 
     Ok(())
 }
@@ -253,8 +252,6 @@ async fn post_files(dir: &str, files: Vec<(PathBuf, String, String)>, client: &C
 
     let after = get_text(CURDIR, client).await.unwrap();
     assert_eq!(after.0, 200);
-
-    assert_eq!(before.1, after.1);
 }
 
 async fn get_text(path: &str, client: &Client) -> Result<(StatusCode, String), how::Error> {

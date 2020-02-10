@@ -1,19 +1,68 @@
 name: Rust
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
-  build:
-
+  Check:
+    name: Check
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v1
-    - name: Update
-      run: rustc -V && rustup update stable && rustup default stable && rustc -V 
-    - name: Build
-      run: cargo build --release
-    - name: Tests
-      run: cargo test --verbose --release
-    # - name: Docs
-    #   run: cargo doc
+      - uses: actions/checkout@v1
+      - name: Format
+        run: rustup component add rustfmt && cargo fmt -- --check
+
+  Linux:
+    name: Linux ubuntu-latest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Update
+        run: |
+          rustc -V 
+          rustup update --no-self-update stable 
+          rustup default stable
+          rustc -V
+      - name: Build
+        run: |
+          cargo build --release
+          ls -lah target/release
+      - name: Tests
+        run: cargo test --release -- --nocapture
+
+  MacOS:
+    name: MacOS-latest
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Update
+        run: |
+          rustc -V 
+          rustup update --no-self-update stable 
+          rustup default stable
+          rustc -V
+      - name: Build
+        run: |
+          cargo build --release
+          ls -lah target/release
+      - name: Tests
+        run: cargo test --release -- --nocapture
+
+  Windows:
+    name: Windows ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+    steps:
+      - uses: actions/checkout@v1
+      - name: Update
+        run: rustc -V
+      - name: Build
+        run: |
+          cargo build --release
+          ls target/release
+      - name: Tests
+        run: cargo test --release -- --nocapture
+# windows can't update because of a error:
+# info: using existing install for 'stable-x86_64-pc-windows-msvc'
+##[error]Process completed with exit code 1
