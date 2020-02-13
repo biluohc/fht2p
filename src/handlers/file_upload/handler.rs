@@ -47,11 +47,12 @@ pub async fn file_upload_handler<'a>(
                     Ok(writec) => {
                         let size = ByteSize::b(writec).to_string_as(true);
                         warn!(
-                            "addr: {}, part.filename: {}, conetentype: {}, saved to {} ok: {}",
+                            "addr: {}, part.filename: {}, conetentype: {}, saved to {} ok: {} {}",
                             addr,
                             part.filename(),
                             part.contentype(),
                             file.display(),
+                            writec,
                             size
                         );
                     }
@@ -75,6 +76,12 @@ pub async fn file_upload_handler<'a>(
             }
         }
     }
+
+    debug!(
+        "contentlength: {}, offset: {}",
+        ps.content_lenth().unwrap_or_default(),
+        ps.offset()
+    );
 
     f(200, "upload ok")
 }

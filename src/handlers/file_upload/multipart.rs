@@ -48,6 +48,14 @@ impl MultiPart {
         })
     }
 
+    pub fn content_lenth(&self) -> &Option<u64> {
+        &self.content_lenth
+    }
+
+    pub fn offset(&self) -> u64 {
+        self.offset
+    }
+
     // b"--------------------------7adee9ed033d3a54\r\nContent-Disposition: form-data; name=\"filename\"; filename=\"pkg.jl\"\r\nContent-Type: application/octet-stream\r\n\r\n"
 
     pub async fn next_part<'a>(&'a mut self) -> Option<Result<Part<'a>, Error>> {
@@ -251,7 +259,7 @@ impl<'a> Part<'a> {
                 file.write(chunk.as_ref()).map(|wc| (wc, chunk)).map_err(Error::from)
             }) {
                 Ok((wc, chunk)) => {
-                    debug_assert_eq!(wc, chunk.len());
+                    assert_eq!(wc, chunk.len());
                     bytesc += wc;
                 }
                 Err(e) => {
@@ -306,6 +314,8 @@ impl<'a> Part<'a> {
                     if self.complete {
                         return Some(Err(format_err!("unexpected eof")));
                     } else {
+                        // todo: it maybe slow ?
+                        self.multi.buf = chunk.as_ref().into();
                         continue;
                     }
                 }
@@ -319,6 +329,7 @@ impl<'a> Part<'a> {
                     if i == 0 {
                         None
                     } else {
+                        assert_eq!(&chunk[chunk.len() - 2..], b"\r\n");
                         chunk.truncate(chunk.len() - 2);
                         Some(Ok(chunk))
                     }
