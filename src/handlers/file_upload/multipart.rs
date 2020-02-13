@@ -311,7 +311,7 @@ impl<'a> Part<'a> {
             let res = match parse_part_eof(chunk.as_ref(), &self.multi.boundary) {
                 None => Some(Ok(chunk)),
                 Some(None) => {
-                    if self.complete {
+                    if self.multi.eof {
                         return Some(Err(format_err!("unexpected eof")));
                     } else {
                         // todo: it maybe slow ?
