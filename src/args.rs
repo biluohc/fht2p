@@ -33,6 +33,12 @@ pub fn parse() -> (Config, JoinHandle) {
             .about(env!("CARGO_PKG_DESCRIPTION"))
             .about(DESC)
             .arg(
+                Arg::with_name("qr")
+                    .short("Q")
+                    .long("qr-code")
+                    .help("show URL's QR code at startup"),
+            )
+            .arg(
                 Arg::with_name("verbose")
                     .short("v")
                     .multiple(true)
@@ -183,9 +189,10 @@ pub fn parse() -> (Config, JoinHandle) {
 
     // clap's NOTE: The first argument will be parsed as the binary name unless AppSettings::NoBinaryName is used
     let args = env::args().collect::<Vec<_>>();
-    // --version will exit early, so not contains other than -v*
-    let args_is_empty = args.iter().skip(1).all(|arg| arg.starts_with("-v"));
+    // not contains other than -v* or --qr
+    let args_is_empty = args.iter().skip(1).all(|arg| arg.starts_with("-v") || arg == "--qr");
     let matches = app.get_matches_from(args);
+    let qr = matches.is_present("qr");
 
     // -P/--config-print
     if matches.is_present("config-print") {
@@ -202,7 +209,7 @@ pub fn parse() -> (Config, JoinHandle) {
                 process::exit(1);
             })
             .unwrap();
-        return (config, join_handle);
+        return (config.show_qrcode(qr), join_handle);
     }
 
     // 命令行有没有参数？有就解析参数，没有就寻找配置文件，再没有就使用默认配置。
@@ -254,7 +261,7 @@ pub fn parse() -> (Config, JoinHandle) {
         config
     };
 
-    (conf, join_handle)
+    (conf.show_qrcode(qr), join_handle)
 }
 
 #[derive(Debug, Clone)]

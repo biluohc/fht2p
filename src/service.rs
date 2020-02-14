@@ -85,7 +85,12 @@ impl State {
 pub fn run(config: Config) -> Result<()> {
     consts::SERVER_ADDR.set(config.addr);
     consts::MAGIC_LIMIT.set(config.magic_limit);
-    stat_print(&config.addr, config.cert.is_some(), config.routes.values());
+    stat_print(
+        &config.addr,
+        config.cert.is_some(),
+        config.routes.values(),
+        config.show_qrcode,
+    );
 
     let state = State::new(config)?.into_global();
     let mut rt = Builder::new().basic_scheduler().enable_all().build()?;

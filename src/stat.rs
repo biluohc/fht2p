@@ -10,7 +10,7 @@ use std::net::{IpAddr, SocketAddr};
 
 const TIP: &str = "You can visit:";
 
-pub fn stat_print<'a>(addr: &SocketAddr, tls: bool, routes: impl Iterator<Item = &'a Route>) {
+pub fn stat_print<'a>(addr: &SocketAddr, tls: bool, routes: impl Iterator<Item = &'a Route>, show_qrcode: bool) {
     println!(
         "{}/{} Serving at {}:{} for:",
         consts::NAME,
@@ -24,12 +24,31 @@ pub fn stat_print<'a>(addr: &SocketAddr, tls: bool, routes: impl Iterator<Item =
     println!("{}", TIP);
 
     let proto = if tls { "https" } else { "http" };
-    print_addrs(addr, proto)
+    print_addrs(addr, proto, show_qrcode)
         .map_err(|e| error!("print_addrs faield: {:?}", e))
-        .unwrap_or_else(|_| println!("{}{}://{}:{}", " ".repeat(TIP.len()), proto, addr.ip(), addr.port()))
+        .unwrap_or_else(|_| print_addr(&addr.ip(), addr.port(), proto, show_qrcode))
 }
 
-fn print_addrs(addr: &SocketAddr, proto: &str) -> io::Result<()> {
+fn print_addr(adr: &IpAddr, port: u16, proto: &str, show_qrcode: bool) {
+    // curl  http://::1:9000
+    // curl: (3) IPv6 numerical address used in URL without brackets
+    let adr_str = if adr.is_ipv6() {
+        format!("{}://[{}]:{}", proto, adr, port)
+    } else {
+        format!("{}://{}:{}", proto, adr, port)
+    };
+
+    println!("{}{}", " ".repeat(TIP.len()), adr_str);
+
+    if show_qrcode {
+        qr2term::print_qr(&adr_str)
+            .map(|_| println!(""))
+            .map_err(|e| error!("print qr code failed: {}", e))
+            .ok();
+    }
+}
+
+fn print_addrs(addr: &SocketAddr, proto: &str, show_qrcode: bool) -> io::Result<()> {
     let netifs = System::new().networks()?;
 
     let mut adrs = netifs
@@ -65,15 +84,7 @@ fn print_addrs(addr: &SocketAddr, proto: &str) -> io::Result<()> {
         _ => a.cmp(b),
     });
 
-    adrs.iter().for_each(|adr| {
-        // curl  http://::1:9000
-        // curl: (3) IPv6 numerical address used in URL without brackets
-        if adr.is_ipv6() {
-            println!("{}{}://[{}]:{}", " ".repeat(TIP.len()), proto, adr, addr.port())
-        } else {
-            println!("{}{}://{}:{}", " ".repeat(TIP.len()), proto, adr, addr.port())
-        }
-    });
+    adrs.iter().for_each(|adr| print_addr(adr, addr.port(), proto, show_qrcode));
 
     Ok(())
 }

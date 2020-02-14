@@ -30,6 +30,7 @@ nonblock-logger = { version = "0.1", features = [ "color", "dbg" ] }
 clap = { version = "2.33.0", features = [ "suggestions", "color" ] }
 serde = { version = "1.0.102", features = ["derive"] }
 chrono = { version = "0.4.10", features = ["serde"] }
+qr2term = "0.1.5"
 json5 = "0.2.5"
 systemstat = "0.1.5"
 lazy_static = "1.4.0"
