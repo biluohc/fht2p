@@ -4,6 +4,7 @@ use systemstat::{Platform, System};
 use crate::config::Route;
 use crate::consts;
 
+use std::cmp::Ordering::*;
 use std::io;
 use std::net::{IpAddr, SocketAddr};
 
@@ -57,7 +58,13 @@ fn print_addrs(addr: &SocketAddr, proto: &str) -> io::Result<()> {
         })
         .collect::<Vec<_>>();
 
-    adrs.sort();
+    adrs.sort_by(|a, b| match (a.is_loopback(), b.is_loopback()) {
+        (true, true) => Equal,
+        (true, false) => Less,
+        (false, true) => Greater,
+        _ => a.cmp(b),
+    });
+
     adrs.iter().for_each(|adr| {
         // curl  http://::1:9000
         // curl: (3) IPv6 numerical address used in URL without brackets
@@ -67,5 +74,6 @@ fn print_addrs(addr: &SocketAddr, proto: &str) -> io::Result<()> {
             println!("{}{}://{}:{}", " ".repeat(TIP.len()), proto, adr, addr.port())
         }
     });
+
     Ok(())
 }
