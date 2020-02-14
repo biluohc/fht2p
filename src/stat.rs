@@ -35,16 +35,37 @@ fn print_addrs(addr: &SocketAddr, proto: &str) -> io::Result<()> {
         .values()
         .flat_map(|netif| {
             trace!("{}: {:?}", netif.name, netif.addrs);
-            netif.addrs.iter().filter_map(|a| match a.addr {
-                StatIpAddr::V4(ipv4) if addr.is_ipv4() => Some(IpAddr::V4(ipv4)),
-                StatIpAddr::V6(ipv6) if addr.is_ipv6() => Some(IpAddr::V6(ipv6)),
-                _ => None,
-            })
+            netif
+                .addrs
+                .iter()
+                .filter_map(|a| match a.addr {
+                    StatIpAddr::V4(ipv4) if addr.is_ipv4() => Some(ipv4.into()),
+                    StatIpAddr::V6(ipv6) if addr.is_ipv6() => Some(ipv6.into()),
+                    _ => None,
+                })
+                .filter(|ip: &IpAddr| {
+                    let addr_ip = addr.ip();
+
+                    if addr_ip.is_unspecified() {
+                        true
+                    } else if addr_ip.is_loopback() {
+                        ip.is_loopback()
+                    } else {
+                        *ip == addr_ip
+                    }
+                })
         })
         .collect::<Vec<_>>();
 
     adrs.sort();
-    adrs.iter()
-        .for_each(|adr| println!("{}{}://{}:{}", " ".repeat(TIP.len()), proto, adr, addr.port()));
+    adrs.iter().for_each(|adr| {
+        // curl  http://::1:9000
+        // curl: (3) IPv6 numerical address used in URL without brackets
+        if adr.is_ipv6() {
+            println!("{}{}://[{}]:{}", " ".repeat(TIP.len()), proto, adr, addr.port())
+        } else {
+            println!("{}{}://{}:{}", " ".repeat(TIP.len()), proto, adr, addr.port())
+        }
+    });
     Ok(())
 }
