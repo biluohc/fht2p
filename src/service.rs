@@ -82,27 +82,33 @@ impl State {
     }
 }
 
-pub fn run(config: Config) -> Result<()> {
-    consts::SERVER_ADDR.set(config.addr);
-    consts::MAGIC_LIMIT.set(config.magic_limit);
-    stat_print(&config.addr, config.cert.is_some(), config.routes.values());
+pub trait Service {
+    fn startup(self) -> Result<()>;
+}
 
-    let state = State::new(config)?.into_global();
-    let mut rt = Builder::new().basic_scheduler().enable_all().build()?;
+impl Service for Config {
+    fn startup(self) -> Result<()> {
+        consts::SERVER_ADDR.set(self.addr);
+        consts::MAGIC_LIMIT.set(self.magic_limit);
 
-    rt.block_on(async move {
-        let http = Server::run(state);
-        let ctrlc = ctrl_c();
+        stat_print(&self.addr, self.cert.is_some(), self.routes.values(), self.show_qrcode);
 
-        match select(http.boxed(), ctrlc.boxed()).await {
-            Either::Left((http, _)) => {
-                error!("http listen failed: {:?}", http);
+        let state = State::new(self)?.into_global();
+        let mut rt = Builder::new().basic_scheduler().enable_all().build()?;
+
+        rt.block_on(async move {
+            let http = Server::run(state);
+            let ctrlc = ctrl_c();
+
+            match select(http.boxed(), ctrlc.boxed()).await {
+                Either::Left((http, _)) => {
+                    error!("http listen finish: {:?}", http?);
+                }
+                Either::Right((ctrlc, _)) => {
+                    warn!("ctrlc catched: {:?}, will exit", ctrlc);
+                }
             }
-            Either::Right((ctrlc, _)) => {
-                warn!("ctrlc catched: {:?}, will exit", ctrlc);
-            }
-        }
-
-        Ok(())
-    })
+            Ok(())
+        })
+    }
 }

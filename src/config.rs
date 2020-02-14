@@ -176,6 +176,7 @@ impl Default for Config {
         Config {
             addr: Server::default().into(),
             magic_limit: *MAGIC_LIMIT.get(),
+            show_qrcode: false,
             keep_alive: true,
             cache_secs: 60,
             proxy: None,
@@ -189,6 +190,7 @@ impl Default for Config {
 /// `Config` for `main`
 #[derive(Debug, Clone, PartialEq)]
 pub struct Config {
+    pub show_qrcode: bool,
     pub keep_alive: bool,
     pub cache_secs: u32,
     pub magic_limit: u64,
@@ -213,5 +215,10 @@ impl Config {
         }
 
         Ok(None)
+    }
+
+    pub fn show_qrcode(mut self, b: bool) -> Self {
+        self.show_qrcode = b;
+        self
     }
 }

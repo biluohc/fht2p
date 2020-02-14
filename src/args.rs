@@ -2,19 +2,16 @@ use clap::{App, Arg};
 use json5;
 use regex::Regex;
 
-use std;
 use std::collections::BTreeMap as Map;
-use std::env;
-use std::fs::File;
-use std::io::Read;
 use std::net::{IpAddr, SocketAddr};
 use std::path::Path;
-use std::{process, str};
+use std::{env, fs, str};
 
 use crate::{
     config::{Auth, Cert, Config, ProxyRoute, Route},
     consts::*,
     logger::{logger_init, JoinHandle},
+    process_exit,
 };
 
 /// Get `Config` by `parse` `args`
@@ -26,12 +23,19 @@ pub fn parse() -> (Config, JoinHandle) {
     let default_addr = server.ip.to_string();
     let default_port = server.port.to_string();
     let default_cache = config.cache_secs.to_string();
+    let default_magic_size = config.magic_limit.to_string();
     let app = {
         App::new(NAME)
             .version(VERSION)
             .author(env!("CARGO_PKG_AUTHORS"))
             .about(env!("CARGO_PKG_DESCRIPTION"))
             .about(DESC)
+            .arg(
+                Arg::with_name("qr")
+                    .short("Q")
+                    .long("qr-code")
+                    .help("Show URL's QR code at startup"),
+            )
             .arg(
                 Arg::with_name("verbose")
                     .short("v")
@@ -43,7 +47,7 @@ pub fn parse() -> (Config, JoinHandle) {
                     .long("config")
                     .short("c")
                     .takes_value(true)
-                    .help("Set the path to a custom config file"),
+                    .help("Set the path to use a custom config file\ndefault path: ~/.config/fht2p/fht2p.json"),
             )
             .arg(
                 Arg::with_name("auth")
@@ -62,7 +66,7 @@ pub fn parse() -> (Config, JoinHandle) {
                     .long("cert")
                     .short("C")
                     .takes_value(true)
-                    .help("Set the cert for https,  public_key_file:private_key_file")
+                    .help("Set the cert for https,  public_cert_file:private_key_file")
                     .validator(|s| {
                         s.parse::<Cert>()
                             .map(|_| ())
@@ -71,8 +75,9 @@ pub fn parse() -> (Config, JoinHandle) {
             )
             .arg(
                 Arg::with_name("config-print")
+                    .short("F")
                     .long("config-print")
-                    .help("Print the default config file"),
+                    .help("Print the content of default config file"),
             )
             .arg(
                 Arg::with_name("redirect-html")
@@ -84,7 +89,7 @@ pub fn parse() -> (Config, JoinHandle) {
                 Arg::with_name("show-hider")
                     .long("show-hider")
                     .short("s")
-                    .help("show entries starts with '.'"),
+                    .help("Show entries starts with '.'"),
             )
             .arg(
                 Arg::with_name("keepalive")
@@ -96,26 +101,22 @@ pub fn parse() -> (Config, JoinHandle) {
                 Arg::with_name("follow-links")
                     .long("follow-links")
                     .short("f")
-                    .help("Whether follow links(default not)"),
+                    .help("Enable follow links"),
             )
             .arg(
                 Arg::with_name("upload")
                     .long("upload")
                     .short("u")
-                    .help("Whether enable upload(default not)"),
+                    .help("Enable upload function"),
             )
-            .arg(
-                Arg::with_name("mkdir")
-                    .short("m")
-                    .long("mkdir")
-                    .help("Whether enable mkdir(default not)"),
-            )
+            .arg(Arg::with_name("mkdir").short("m").long("mkdir").help("Enable mkdir function"))
             .arg(
                 Arg::with_name("magic-limit")
                     .long("magic-limit")
                     .short("M")
                     .takes_value(true)
-                    .help("The limit for detect file ContenType(use 0 to close)")
+                    .default_value(&default_magic_size)
+                    .help("The size limit for detect file ContenType(use 0 to close)")
                     .validator(|s| {
                         s.parse::<u64>()
                             .map(|_| ())
@@ -124,10 +125,11 @@ pub fn parse() -> (Config, JoinHandle) {
             )
             .arg(
                 Arg::with_name("cache-secs")
+                    .short("S")
                     .long("cache-secs")
                     .takes_value(true)
                     .default_value(&default_cache)
-                    .help("Set cache secs(use 0 to close)")
+                    .help("Set the secs of cache(use 0 to close)")
                     .validator(|s| {
                         s.parse::<u32>()
                             .map(|_| ())
@@ -138,9 +140,8 @@ pub fn parse() -> (Config, JoinHandle) {
                 Arg::with_name("proxy")
                     .long("proxy")
                     .short("P")
-                    // .default_value("")
                     .takes_value(true)
-                    .help("Enable http proxy function")
+                    .help("Enable http proxy(Regular for allowed domains, empty string can allow all)")
                     .validator(|s| {
                         Regex::new(&s)
                             .map(|_| ())
@@ -153,7 +154,7 @@ pub fn parse() -> (Config, JoinHandle) {
                     .short("i")
                     .default_value(&default_addr)
                     .takes_value(true)
-                    .help("Set listenning ip")
+                    .help("Set listenning ip address")
                     .validator(|s| {
                         s.parse::<IpAddr>()
                             .map(|_| ())
@@ -177,43 +178,42 @@ pub fn parse() -> (Config, JoinHandle) {
                 Arg::with_name("PATH")
                     .index(1)
                     .multiple(true)
-                    .help(r#"Set the paths to share"#),
+                    .help(r#"Set the paths to share [Default: "."]"#),
             )
     };
 
     // clap's NOTE: The first argument will be parsed as the binary name unless AppSettings::NoBinaryName is used
     let args = env::args().collect::<Vec<_>>();
-    // --version will exit early, so not contains other than -v*
-    let args_is_empty = args.iter().skip(1).all(|arg| arg.starts_with("-v"));
+    // not contains other than -v* or -Q/--qr-code
+    let args_is_empty = args
+        .iter()
+        .skip(1)
+        .all(|arg| arg.starts_with("-v") || ["-Q", "--qr-code"].contains(&arg.as_str()));
     let matches = app.get_matches_from(args);
+    let qr = matches.is_present("qr");
 
     // -P/--config-print
     if matches.is_present("config-print") {
         config_print();
     }
 
-    let join_handle = logger_init(matches.occurrences_of("verbose"));
+    let mut join_handle = logger_init(matches.occurrences_of("verbose"));
+    let exit_with_msg = |e: String| {
+        error!("{}", e);
+        join_handle.join();
+        process_exit(1);
+    };
 
     //-c/--config选项，如果有就载入该文件。
     if let Some(s) = matches.value_of("config") {
-        let config = Config::load_from_file(&s)
-            .map_err(|e| {
-                error!("{:?}", e);
-                process::exit(1);
-            })
-            .unwrap();
-        return (config, join_handle);
+        let config = Config::load_from_file(&s).map_err(exit_with_msg).unwrap();
+        return (config.show_qrcode(qr), join_handle);
     }
 
     // 命令行有没有参数？有就解析参数，没有就寻找配置文件，再没有就使用默认配置。
     let conf = if args_is_empty {
         match get_config_path() {
-            Some(s) => Config::load_from_file(&s)
-                .map_err(|e| {
-                    error!("{:?}", e);
-                    process::exit(1);
-                })
-                .unwrap(),
+            Some(s) => Config::load_from_file(&s).map_err(exit_with_msg).unwrap(),
             None => Config::load_from_STR(),
         }
     } else {
@@ -246,15 +246,12 @@ pub fn parse() -> (Config, JoinHandle) {
             mkdir,
             authorized,
         )
-        .map_err(|e| {
-            error!("{:?}", e);
-            process::exit(1);
-        })
+        .map_err(exit_with_msg)
         .unwrap();
         config
     };
 
-    (conf, join_handle)
+    (conf.show_qrcode(qr), join_handle)
 }
 
 #[derive(Debug, Clone)]
@@ -307,17 +304,15 @@ pub struct Setting {
 
 impl Config {
     fn load_from_file(path: &str) -> Result<Self, String> {
-        let mut str = String::new();
-        let mut file = File::open(path).map_err(|e| format!("config file('{}') open fails: {}", path, e))?;
-        file.read_to_string(&mut str)
-            .map_err(|e| format!("config file('{}') read fails: {}", path, e))?;
+        debug!("Config.load_from_file: {}", path);
+        let str = fs::read_to_string(path).map_err(|e| format!("config file('{}') read failed: {}", path, e))?;
         Self::load_from_str(path, &str)
     }
     fn load_from_str(file_name: &str, json: &str) -> Result<Config, String> {
         let mut config = Self::default();
         config.routes.clear();
 
-        let json: Fht2p = json5::from_str(json).map_err(|e| format!("config file('{}') parse fails: {}", file_name, e))?;
+        let json: Fht2p = json5::from_str(json).map_err(|e| format!("config file('{}') parse failed: {}", file_name, e))?;
         config.keep_alive = json.setting.keep_alive;
         config.magic_limit = json.setting.magic_limit;
         config.cache_secs = json.setting.cache_secs;
@@ -358,7 +353,7 @@ impl Config {
 // 打印默认配置文件。
 fn config_print() {
     println!("{}", CONFIG_STR);
-    std::process::exit(0);
+    process_exit(0);
 }
 
 // 家目录 ～/.config/fht2p/fht2p.json

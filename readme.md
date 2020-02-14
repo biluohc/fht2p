@@ -29,7 +29,7 @@
 
 ### Help
 ```sh
-fht2p 0.9.0 (857a9fc7@0.9 rustc1.40.0 2020-01-31~11:12:54UTC)
+fht2p 0.9.2 (a91f0a0f-modified@qr rustc1.41.0 2020-02-14~14:15:32UTC)
 Wspsxing <biluohc@qq.com>
 A HTTP Server for Static File written with Rust
 
@@ -37,27 +37,29 @@ USAGE:
     fht2p [FLAGS] [OPTIONS] [PATH]...
 
 FLAGS:
-        --config-print     Print the default config file
-    -f, --follow-links     Whether follow links(default not)
+    -F, --config-print     Print the content of default config file
+    -f, --follow-links     Enable follow links
     -h, --help             Prints help information
     -k, --keepalive        Close HTTP keep alive
-    -m, --mkdir            Whether enable mkdir(default not)
+    -m, --mkdir            Enable mkdir function
+    -Q, --qr-code          Show URL's QR code at startup
     -r, --redirect-html    Redirect dir to `index.html` or `index.htm` if it exists
-    -s, --show-hider       show entries starts with '.'
-    -u, --upload           Whether enable upload(default not)
+    -s, --show-hider       Show entries starts with '.'
+    -u, --upload           Enable upload function
     -V, --version          Prints version information
     -v                     Increases logging verbosity each use for up to 3 times(warn0_info1_debug2_trace3+)
 
 OPTIONS:
     -a, --auth <auth>                  Set the username:password for authorization
-        --cache-secs <cache-secs>      Set cache secs(use 0 to close) [default: 60]
-    -C, --cert <cert>                  Set the cert for https,  public_key_file:private_key_file
-    -c, --config <config>              Set the path to a custom config file
-    -i, --ip <ip>                      Set listenning ip [default: 0.0.0.0]
-    -M, --magic-limit <magic-limit>    The limit for detect file ContenType(use 0 to close)
+    -S, --cache-secs <cache-secs>      Set the secs of cache(use 0 to close) [default: 60]
+    -C, --cert <cert>                  Set the cert for https,  public_cert_file:private_key_file
+    -c, --config <config>              Set the path to use a custom config file
+                                       default path: ~/.config/fht2p/fht2p.json
+    -i, --ip <ip>                      Set listenning ip address [default: 127.0.0.1]
+    -M, --magic-limit <magic-limit>    The size limit for detect file ContenType(use 0 to close) [default: 10485760]
     -p, --port <port>                  Set listenning port [default: 8000]
-    -P, --proxy <proxy>                Enable http proxy function
+    -P, --proxy <proxy>                Enable http proxy(Regular for allowed domains, empty string can allow all)
 
 ARGS:
-    <PATH>...    Set the paths to share
+    <PATH>...    Set the paths to share [Default: "."]
 ```

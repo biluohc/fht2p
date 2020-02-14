@@ -11,6 +11,8 @@ extern crate anyhow;
 #[macro_use]
 extern crate serde;
 
+pub use std::process::exit as process_exit;
+
 pub mod how {
     pub type Error = anyhow::Error;
     pub type Result<T> = anyhow::Result<T>;
