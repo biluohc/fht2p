@@ -130,6 +130,7 @@ pub fn parse() -> (Config, JoinHandle) {
             )
             .arg(
                 Arg::with_name("cache-secs")
+                    .short("S")
                     .long("cache-secs")
                     .takes_value(true)
                     .default_value(&default_cache)
