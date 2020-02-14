@@ -185,8 +185,11 @@ pub fn parse() -> (Config, JoinHandle) {
 
     // clap's NOTE: The first argument will be parsed as the binary name unless AppSettings::NoBinaryName is used
     let args = env::args().collect::<Vec<_>>();
-    // not contains other than -v* or --qr
-    let args_is_empty = args.iter().skip(1).all(|arg| arg.starts_with("-v") || arg == "--qr");
+    // not contains other than -v* or -Q/--qr-code
+    let args_is_empty = args
+        .iter()
+        .skip(1)
+        .all(|arg| arg.starts_with("-v") || ["-Q", "--qr-code"].contains(&arg.as_str()));
     let matches = app.get_matches_from(args);
     let qr = matches.is_present("qr");
 
