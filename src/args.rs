@@ -2,17 +2,16 @@ use clap::{App, Arg};
 use json5;
 use regex::Regex;
 
-use std;
 use std::collections::BTreeMap as Map;
-use std::env;
 use std::net::{IpAddr, SocketAddr};
 use std::path::Path;
-use std::{fs, process, str};
+use std::{env, fs, str};
 
 use crate::{
     config::{Auth, Cert, Config, ProxyRoute, Route},
     consts::*,
     logger::{logger_init, JoinHandle},
+    process_exit,
 };
 
 /// Get `Config` by `parse` `args`
@@ -198,28 +197,23 @@ pub fn parse() -> (Config, JoinHandle) {
         config_print();
     }
 
-    let join_handle = logger_init(matches.occurrences_of("verbose"));
+    let mut join_handle = logger_init(matches.occurrences_of("verbose"));
+    let exit_with_msg = |e: String| {
+        error!("{}", e);
+        join_handle.join();
+        process_exit(1);
+    };
 
     //-c/--config选项，如果有就载入该文件。
     if let Some(s) = matches.value_of("config") {
-        let config = Config::load_from_file(&s)
-            .map_err(|e| {
-                error!("{:?}", e);
-                process::exit(1);
-            })
-            .unwrap();
+        let config = Config::load_from_file(&s).map_err(exit_with_msg).unwrap();
         return (config.show_qrcode(qr), join_handle);
     }
 
     // 命令行有没有参数？有就解析参数，没有就寻找配置文件，再没有就使用默认配置。
     let conf = if args_is_empty {
         match get_config_path() {
-            Some(s) => Config::load_from_file(&s)
-                .map_err(|e| {
-                    error!("{:?}", e);
-                    process::exit(1);
-                })
-                .unwrap(),
+            Some(s) => Config::load_from_file(&s).map_err(exit_with_msg).unwrap(),
             None => Config::load_from_STR(),
         }
     } else {
@@ -252,10 +246,7 @@ pub fn parse() -> (Config, JoinHandle) {
             mkdir,
             authorized,
         )
-        .map_err(|e| {
-            error!("{:?}", e);
-            process::exit(1);
-        })
+        .map_err(exit_with_msg)
         .unwrap();
         config
     };
@@ -362,7 +353,7 @@ impl Config {
 // 打印默认配置文件。
 fn config_print() {
     println!("{}", CONFIG_STR);
-    std::process::exit(0);
+    process_exit(0);
 }
 
 // 家目录 ～/.config/fht2p/fht2p.json
