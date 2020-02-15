@@ -90,11 +90,7 @@ pub async fn index_handler2<'a>(
     match *req.method() {
         Method::GET => {
             let compress_level = state.config().compress_level;
-            if compress_level > 0 && html.len() > 32 {
-                Ok(compress_handler(req, addr, resp, html, compress_level).await)
-            } else {
-                Ok(resp.body(html.into()))
-            }
+            Ok(compress_handler(req, addr, resp, html, compress_level).await)
         }
         // 204： curl -Lv -X HEAD "0.0.0.0:8000/src/main.rs"
         Method::HEAD => Ok(resp.status(StatusCode::NO_CONTENT).body(Body::empty())),
