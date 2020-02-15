@@ -11,6 +11,7 @@ pub const CONFIG_STR: &str = include_str!("../config/fht2p.json");
 
 pub const CHARSET: &str = "charset=utf-8";
 pub const CONTENT_TYPE_HTML: &str = "text/html; charset=utf-8";
+pub const COMPRESS_LEVEL: u32 = 5;
 
 use std::cell::UnsafeCell;
 use std::net::{Ipv4Addr, SocketAddr};

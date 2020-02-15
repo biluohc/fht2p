@@ -1,3 +1,4 @@
+pub mod compress;
 pub mod exception;
 pub mod file;
 pub mod file_upload;

@@ -11,6 +11,7 @@
         // if file not have extname, pragram will to detect conten-type by read it if magic_limic big than the size of file.
         "magicLimit": 10485760, // 10M
         "cacheSecs": 60,
+        "compressLevel": 5,
         "addr": "127.0.0.1:8000",
         "auth": null,
         "cert": null

@@ -12,10 +12,11 @@ pub use service::Service;
 pub type Body = hyper::Body;
 pub type Request = hyper::Request<Body>;
 pub type Response = hyper::Response<Body>;
+pub type ResponseBuilder = http::response::Builder;
 
 pub use hyper::body::to_bytes as body_to_bytes;
 
 pub use http;
-pub fn response() -> http::response::Builder {
-    http::response::Builder::new()
+pub fn response() -> ResponseBuilder {
+    ResponseBuilder::new()
 }

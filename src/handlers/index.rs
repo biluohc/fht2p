@@ -1,5 +1,4 @@
 use chrono::{offset::Local, DateTime};
-use futures::{future, Future};
 use hyper::{header, Body, Method, StatusCode};
 
 use std::{fs, io, net::SocketAddr, path::Path};
@@ -11,35 +10,33 @@ use crate::consts::CONTENT_TYPE_HTML;
 use crate::service::GlobalState;
 use crate::views::{EntryMetadata, EntryOrder};
 
-use super::exception::io_exception_handler_sync;
+use super::{compress::compress_handler, exception::io_exception_handler_sync};
 
-pub fn index_handler(
-    route: &Route,
-    reqpath: &str,
-    path: &Path,
-    meta: &fs::Metadata,
+pub async fn index_handler<'a>(
+    route: &'a Route,
+    reqpath: &'a str,
+    path: &'a Path,
+    meta: &'a fs::Metadata,
     req: Request,
-    addr: &SocketAddr,
+    addr: &'a SocketAddr,
     state: GlobalState,
-) -> impl Future<Output = Result<Response, http::Error>> {
-    let resp = match index_handler2(route, reqpath, path, meta, &req, addr, state) {
+) -> Result<Response, http::Error> {
+    match index_handler2(route, reqpath, path, meta, &req, addr, state).await {
         Ok(resp) => resp,
         Err(e) => {
             error!("index_handler2 faield: {:?}", e);
             io_exception_handler_sync(e, &req, addr)
         }
-    };
-
-    future::ready(resp)
+    }
 }
 
-pub fn index_handler2(
-    route: &Route,
-    reqpath: &str,
-    path: &Path,
-    meta: &fs::Metadata,
-    req: &Request,
-    addr: &SocketAddr,
+pub async fn index_handler2<'a>(
+    route: &'a Route,
+    reqpath: &'a str,
+    path: &'a Path,
+    meta: &'a fs::Metadata,
+    req: &'a Request,
+    addr: &'a SocketAddr,
     state: ctxs::State,
 ) -> io::Result<Result<Response, http::Error>> {
     let mut resp = response();
@@ -91,7 +88,14 @@ pub fn index_handler2(
     resp = resp.header(header::CONTENT_LENGTH, html.len());
 
     match *req.method() {
-        Method::GET => Ok(resp.body(html.into())),
+        Method::GET => {
+            let compress_level = state.config().compress_level;
+            if compress_level > 0 && html.len() > 32 {
+                Ok(compress_handler(req, addr, resp, html, compress_level).await)
+            } else {
+                Ok(resp.body(html.into()))
+            }
+        }
         // 204： curl -Lv -X HEAD "0.0.0.0:8000/src/main.rs"
         Method::HEAD => Ok(resp.status(StatusCode::NO_CONTENT).body(Body::empty())),
         _ => unreachable!(),

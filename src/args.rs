@@ -23,6 +23,7 @@ pub fn parse() -> (Config, JoinHandle) {
     let default_addr = server.ip.to_string();
     let default_port = server.port.to_string();
     let default_cache = config.cache_secs.to_string();
+    let default_compress = config.compress_level.to_string();
     let default_magic_size = config.magic_limit.to_string();
     let app = {
         App::new(NAME)
@@ -71,6 +72,24 @@ pub fn parse() -> (Config, JoinHandle) {
                         s.parse::<Cert>()
                             .map(|_| ())
                             .map_err(|e| format!("invalid value for cert: {}", e))
+                    }),
+            )
+            .arg(
+                Arg::with_name("compress")
+                    .long("compress")
+                    .takes_value(true)
+                    .help("Set the level for index compress, should between 0~9, use 0 to close")
+                    .default_value(&default_compress)
+                    .validator(|s| {
+                        s.parse::<u32>()
+                            .map_err(|e| format!("invalid value for compress: {}", e))
+                            .and_then(|x| {
+                                if x <= 9 {
+                                    Ok(())
+                                } else {
+                                    Err(format!("invalid level for compress: {}", x))
+                                }
+                            })
                     }),
             )
             .arg(
@@ -229,6 +248,9 @@ pub fn parse() -> (Config, JoinHandle) {
         matches
             .value_of("cache-secs")
             .map(|cs| config.cache_secs = cs.parse::<u32>().unwrap());
+        matches
+            .value_of("compress")
+            .map(|cp| config.compress_level = cp.parse::<u32>().unwrap());
 
         config.addr = SocketAddr::new(server.ip, server.port);
         config.auth = matches.value_of("auth").map(|cp| cp.parse::<Auth>().unwrap());
@@ -298,6 +320,7 @@ pub struct Setting {
     keep_alive: bool,
     magic_limit: u64,
     cache_secs: u32,
+    compress_level: u32,
     auth: Option<Auth>,
     cert: Option<Cert>,
 }
@@ -315,6 +338,7 @@ impl Config {
         let json: Fht2p = json5::from_str(json).map_err(|e| format!("config file('{}') parse failed: {}", file_name, e))?;
         config.keep_alive = json.setting.keep_alive;
         config.magic_limit = json.setting.magic_limit;
+        config.compress_level = json.setting.compress_level;
         config.cache_secs = json.setting.cache_secs;
         config.addr = json.setting.addr;
         config.cert = json.setting.cert.clone();

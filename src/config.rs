@@ -176,6 +176,7 @@ impl Default for Config {
         Config {
             addr: Server::default().into(),
             magic_limit: *MAGIC_LIMIT.get(),
+            compress_level: COMPRESS_LEVEL,
             show_qrcode: false,
             keep_alive: true,
             cache_secs: 60,
@@ -199,6 +200,7 @@ pub struct Config {
     pub auth: Option<Auth>,
     pub cert: Option<Cert>,
     pub proxy: Option<Route>,
+    pub compress_level: u32,
 }
 
 impl Config {
