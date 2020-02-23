@@ -210,11 +210,7 @@ pub fn parse() -> (Config, JoinHandle) {
 
     // clap's NOTE: The first argument will be parsed as the binary name unless AppSettings::NoBinaryName is used
     let args = env::args().collect::<Vec<_>>();
-    // not contains other than -v*, -Q, --qr-code/--verbose, but -vs ?
-    let args_is_empty = args
-        .iter()
-        .skip(1)
-        .all(|arg| arg.starts_with("-v") || arg.starts_with("-Q") || ["--verbose", "--qr-code"].contains(&arg.as_str()));
+    let args_is_empty = args_is_empty(args.iter());
     let matches = app.get_matches_from(args);
     let qr = matches.is_present("qr");
 
@@ -283,6 +279,45 @@ pub fn parse() -> (Config, JoinHandle) {
     };
 
     (conf.show_qrcode(qr), join_handle)
+}
+
+// not contains other than -v*, -Q, --qr-code/--verbose, but -vs ?
+pub fn args_is_empty<S: AsRef<str>>(args: impl Iterator<Item = S>) -> bool {
+    let regex = Regex::new(r"^((-[vQ]{1,})|(--verbose)|(--qr-code))$").unwrap();
+
+    args.skip(1).all(|arg| {
+        // arg.as_ref().starts_with("-v") || arg.as_ref().starts_with("-Q") || ["--verbose", "--qr-code"].contains(&arg.as_ref())
+        regex.is_match(arg.as_ref())
+    })
+}
+
+#[test]
+fn args_is_empty_test() {
+    assert!(args_is_empty(["", "-v"].iter()));
+    assert!(args_is_empty(["", "--verbose"].iter()));
+    assert!(args_is_empty(["", "-Q"].iter()));
+    assert!(args_is_empty(["", "--qr-code"].iter()));
+    assert!(args_is_empty(["", "-vv"].iter()));
+    assert!(args_is_empty(["", "-vQ"].iter()));
+    assert!(args_is_empty(["", "-QQ"].iter()));
+
+    assert!(!args_is_empty(["", "-vs"].iter()));
+    assert!(!args_is_empty(["", "-Qr"].iter()));
+    assert!(!args_is_empty(["", "--verbose0"].iter()));
+    assert!(!args_is_empty(["", "--qr-code "].iter()));
+    assert!(!args_is_empty(["", " --qr-code "].iter()));
+    assert!(!args_is_empty(["", " -v"].iter()));
+    assert!(!args_is_empty(["", "-v "].iter()));
+    assert!(!args_is_empty(["", " -v "].iter()));
+    assert!(!args_is_empty(["", "-Q", "-i"].iter()));
+    assert!(!args_is_empty(["", "-v", "--ip"].iter()));
+    assert!(!args_is_empty(["", "-vvQr"].iter()));
+    assert!(!args_is_empty(["", "-r"].iter()));
+    assert!(!args_is_empty(["", "-ip"].iter()));
+    assert!(!args_is_empty(["", "./-v"].iter()));
+    assert!(!args_is_empty(["", "-"].iter()));
+    assert!(!args_is_empty(["", "--"].iter()));
+    assert!(!args_is_empty(["", ""].iter()));
 }
 
 #[derive(Debug, Clone)]
