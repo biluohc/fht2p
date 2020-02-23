@@ -40,6 +40,7 @@ pub fn parse() -> (Config, JoinHandle) {
             .arg(
                 Arg::with_name("verbose")
                     .short("v")
+                    .long("verbose")
                     .multiple(true)
                     .help("Increases logging verbosity each use for up to 3 times(warn0_info1_debug2_trace3+)"),
             )
@@ -209,11 +210,11 @@ pub fn parse() -> (Config, JoinHandle) {
 
     // clap's NOTE: The first argument will be parsed as the binary name unless AppSettings::NoBinaryName is used
     let args = env::args().collect::<Vec<_>>();
-    // not contains other than -v* or -Q/--qr-code
+    // not contains other than -v*, -Q, --qr-code/--verbose, but -vs ?
     let args_is_empty = args
         .iter()
         .skip(1)
-        .all(|arg| arg.starts_with("-v") || ["-Q", "--qr-code"].contains(&arg.as_str()));
+        .all(|arg| arg.starts_with("-v") || arg.starts_with("-Q") || ["--verbose", "--qr-code"].contains(&arg.as_str()));
     let matches = app.get_matches_from(args);
     let qr = matches.is_present("qr");
 
