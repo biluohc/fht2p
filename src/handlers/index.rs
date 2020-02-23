@@ -10,7 +10,10 @@ use crate::consts::CONTENT_TYPE_HTML;
 use crate::service::GlobalState;
 use crate::views::{EntryMetadata, EntryOrder};
 
-use super::{compress::compress_handler, exception::io_exception_handler_sync};
+use super::{
+    compress::compress_handler,
+    exception::{exception_handler_sync, io_exception_handler_sync},
+};
 
 pub async fn index_handler<'a>(
     route: &'a Route,
@@ -21,6 +24,10 @@ pub async fn index_handler<'a>(
     addr: &'a SocketAddr,
     state: GlobalState,
 ) -> Result<Response, http::Error> {
+    if route.disable_index {
+        return exception_handler_sync(403, Some("index(directory) view is closed"), &req, addr);
+    }
+
     match index_handler2(route, reqpath, path, meta, &req, addr, state).await {
         Ok(resp) => resp,
         Err(e) => {

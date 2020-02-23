@@ -117,6 +117,12 @@ pub fn parse() -> (Config, JoinHandle) {
                     .help("Close HTTP keep alive"),
             )
             .arg(
+                Arg::with_name("disable-index")
+                    .long("disable-index")
+                    .short("d")
+                    .help("Disable index(directory) view(will return 403)"),
+            )
+            .arg(
                 Arg::with_name("follow-links")
                     .long("follow-links")
                     .short("f")
@@ -238,6 +244,7 @@ pub fn parse() -> (Config, JoinHandle) {
     } else {
         let redirect_html = matches.is_present("redirect-html");
         let follow_links = matches.is_present("follow-links");
+        let disable_index = matches.is_present("disable-index");
         let show_hider = matches.is_present("show-hider");
         let upload = matches.is_present("upload");
         let mkdir = matches.is_present("mkdir");
@@ -264,6 +271,7 @@ pub fn parse() -> (Config, JoinHandle) {
             redirect_html,
             follow_links,
             show_hider,
+            disable_index,
             upload,
             mkdir,
             authorized,
@@ -352,11 +360,12 @@ impl Config {
             config.routes.insert(
                 url.clone(),
                 Route::new(
-                    url.as_str(),
-                    route.path.as_str(),
+                    url,
+                    &route.path,
                     route.redirect_html,
                     route.follow_links,
                     route.show_hider,
+                    route.disable_index,
                     route.upload,
                     route.mkdir,
                     route.authorized,
@@ -399,6 +408,7 @@ fn args_paths_to_route(
     redirect_html: bool,
     follow_links: bool,
     show_hider: bool,
+    disable_index: bool,
     upload: bool,
     mkdir: bool,
     authorized: bool,
@@ -410,11 +420,12 @@ fn args_paths_to_route(
         }
         if idx == 0 {
             let route = Route::new(
-                "/".to_owned(),
-                path.to_string(),
+                "/",
+                path,
                 redirect_html,
                 follow_links,
                 show_hider,
+                disable_index,
                 upload,
                 mkdir,
                 authorized,
@@ -423,11 +434,12 @@ fn args_paths_to_route(
         } else {
             let route_url = route_name(path)?;
             let route = Route::new(
-                route_url.clone(),
-                path.to_string(),
+                &route_url,
+                path,
                 redirect_html,
                 follow_links,
                 show_hider,
+                disable_index,
                 upload,
                 mkdir,
                 authorized,

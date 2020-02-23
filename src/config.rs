@@ -130,12 +130,13 @@ pub struct Route {
     #[serde(skip)]
     pub url: String,
     #[serde(default)]
-    #[serde(skip)]
     pub follow_links: bool,
     #[serde(default)]
     pub redirect_html: bool,
     #[serde(default)]
     pub show_hider: bool,
+    #[serde(default)]
+    pub disable_index: bool,
     #[serde(default)]
     pub authorized: bool,
     #[serde(default)]
@@ -145,16 +146,21 @@ pub struct Route {
 }
 
 impl Route {
-    pub fn new<S: Into<String>>(
-        url: S,
-        path: S,
+    pub fn new<Su, Sp>(
+        url: Su,
+        path: Sp,
         redirect_html: bool,
         follow_links: bool,
         show_hider: bool,
+        disable_index: bool,
         upload: bool,
         mkdir: bool,
         authorized: bool,
-    ) -> Self {
+    ) -> Self
+    where
+        Su: Into<String>,
+        Sp: Into<String>,
+    {
         Self {
             urlcs: 0,
             url: url.into(),
@@ -162,6 +168,7 @@ impl Route {
             redirect_html,
             follow_links,
             show_hider,
+            disable_index,
             upload,
             mkdir,
             authorized,
@@ -172,7 +179,10 @@ impl Route {
 impl Default for Config {
     fn default() -> Self {
         let mut map = Map::new();
-        map.insert("/".to_owned(), Route::new("/", ".", false, false, false, false, false, false));
+        map.insert(
+            "/".to_owned(),
+            Route::new("/", ".", false, false, false, false, false, false, false),
+        );
         Config {
             addr: Server::default().into(),
             magic_limit: *MAGIC_LIMIT.get(),
