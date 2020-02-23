@@ -1,4 +1,5 @@
 use futures::{Future, FutureExt};
+use hyper::header;
 use tower_service::Service as TowerService;
 
 use std::net::SocketAddr;
@@ -31,6 +32,19 @@ impl TowerService<Request> for Service {
     }
 
     fn call(&mut self, req: Request) -> Self::Future {
-        Router::call(self.peer_addr, req, self.state).boxed()
+        let keepalive = if self.state.config().keep_alive {
+            "Keep-Alive"
+        } else {
+            "Close"
+        };
+
+        Router::call(self.peer_addr, req, self.state)
+            .map(move |resp| {
+                resp.map(|mut resp| {
+                    resp.headers_mut().insert(header::CONNECTION, keepalive.parse().unwrap());
+                    resp
+                })
+            })
+            .boxed()
     }
 }
