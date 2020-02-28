@@ -58,7 +58,7 @@ impl MultiPart {
 
     // b"--------------------------7adee9ed033d3a54\r\nContent-Disposition: form-data; name=\"filename\"; filename=\"pkg.jl\"\r\nContent-Type: application/octet-stream\r\n\r\n"
 
-    pub async fn next_part<'a>(&'a mut self) -> Option<Result<Part<'a>, Error>> {
+    pub async fn next_part(&mut self) -> Option<Result<Part<'_>, Error>> {
         fn is_multi_eof(input: &[u8], boundary: &str) -> bool {
             input.len() >= boundary.len() + 4
                 && &input[0..2] == b"--".as_ref()
@@ -83,7 +83,7 @@ impl MultiPart {
             }
 
             let (remain_bytes, fin, ct) = match filename_and_contentype(self.buf.as_ref(), self.boundary.as_str()) {
-                Ok((b, f, c)) => (b.len(), f.to_owned(), c.to_owned()),
+                Ok((b, f, c)) => (b.len(), f, c.to_owned()),
                 Err(e) => {
                     debug!("{:?}", self.buf);
                     if is_multi_eof(self.buf.as_ref(), self.boundary.as_str()) {
@@ -361,10 +361,10 @@ fn parse_part_eof(input: &[u8], boundary: &str) -> Option<Option<usize>> {
         if input[i] == b'\r' {
             let remain_bytes = &input[i..];
 
-            for idx in 0..std::cmp::min(remain_bytes.len(), boundary_bytes_size + 4) {
-                let rc = remain_bytes[idx];
+            let takes = std::cmp::min(remain_bytes.len(), boundary_bytes_size + 4);
+            for (idx, rc) in remain_bytes.iter().enumerate().take(takes) {
                 let bc = take(idx);
-                if rc != bc {
+                if *rc != bc {
                     continue 'for0;
                 }
             }

@@ -22,6 +22,7 @@ impl Service {
     }
 }
 
+#[allow(clippy::type_complexity)]
 impl TowerService<Request> for Service {
     type Response = Response;
     type Error = http::Error;

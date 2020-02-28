@@ -20,7 +20,7 @@ impl MiddleWare for PathNormalizer {
 
         let reqpath_components = reqpath_components_raw
             .fold(Ok(vec![]), |cs, c| {
-                cs.and_then(move |mut cs| match (cs.len() > 0, c == "..") {
+                cs.and_then(move |mut cs| match (!cs.is_empty(), c == "..") {
                     (_, false) => {
                         cs.push(c);
                         Ok(cs)

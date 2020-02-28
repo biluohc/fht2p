@@ -127,7 +127,7 @@ pub fn render_html(
         &parent,
         &remote_addr,
         next_order,
-        &metadatas,
+        metadatas.iter(),
         config.upload,
         config.mkdir,
     );

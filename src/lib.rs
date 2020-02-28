@@ -1,4 +1,6 @@
-#![allow(unknown_lints)]
+// #![allow(unknown_lints)]
+// #![allow(clippy::all)]
+// #[rustfmt::skip]
 #[macro_use]
 pub extern crate nonblock_logger;
 // #[macro_use]

@@ -66,20 +66,23 @@ pub struct IndexTemplate<'a> {
 }
 
 impl<'a> IndexTemplate<'a> {
-    pub fn new(
+    pub fn new<Es>(
         title: &'a str,
         h1: &'a str,
         parent: &'a str,
         client: &'a SocketAddr,
         next: (&'static str, &'static str, &'static str),
-        entries: &'a Vec<EntryMetadata>,
+        entries: Es,
         upload: bool,
         mkdir: bool,
-    ) -> Self {
+    ) -> Self
+    where
+        Es: Iterator<Item = &'a EntryMetadata>,
+    {
         IndexTemplate {
             next,
             _parent: BaseTemplate::new(title, h1, parent, client, upload, mkdir),
-            entries: entries.iter().map(|entry| Entry::new(entry)).collect::<Vec<Entry<'a>>>(),
+            entries: entries.map(|entry| Entry::new(entry)).collect::<Vec<Entry<'a>>>(),
         }
     }
 }

@@ -24,7 +24,7 @@ pub fn url_for_path(path: &str) -> String {
     percent_encode(path.as_bytes(), PATH_ENCODE_SET).to_string()
 }
 
-pub fn url_path_decode<'a>(path: &'a str) -> Cow<'a, str> {
+pub fn url_path_decode(path: &str) -> Cow<'_, str> {
     percent_decode(path.as_bytes()).decode_utf8().unwrap()
 }
 
@@ -55,6 +55,7 @@ for i in 0:127
     @printf(".add(0x%02x) // %d %s\n", i, i, Char(i))
 end
 */
+// #[rustfmt::skip]
 const PATH_ENCODE_SET: &AsciiSet = &CONTROLS
     .add(0x00) // 0
     .add(0x01) // 1

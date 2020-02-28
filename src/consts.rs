@@ -33,6 +33,7 @@ impl<T> MutStatic<T> {
         unsafe { self.0.get().as_ref().unwrap() }
     }
     // tls
+    #[warn(clippy::mut_from_ref)]
     pub fn get_mut(&self) -> &mut T {
         unsafe { self.0.get().as_mut().unwrap() }
     }

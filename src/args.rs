@@ -15,6 +15,7 @@ use crate::{
 };
 
 /// Get `Config` by `parse` `args`
+#[allow(clippy::option_map_unit_fn)]
 pub fn parse() -> (Config, JoinHandle) {
     let mut config = Config::default();
     let mut server = Server::default();

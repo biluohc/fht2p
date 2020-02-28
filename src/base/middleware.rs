@@ -17,6 +17,7 @@ pub type BoxedMiddleWare = Box<dyn MiddleWare + Send + Sync + 'static>;
 #[derive(Default)]
 pub struct MiddleWares(Vec<BoxedMiddleWare>);
 
+#[allow(clippy::len_without_is_empty)]
 impl MiddleWares {
     pub fn new() -> Self {
         Default::default()

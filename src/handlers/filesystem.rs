@@ -17,7 +17,7 @@ use crate::base::{
     http, Request, Response,
 };
 
-pub fn fs_handler<'a>() -> BoxedHandler {
+pub fn fs_handler() -> BoxedHandler {
     use std::path::Path;
 
     async fn fs_handler2<'a>(req: Request, addr: &'a SocketAddr, ctx: &'a mut Ctx) -> Result<Response, http::Error> {

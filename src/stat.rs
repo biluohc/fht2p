@@ -42,7 +42,7 @@ fn print_addr(adr: &IpAddr, port: u16, proto: &str, show_qrcode: bool) {
 
     if show_qrcode {
         qr2term::print_qr(&adr_str)
-            .map(|_| println!(""))
+            .map(|_| println!())
             .map_err(|e| error!("print qr code failed: {}", e))
             .ok();
     }
