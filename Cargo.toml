@@ -13,10 +13,20 @@ edition = "2018"
 name = "fht2plib"
 path = "src/lib.rs"
 
+# https://doc.rust-lang.org/cargo/reference/profiles.html#lto
 [profile.release]
 opt-level = 3
-# lto = true
-# debug = true 
+lto = "thin"
+
+[profile.dev]
+opt-level = 0
+debug = 2
+lto = false
+panic = 'unwind'
+debug-assertions = true
+overflow-checks = true
+incremental = true
+rpath = false
 
 [dev-dependencies]
 walkdir = "2.3.1"

@@ -4,7 +4,7 @@
         "magicLimit": 10485760,
         "cacheSecs": 60,
         "compressLevel": 5,
-        "addr": "0.0.0.0:9000",
+        "addr": "0.0.0.0:8000",
         "auth": {
             "username": "www",
             "password": "basic"
