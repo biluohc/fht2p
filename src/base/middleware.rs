@@ -9,7 +9,7 @@ pub trait MiddleWare {
     fn before(&self, _req: &Request, _addr: &SocketAddr, _ctx: &mut Ctx) -> Result<(), Response> {
         Ok(())
     }
-    fn after(&self, _resp: &Response, _addr: &SocketAddr, _ctx: &mut Ctx) {}
+    fn after(&self, _resp: &mut Response, _addr: &SocketAddr, _ctx: &mut Ctx) {}
 }
 
 pub type BoxedMiddleWare = Box<dyn MiddleWare + Send + Sync + 'static>;

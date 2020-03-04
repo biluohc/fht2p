@@ -28,7 +28,7 @@ impl MiddleWare for Logger {
 
         Ok(())
     }
-    fn after(&self, resp: &Response, addr: &SocketAddr, ctx: &mut Ctx) {
+    fn after(&self, resp: &mut Response, addr: &SocketAddr, ctx: &mut Ctx) {
         let start = ctx.get::<ctxs::ReqStart>().unwrap();
         let method = ctx.get::<ctxs::ReqMethod>().unwrap();
         let uri = ctx.get::<ctxs::ReqUri>().unwrap();

@@ -9,7 +9,10 @@ use std::{
     str,
 };
 
-use crate::{base::Body, how::Error};
+use crate::{
+    base::{Body, HeaderGetStr},
+    how::Error,
+};
 
 #[derive(Debug)]
 pub struct MultiPart {
@@ -24,8 +27,7 @@ pub struct MultiPart {
 impl MultiPart {
     pub fn new(body: Body, headers: &HeaderMap) -> Result<Self, Error> {
         let (contentype, boundary) = headers
-            .get(header::CONTENT_TYPE)
-            .and_then(|v| v.to_str().ok())
+            .get_str_option(header::CONTENT_TYPE)
             .ok_or_else(|| format_err!("without content-type"))
             .and_then(|str| contentype_and_boundary(str).map_err(|e| format_err!(e)))?;
 
@@ -34,8 +36,7 @@ impl MultiPart {
         }
 
         let content_lenth = headers
-            .get(header::CONTENT_LENGTH)
-            .and_then(|v| v.to_str().ok())
+            .get_str_option(header::CONTENT_LENGTH)
             .and_then(|s| s.trim().parse().ok());
 
         Ok(Self {

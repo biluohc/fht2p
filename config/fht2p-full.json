@@ -12,6 +12,12 @@
         "cert": {
             "pub": "cert/rsa_public_key.pem",
             "key": "cert/rsa_private_key.pem"
+        },
+        "cors": { // Regex or null
+            // null => 'self'
+            "allowReferers": ".*",
+            // null => deny
+            "allowOrigins": null
         }
     },
     "proxy": {
@@ -21,7 +27,10 @@
     "routes": {
         "/": {
             "path": "./target/",
+            "disableIndex": false,
             "redirectHtml": false,
+            "followLinks": false,
+            "showHider": true,
             "authorized": false,
             "upload": false,
             "mkdir": false
@@ -29,6 +38,9 @@
         "/doc/": {
             "path": "./target/doc/",
             "redirectHtml": true,
+            "disableIndex": false,
+            "followLinks": false,
+            "showHider": false,
             "authorized": false,
             "upload": false,
             "mkdir": false
@@ -36,6 +48,9 @@
         "/rust/": {
             "path": "/Users/biluohc/.rustup/toolchains/nightly-x86_64-apple-darwin/share/doc/rust/html/",
             "redirectHtml": true,
+            "disableIndex": false,
+            "followLinks": false,
+            "showHider": false,
             "authorized": false,
             "upload": false,
             "mkdir": false

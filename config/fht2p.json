@@ -12,18 +12,12 @@
         "magicLimit": 10485760, // 10M
         "cacheSecs": 60,
         "compressLevel": 5,
-        "addr": "127.0.0.1:8000",
-        "auth": null,
-        "cert": null
+        "addr": "127.0.0.1:8000"
     },
     "routes": {
         // ./ is default "/" of, "/" must exist.
         "/": {
-            "path": "./",
-            "redirectHtml": false,
-            "authorized": false,
-            "upload": false,
-            "mkdir": false
+            "path": "./"
         }
     }
 }

@@ -29,7 +29,7 @@
 
 ### Help
 ```sh
-fht2p 0.9.2 (a91f0a0f-modified@qr rustc1.41.0 2020-02-14~14:15:32UTC)
+fht2p 0.9.3 (8d85ce30-modified@master rustc1.41.1 2020-03-04~15:35:48UTC)
 Wspsxing <biluohc@qq.com>
 A HTTP Server for Static File written with Rust
 
@@ -38,6 +38,7 @@ USAGE:
 
 FLAGS:
     -F, --config-print     Print the content of default config file
+    -d, --disable-index    Disable index(directory) view(will return 403)
     -f, --follow-links     Enable follow links
     -h, --help             Prints help information
     -k, --keepalive        Close HTTP keep alive
@@ -47,12 +48,13 @@ FLAGS:
     -s, --show-hider       Show entries starts with '.'
     -u, --upload           Enable upload function
     -V, --version          Prints version information
-    -v                     Increases logging verbosity each use for up to 3 times(warn0_info1_debug2_trace3+)
+    -v, --verbose          Increases logging verbosity each use(warn0_info1_debug2_trace3+)
 
 OPTIONS:
     -a, --auth <auth>                  Set the username:password for authorization
     -S, --cache-secs <cache-secs>      Set the secs of cache(use 0 to close) [default: 60]
     -C, --cert <cert>                  Set the cert for https,  public_cert_file:private_key_file
+        --compress <compress>          Set the level for index compress, should between 0~9, use 0 to close [default: 5]
     -c, --config <config>              Set the path to use a custom config file
                                        default path: ~/.config/fht2p/fht2p.json
     -i, --ip <ip>                      Set listenning ip address [default: 127.0.0.1]

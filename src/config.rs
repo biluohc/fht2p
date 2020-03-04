@@ -87,14 +87,23 @@ impl ProxyRoute {
     }
 }
 
-impl Into<Route> for &ProxyRoute {
+impl Into<Route> for ProxyRoute {
     fn into(self) -> Route {
         let mut new = Route::default();
-        new.url = "proxy".to_owned();
-        new.path = self.path.clone();
         new.authorized = self.authorized;
+        new.url = "proxy".to_owned();
+        new.path = self.path;
         new
     }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CorsConfig {
+    // args unwrap or #
+    pub allow_referers: Option<String>,
+    // args none -> deny
+    pub allow_origins: Option<String>,
 }
 
 pub fn load_certs(path: &str) -> Result<Vec<rustls::Certificate>> {
@@ -187,6 +196,7 @@ impl Default for Config {
             addr: Server::default().into(),
             magic_limit: *MAGIC_LIMIT.get(),
             compress_level: COMPRESS_LEVEL,
+            cors: Default::default(),
             show_qrcode: false,
             keep_alive: true,
             cache_secs: 60,
@@ -211,6 +221,7 @@ pub struct Config {
     pub cert: Option<Cert>,
     pub proxy: Option<Route>,
     pub compress_level: u32,
+    pub cors: CorsConfig,
 }
 
 impl Config {

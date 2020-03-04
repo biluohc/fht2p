@@ -9,7 +9,7 @@ use std::io::{self, Write};
 use std::net::SocketAddr;
 
 use super::exception::exception_handler_sync;
-use crate::base::{http, Body, Request, Response, ResponseBuilder};
+use crate::base::{http, Body, HeaderGetStr, Request, Response, ResponseBuilder};
 
 // bitflags! {
 //     pub struct Algorithms: u8 {
@@ -104,11 +104,7 @@ where
         return resp.body(body.into());
     }
 
-    let accept_encodings_str = req
-        .headers()
-        .get(header::ACCEPT_ENCODING)
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or_default();
+    let accept_encodings_str = req.headers().get_str(header::ACCEPT_ENCODING);
 
     match Compressor::new(accept_encodings_str, compress_level) {
         Ok(compressor) => {

@@ -4,7 +4,7 @@ use hyper::header;
 use std::{net::SocketAddr, str};
 
 use crate::{
-    base::{ctx::Ctx, middleware::MiddleWare, response, Request, Response},
+    base::{ctx::Ctx, middleware::MiddleWare, response, HeaderGetStr, Request, Response},
     config::Auth,
     handlers::method_maybe_proxy,
 };
@@ -49,11 +49,7 @@ impl MiddleWare for Authenticator {
                 .unwrap()
         };
 
-        let www = req
-            .headers()
-            .get(authorization)
-            .and_then(|v| v.to_str().ok())
-            .unwrap_or_default();
+        let www = req.headers().get_str(authorization);
 
         let auth = match www_base64_to_auth(www) {
             Ok(a) => a,

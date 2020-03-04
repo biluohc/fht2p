@@ -1,0 +1,33 @@
+// for test corss
+{
+    "setting": {
+        "keepAlive": true,
+        // if file not have extname, pragram will to detect conten-type by read it if magic_limic big than the size of file.
+        "magicLimit": 10485760, // 10M
+        "cacheSecs": 60,
+        "compressLevel": 5,
+        "addr": "127.0.0.1:8000",
+        "cors": { // Regex or null
+            // null => allow self
+            "allowReferers": ".*",
+            // null => deny all
+            "allowOrigins": ".*", // allow all is dangerous
+        },
+        "auth": {
+            "username": "www",
+            "password": "basic"
+        }
+    },
+    "routes": {
+        // ./ is default "/" of, "/" must exist.
+        "/": {
+            "path": "./",
+            "authorized": true
+        },
+        "/target/": {
+            "path": "./target",
+            "authorized": true,
+            "upload": true
+        }
+    }
+}

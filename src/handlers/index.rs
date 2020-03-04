@@ -4,7 +4,7 @@ use hyper::{header, Body, Method, StatusCode};
 use std::{fs, io, net::SocketAddr, path::Path};
 
 use crate::base::ctx::ctxs;
-use crate::base::{http, response, Request, Response};
+use crate::base::{http, response, HeaderGetStr, Request, Response};
 use crate::config::Route;
 use crate::consts::CONTENT_TYPE_HTML;
 use crate::service::GlobalState;
@@ -65,15 +65,11 @@ pub async fn index_handler2<'a>(
             entry_order
         );
 
-        let http_etag = req
-            .headers()
-            .get(header::IF_NONE_MATCH)
-            .and_then(|v| v.to_str().ok())
-            .unwrap_or_default();
+        let http_etag = req.headers().get_str(header::IF_NONE_MATCH);
 
-        let http_if_modified_since = req.headers().get(header::IF_MODIFIED_SINCE);
-        let if_modified_since = http_if_modified_since
-            .and_then(|v| v.to_str().ok())
+        let if_modified_since = req
+            .headers()
+            .get_str_option(header::IF_MODIFIED_SINCE)
             .and_then(|v| DateTime::parse_from_rfc2822(v).ok())
             .map(|v| v.with_timezone(&Local));
 

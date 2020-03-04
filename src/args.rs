@@ -8,7 +8,7 @@ use std::path::Path;
 use std::{env, fs, str};
 
 use crate::{
-    config::{Auth, Cert, Config, ProxyRoute, Route},
+    config::{Auth, Cert, Config, CorsConfig, ProxyRoute, Route},
     consts::*,
     logger::{logger_init, JoinHandle},
     process_exit,
@@ -43,7 +43,7 @@ pub fn parse() -> (Config, JoinHandle) {
                     .short("v")
                     .long("verbose")
                     .multiple(true)
-                    .help("Increases logging verbosity each use for up to 3 times(warn0_info1_debug2_trace3+)"),
+                    .help("Increases logging verbosity each use(warn0_info1_debug2_trace3+)"),
             )
             .arg(
                 Arg::with_name("config")
@@ -227,7 +227,7 @@ pub fn parse() -> (Config, JoinHandle) {
         process_exit(1);
     };
 
-    //-c/--config选项，如果有就载入该文件。
+    //-c/--config option，use it if it exists
     if let Some(s) = matches.value_of("config") {
         let config = Config::load_from_file(&s).map_err(exit_with_msg).unwrap();
         return (config.show_qrcode(qr), join_handle);
@@ -260,7 +260,7 @@ pub fn parse() -> (Config, JoinHandle) {
         config.addr = SocketAddr::new(server.ip, server.port);
         config.auth = matches.value_of("auth").map(|cp| cp.parse::<Auth>().unwrap());
         config.cert = matches.value_of("cert").map(|cp| cp.parse::<Cert>().unwrap());
-        config.proxy = matches.value_of("proxy").map(|s| (&ProxyRoute::new(true, s)).into());
+        config.proxy = matches.value_of("proxy").map(|s| ProxyRoute::new(true, s).into());
         config.keep_alive = !matches.is_present("keepalive");
         matches.values_of_lossy("PATH").map(|args| routes = args);
 
@@ -348,7 +348,6 @@ impl Into<SocketAddr> for Server {
     }
 }
 
-// 关键是结构体的字段名，和 json 的[name]对应
 #[serde(rename_all = "camelCase")]
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Fht2p {
@@ -368,6 +367,7 @@ pub struct Setting {
     compress_level: u32,
     auth: Option<Auth>,
     cert: Option<Cert>,
+    cors: Option<CorsConfig>,
 }
 
 impl Config {
@@ -380,17 +380,31 @@ impl Config {
         let mut config = Self::default();
         config.routes.clear();
 
-        let json: Fht2p = json5::from_str(json).map_err(|e| format!("config file('{}') parse failed: {}", file_name, e))?;
-        config.keep_alive = json.setting.keep_alive;
-        config.magic_limit = json.setting.magic_limit;
-        config.compress_level = json.setting.compress_level;
-        config.cache_secs = json.setting.cache_secs;
-        config.addr = json.setting.addr;
-        config.cert = json.setting.cert.clone();
-        config.auth = json.setting.auth.clone();
-        config.proxy = json.proxy.map(|ref pc| pc.into());
+        let Fht2p { setting, proxy, routes } =
+            json5::from_str(json).map_err(|e| format!("config file('{}') parse failed: {}", file_name, e))?;
 
-        for (url, route) in &json.routes {
+        let Setting {
+            addr,
+            auth,
+            cert,
+            cors,
+            keep_alive,
+            magic_limit,
+            cache_secs,
+            compress_level,
+        } = setting;
+
+        config.addr = addr;
+        config.cert = cert;
+        config.auth = auth;
+        config.keep_alive = keep_alive;
+        config.cache_secs = cache_secs;
+        config.magic_limit = magic_limit;
+        config.compress_level = compress_level;
+        config.proxy = proxy.map(|pc| pc.into());
+        config.cors = cors.unwrap_or_default();
+
+        for (url, route) in routes {
             if !Path::new(&route.path).exists() {
                 warn!("'{}''s routes({:?}: {:?}) is not exists", file_name, url, route.path);
             }
@@ -420,13 +434,12 @@ impl Config {
     }
 }
 
-// 打印默认配置文件。
 fn config_print() {
     println!("{}", CONFIG_STR);
     process_exit(0);
 }
 
-// 家目录 ～/.config/fht2p/fht2p.json
+// Home: ～/.config/fht2p/fht2p.json
 fn get_config_path() -> Option<String> {
     // using the home_dir function from https://crates.io/crates/dirs instead.
     #[allow(deprecated)]
@@ -439,7 +452,6 @@ fn get_config_path() -> Option<String> {
     }
 }
 
-// 参数转换为Route url, path
 fn args_paths_to_route(
     map: &[String],
     redirect_html: bool,

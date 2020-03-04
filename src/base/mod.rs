@@ -20,3 +20,21 @@ pub use http;
 pub fn response() -> ResponseBuilder {
     ResponseBuilder::new()
 }
+
+use hyper::{
+    header::{AsHeaderName, HeaderValue},
+    HeaderMap,
+};
+
+pub trait HeaderGetStr {
+    fn get_str_option<K: AsHeaderName>(&self, key: K) -> Option<&str>;
+    fn get_str<K: AsHeaderName>(&self, key: K) -> &str {
+        self.get_str_option(key).unwrap_or_default()
+    }
+}
+
+impl HeaderGetStr for HeaderMap<HeaderValue> {
+    fn get_str_option<K: AsHeaderName>(&self, key: K) -> Option<&str> {
+        self.get(key).and_then(|v| v.to_str().ok())
+    }
+}

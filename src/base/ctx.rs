@@ -14,4 +14,5 @@ pub mod ctxs {
     pub type ReqUri = hyper::Uri;
     pub type ReqPath = String;
     pub type ReqPathCs = Vec<String>;
+    pub type Cors = bool;
 }

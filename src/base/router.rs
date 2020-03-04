@@ -10,7 +10,7 @@ use crate::{
     },
     config::{Config, Route},
     handlers::{fs_handler, method_maybe_proxy, notfound_handler, proxy_handler},
-    middlewares::{auth::Authenticator, logger::Logger, path::PathNormalizer},
+    middlewares::{auth::Authenticator, cors::CorsController, logger::Logger, path::PathNormalizer},
     service::GlobalState,
 };
 
@@ -22,7 +22,7 @@ pub struct Router {
 }
 
 impl Router {
-    pub fn new(config: &Config) -> Self {
+    pub fn new(config: &Config) -> crate::how::Result<Self> {
         let mut routes = config
             .routes
             .values()
@@ -44,11 +44,12 @@ impl Router {
 
         routes.sort_by(|a, b| b.0.urlcs.cmp(&a.0.urlcs));
 
-        let mut global_middlewares = MiddleWares::with_capacity(2);
+        let mut global_middlewares = MiddleWares::with_capacity(3);
         global_middlewares.push(Logger);
         global_middlewares.push(PathNormalizer);
+        global_middlewares.push(CorsController::new(&config.cors)?);
 
-        Self {
+        Ok(Self {
             routes,
             global_middlewares,
             notfound: notfound_handler(),
@@ -69,7 +70,7 @@ impl Router {
                     proxy_handler(&route.path),
                 )
             }),
-        }
+        })
     }
 
     pub async fn call(addr: SocketAddr, req: Request, state: GlobalState) -> Result<Response, http::Error> {
@@ -79,10 +80,10 @@ impl Router {
         ctx.insert(state);
 
         for idx in 0..this.global_middlewares.len() {
-            if let Err(resp) = (this.global_middlewares[idx]).before(&req, &addr, &mut ctx) {
+            if let Err(mut resp) = (this.global_middlewares[idx]).before(&req, &addr, &mut ctx) {
                 // take global_middlewares return ok
                 for gm in this.global_middlewares.as_ref()[0..idx].iter().rev() {
-                    gm.after(&resp, &addr, &mut ctx);
+                    gm.after(&mut resp, &addr, &mut ctx);
                 }
 
                 return Ok(resp);
@@ -105,29 +106,29 @@ impl Router {
             matched.as_ref().map(|m| m.0.url.as_str()) // .unwrap_or("")
         );
 
-        let resp = if let Some((route, middlewares, handler)) = matched {
+        let mut resp = if let Some((route, middlewares, handler)) = matched {
             ctx.insert(route);
             // assert_eq!(route, *ctx.get::<ctx::Route>().unwrap());
 
             let mut resp = None;
             for idx in 0..middlewares.len() {
-                if let Err(resp_) = (middlewares[idx]).before(&req, &addr, &mut ctx) {
+                if let Err(mut resp_) = (middlewares[idx]).before(&req, &addr, &mut ctx) {
                     // take middlewares return ok
                     for lm in middlewares.as_ref()[0..idx].iter().rev() {
-                        lm.after(&resp_, &addr, &mut ctx);
+                        lm.after(&mut resp_, &addr, &mut ctx);
                     }
                     resp = Some(resp_);
                 }
             }
 
-            let resp = if let Some(resp) = resp {
+            let mut resp = if let Some(resp) = resp {
                 resp
             } else {
                 (*handler)(req, &addr, &mut ctx).await?
             };
 
             for lm in middlewares.as_ref().iter().rev() {
-                lm.after(&resp, &addr, &mut ctx);
+                lm.after(&mut resp, &addr, &mut ctx);
             }
 
             resp
@@ -136,7 +137,7 @@ impl Router {
         };
 
         for gm in this.global_middlewares.as_ref().iter().rev() {
-            gm.after(&resp, &addr, &mut ctx);
+            gm.after(&mut resp, &addr, &mut ctx);
         }
 
         Ok(resp)

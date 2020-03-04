@@ -34,7 +34,7 @@ impl State {
         let tls = config.load_cert()?;
         let mut http = Http::new();
         http.keep_alive(config.keep_alive);
-        let router = Router::new(&config);
+        let router = Router::new(&config)?;
         let runtime = Builder::new()
             .threaded_scheduler()
             .core_threads(num_cpus::get() * 2 + 1)
@@ -91,9 +91,10 @@ impl Service for Config {
         consts::SERVER_ADDR.set(self.addr);
         consts::MAGIC_LIMIT.set(self.magic_limit);
 
-        stat_print(&self.addr, self.cert.is_some(), self.routes.values(), self.show_qrcode);
-
         let state = State::new(self)?.into_global();
+        let this = state.config();
+        stat_print(&this.addr, this.cert.is_some(), this.routes.values(), this.show_qrcode);
+
         let mut rt = Builder::new().basic_scheduler().enable_all().build()?;
 
         rt.block_on(async move {
