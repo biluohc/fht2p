@@ -33,3 +33,11 @@ readme:
 clippy:
 	cargo clippy
 
+# musl-gcc & musl-ldd
+# apt install -y musl-tools && dpkg -L musl-tools
+# env RUSTUP_DIST_SERVER=https://mirrors.sjtug.sjtu.edu.cn/rust-static rustup target add x86_64-unknown-linux-musl
+musl:
+	rustup target add x86_64-unknown-linux-musl && cargo build --release --target x86_64-unknown-linux-musl
+
+musld:
+	docker pull clux/muslrust && docker run -v `pwd`:/volume --rm -t clux/muslrust cargo build --release
