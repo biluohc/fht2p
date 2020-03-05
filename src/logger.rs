@@ -4,21 +4,23 @@ use nonblock_logger::{
     BaseFilter, BaseFormater, FixedLevel, NonblockLogger,
 };
 
-pub fn format(base: &BaseFormater, record: &Record) -> String {
-    let level = FixedLevel::with_color(record.level(), base.color_get())
-        .length(base.level_get())
-        .into_colored()
-        .into_coloredfg();
+pub fn format(debug: bool) -> impl Fn(&BaseFormater, &Record) -> String + Send + Sync + 'static {
+    move |base: &BaseFormater, record: &Record| {
+        let level = FixedLevel::with_color(record.level(), base.color_get())
+            .length(base.level_get())
+            .into_colored()
+            .into_coloredfg();
 
-    format!(
-        "{} {} [{} {}:{}] {}\n",
-        chrono::Local::now().format("%Y-%m-%d %H:%M:%S.%3f"),
-        level,
-        current_thread_name(),
-        record.file().unwrap_or("*"),
-        record.line().unwrap_or(0),
-        record.args()
-    )
+        format!(
+            "{} {} [{} {}:{}] {}\n",
+            chrono::Local::now().format("%Y-%m-%d %H:%M:%S.%3f"),
+            level,
+            current_thread_name(),
+            if debug { record.file() } else { record.module_path() }.unwrap_or("*"),
+            record.line().unwrap_or(0),
+            record.args()
+        )
+    }
 }
 
 pub fn log_enabled_info(target: &str) -> bool {
@@ -38,7 +40,12 @@ pub fn logger_init(verbose: u64) -> JoinHandle {
         println!("logger_init: pkg: {}, level: {:?}", pkg, log)
     };
 
-    let formater = BaseFormater::new().local(true).color(true).level(4).formater(format);
+    let formater = BaseFormater::new()
+        .local(true)
+        .color(true)
+        .level(4)
+        .formater(format(verbose > 1));
+
     let filter = BaseFilter::new()
         .max_level(log)
         .starts_with(true)
