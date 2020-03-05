@@ -66,6 +66,7 @@ pub struct IndexTemplate<'a> {
 }
 
 impl<'a> IndexTemplate<'a> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new<Es>(
         title: &'a str,
         h1: &'a str,

@@ -89,20 +89,16 @@ impl ProxyRoute {
 
 impl Into<Route> for ProxyRoute {
     fn into(self) -> Route {
-        let mut new = Route::default();
-        new.authorized = self.authorized;
-        new.url = "proxy".to_owned();
-        new.path = self.path;
-        new
+        Route::new("proxy", self.path).authorized(self.authorized)
     }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CorsConfig {
-    // args unwrap or #
+    // null => 'self'
     pub allow_referers: Option<String>,
-    // args none -> deny
+    // none => deny
     pub allow_origins: Option<String>,
 }
 
@@ -154,44 +150,48 @@ pub struct Route {
     pub mkdir: bool,
 }
 
+macro_rules! route_builder {
+    ($name: ident) => {
+        #[inline]
+        pub fn $name(mut self, b: bool) -> Self {
+            self.$name = b;
+            self
+        }
+    };
+    ($($name: ident,)*) => {
+        $(route_builder!{$name})*
+    }
+}
+
 impl Route {
-    pub fn new<Su, Sp>(
-        url: Su,
-        path: Sp,
-        redirect_html: bool,
-        follow_links: bool,
-        show_hider: bool,
-        disable_index: bool,
-        upload: bool,
-        mkdir: bool,
-        authorized: bool,
-    ) -> Self
+    pub fn new<U, P>(url: U, path: P) -> Self
     where
-        Su: Into<String>,
-        Sp: Into<String>,
+        U: Into<String>,
+        P: Into<String>,
     {
         Self {
             urlcs: 0,
             url: url.into(),
             path: path.into(),
-            redirect_html,
-            follow_links,
-            show_hider,
-            disable_index,
-            upload,
-            mkdir,
-            authorized,
+            ..Default::default()
         }
+    }
+
+    route_builder! {
+        disable_index,
+        redirect_html,
+        follow_links,
+        show_hider,
+        authorized,
+        upload,
+        mkdir,
     }
 }
 
 impl Default for Config {
     fn default() -> Self {
         let mut map = Map::new();
-        map.insert(
-            "/".to_owned(),
-            Route::new("/", ".", false, false, false, false, false, false, false),
-        );
+        map.insert("/".to_owned(), Route::new("/", "."));
         Config {
             addr: Server::default().into(),
             magic_limit: *MAGIC_LIMIT.get(),

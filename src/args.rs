@@ -237,16 +237,16 @@ pub fn parse() -> (Config, JoinHandle) {
     let conf = if args_is_empty {
         match get_config_path() {
             Some(s) => Config::load_from_file(&s).map_err(exit_with_msg).unwrap(),
-            None => Config::load_from_STR(),
+            None => Config::load_from_STRING(),
         }
     } else {
         let redirect_html = matches.is_present("redirect-html");
         let follow_links = matches.is_present("follow-links");
         let disable_index = matches.is_present("disable-index");
         let show_hider = matches.is_present("show-hider");
+        let authorized = matches.is_present("auth");
         let upload = matches.is_present("upload");
         let mkdir = matches.is_present("mkdir");
-        let authorized = matches.is_present("auth");
 
         matches.value_of("ip").map(|p| server.ip = p.parse().unwrap());
         matches.value_of("port").map(|p| server.port = p.parse().unwrap());
@@ -264,22 +264,26 @@ pub fn parse() -> (Config, JoinHandle) {
         config.keep_alive = !matches.is_present("keepalive");
         matches.values_of_lossy("PATH").map(|args| routes = args);
 
-        config.routes = args_paths_to_route(
-            &routes[..],
-            redirect_html,
-            follow_links,
-            show_hider,
-            disable_index,
-            upload,
-            mkdir,
-            authorized,
-        )
+        config.routes = args_paths_to_route(&routes[..], |r| {
+            r.disable_index(disable_index)
+                .redirect_html(redirect_html)
+                .follow_links(follow_links)
+                .show_hider(show_hider)
+                .authorized(authorized)
+                .upload(upload)
+                .mkdir(mkdir)
+        })
         .map_err(exit_with_msg)
         .unwrap();
         config
     };
 
     (conf.show_qrcode(qr), join_handle)
+}
+
+fn config_print() {
+    println!("{}", CONFIG_STRING);
+    process_exit(0);
 }
 
 // not contains other than -v*, -Q, --qr-code/--verbose, but -vs ?
@@ -378,7 +382,6 @@ impl Config {
     }
     fn load_from_str(file_name: &str, json: &str) -> Result<Config, String> {
         let mut config = Self::default();
-        config.routes.clear();
 
         let Fht2p { setting, proxy, routes } =
             json5::from_str(json).map_err(|e| format!("config file('{}') parse failed: {}", file_name, e))?;
@@ -404,39 +407,24 @@ impl Config {
         config.proxy = proxy.map(|pc| pc.into());
         config.cors = cors.unwrap_or_default();
 
-        for (url, route) in routes {
-            if !Path::new(&route.path).exists() {
-                warn!("'{}''s routes({:?}: {:?}) is not exists", file_name, url, route.path);
-            }
-            config.routes.insert(
-                url.clone(),
-                Route::new(
-                    url,
-                    &route.path,
-                    route.redirect_html,
-                    route.follow_links,
-                    route.show_hider,
-                    route.disable_index,
-                    route.upload,
-                    route.mkdir,
-                    route.authorized,
-                ),
-            );
-        }
+        config.routes = routes;
         if config.routes.is_empty() {
             return Err(format!("'{}''s routes is empty", file_name));
+        } else {
+            for (url, route) in &mut config.routes {
+                route.url = url.clone();
+                if !Path::new(&route.path).exists() {
+                    warn!("'{}''s routes({:?}: {:?}) is not exists", file_name, url, route.path);
+                }
+            }
         }
+
         Ok(config)
     }
     #[allow(non_snake_case)]
-    fn load_from_STR() -> Self {
-        Config::load_from_str("CONFIG-STR", CONFIG_STR).unwrap()
+    fn load_from_STRING() -> Self {
+        Config::load_from_str("CONFIG-STRING", CONFIG_STRING).unwrap()
     }
-}
-
-fn config_print() {
-    println!("{}", CONFIG_STR);
-    process_exit(0);
 }
 
 // Home: ～/.config/fht2p/fht2p.json
@@ -444,7 +432,7 @@ fn get_config_path() -> Option<String> {
     // using the home_dir function from https://crates.io/crates/dirs instead.
     #[allow(deprecated)]
     let home = std::env::home_dir()?;
-    let confp = home.as_path().join(".config/fht2p").join(CONFIG_STR_PATH);
+    let confp = home.as_path().join(".config/fht2p").join(CONFIG_FILE_NAME);
     if confp.exists() {
         Some(confp.to_string_lossy().into_owned())
     } else {
@@ -452,63 +440,41 @@ fn get_config_path() -> Option<String> {
     }
 }
 
-fn args_paths_to_route(
-    map: &[String],
-    redirect_html: bool,
-    follow_links: bool,
-    show_hider: bool,
-    disable_index: bool,
-    upload: bool,
-    mkdir: bool,
-    authorized: bool,
-) -> Result<Map<String, Route>, String> {
+fn route_name(p: &str) -> Result<String, String> {
+    let path = Path::new(p);
+    path.file_name()
+        .map(|s| {
+            let s = s.to_str().expect("route_name invalid");
+            if path.is_dir() {
+                format!("/{}/", s)
+            } else {
+                format!("/{}", s)
+            }
+        })
+        .ok_or_else(|| format!("Path '{}' dost not have name", p))
+}
+
+fn args_paths_to_route<F>(map: &[String], f: F) -> Result<Map<String, Route>, String>
+where
+    F: Fn(Route) -> Route,
+{
     let mut routes = Map::new();
     for (idx, path) in map.iter().enumerate() {
         if !Path::new(&path).exists() {
             warn!("{:?} is not exists", &path);
         }
         if idx == 0 {
-            let route = Route::new(
-                "/",
-                path,
-                redirect_html,
-                follow_links,
-                show_hider,
-                disable_index,
-                upload,
-                mkdir,
-                authorized,
-            );
+            let route = f(Route::new("/", path));
             routes.insert("/".to_owned(), route);
         } else {
             let route_url = route_name(path)?;
-            let route = Route::new(
-                &route_url,
-                path,
-                redirect_html,
-                follow_links,
-                show_hider,
-                disable_index,
-                upload,
-                mkdir,
-                authorized,
-            );
+            let route = f(Route::new(&route_url, path));
+
             if routes.insert(route_url, route).is_some() {
                 return Err(format!("{} already defined", route_name(path).unwrap()));
             }
         }
     }
-    fn route_name(msg: &str) -> Result<String, String> {
-        let path = Path::new(msg);
-        path.file_name()
-            .map(|s| "/".to_owned() + s.to_str().unwrap())
-            .map(|mut s| {
-                if Path::new(msg).is_dir() {
-                    s.push('/');
-                }
-                s
-            })
-            .ok_or_else(|| format!("Path '{}' dost not have name", msg))
-    }
+
     Ok(routes)
 }

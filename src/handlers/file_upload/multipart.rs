@@ -311,7 +311,7 @@ impl<'a> Part<'a> {
 
             let res = match parse_part_eof(chunk.as_ref(), &self.multi.boundary) {
                 None => Some(Ok(chunk)),
-                Some(None) => {
+                Some(Err(_)) => {
                     if self.multi.eof {
                         return Some(Err(format_err!("unexpected eof")));
                     } else {
@@ -320,7 +320,7 @@ impl<'a> Part<'a> {
                         continue;
                     }
                 }
-                Some(Some(i)) => {
+                Some(Ok(i)) => {
                     self.complete = true;
 
                     // remove \r\n from remains
@@ -344,9 +344,9 @@ impl<'a> Part<'a> {
 
 #[test]
 fn parse_part_eof_test() {
-    assert_eq!(parse_part_eof("\r\n--xyz".as_bytes(), "xyz"), Some(Some(0)));
+    assert_eq!(parse_part_eof("\r\n--xyz".as_bytes(), "xyz"), Some(Ok(0)));
 }
-fn parse_part_eof(input: &[u8], boundary: &str) -> Option<Option<usize>> {
+fn parse_part_eof(input: &[u8], boundary: &str) -> Option<Result<usize, ()>> {
     let boundary_bytes = boundary.as_bytes();
     let boundary_bytes_size = boundary.as_bytes().len();
 
@@ -371,9 +371,9 @@ fn parse_part_eof(input: &[u8], boundary: &str) -> Option<Option<usize>> {
             }
 
             if remain_bytes.len() < boundary_bytes_size {
-                return Some(None);
+                return Some(Err(()));
             } else {
-                return Some(Some(i));
+                return Some(Ok(i));
             }
         }
     }

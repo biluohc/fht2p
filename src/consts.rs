@@ -6,8 +6,8 @@ pub const DESC: &str = env!("CARGO_PKG_DESCRIPTION");
 pub const URL: &str = "https://github.com/biluohc/fht2p";
 
 // config file
-pub const CONFIG_STR_PATH: &str = "fht2p.json";
-pub const CONFIG_STR: &str = include_str!("../config/fht2p.json");
+pub const CONFIG_FILE_NAME: &str = "fht2p.json";
+pub const CONFIG_STRING: &str = include_str!("../config/fht2p.json");
 
 pub const CHARSET: &str = "charset=utf-8";
 pub const CONTENT_TYPE_HTML: &str = "text/html; charset=utf-8";
