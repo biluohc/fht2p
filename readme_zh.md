@@ -3,7 +3,7 @@
 
 [English](https://github.com/biluohc/fht2p/blob/master/readme.md)
 
-fht2p 是使用 Rust 开发的，跨平台的 HTTP 静态文件服务器，项目已经在 Linux, MacOS 和 Windows 三大平台测试了。
+fht2p 是使用 Rust 开发的，跨平台的 HTTP 静态文件服务器，CI测试覆盖了 Linux, MacOS 和 Windows 三大平台。
 
 ## 特点
 - 可靠： 使用 Rust 实现，集成测试，安全可靠
@@ -33,14 +33,16 @@ fht2p 是使用 Rust 开发的，跨平台的 HTTP 静态文件服务器，项�
 ![snapshot.png](https://raw.githubusercontent.com/biluohc/fht2p/master/config/assets/snapshot.png)
 
 ### 安装
+
+#### 下载自 [Releases](https://github.com/biluohc/fht2p/releases)
+
+#### 从源码编译
 ```sh
     cargo install --git https://github.com/biluohc/fht2p fht2p -f
 
-    # running fht2p --help(-h) to get help.
-
     fht2p -h
 ```
-#### 或者
+##### 或者
 ```sh
     git clone https://github.com/biluohc/fht2p
     # cargo  install --path fht2p/ fht2p -f
@@ -50,7 +52,6 @@ fht2p 是使用 Rust 开发的，跨平台的 HTTP 静态文件服务器，项�
 
     ./target/release/fht2p --help
 ```
-
 
 ### 提示
 1. --help 可以查看帮助信息

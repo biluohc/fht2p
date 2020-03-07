@@ -2,7 +2,7 @@
 
 [中文](https://github.com/biluohc/fht2p/blob/master/readme_zh.md)
 
-fht2p is a cross-platform HTTP static file server developed using Rust. The project has been tested on Linux, MacOS and Windows.
+fht2p is a cross-platform HTTP static file server developed using Rust. The CI test covers Linux, MacOS and Windows.
 
 ## Features
 - Reliable: Implemented in Rust, integrated testing, safe and reliable
@@ -32,14 +32,16 @@ fht2p is a cross-platform HTTP static file server developed using Rust. The proj
 ![snapshot.png](https://raw.githubusercontent.com/biluohc/fht2p/master/config/assets/snapshot.png)
 
 ### Install
+
+#### 1. Download from [Releases](https://github.com/biluohc/fht2p/releases)
+
+#### 2. Compile from Source Code
 ```sh
     cargo install --git https://github.com/biluohc/fht2p fht2p -f
 
-    # running fht2p --help(-h) to get help.
-
     fht2p -h
 ```
-#### Or
+##### Or
 ```sh
     git clone https://github.com/biluohc/fht2p
     # cargo  install --path fht2p/ fht2p -f
