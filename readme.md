@@ -1,4 +1,4 @@
-[![Build status](https://travis-ci.org/biluohc/fht2p.svg?branch=master)](https://github.com/biluohc/fht2p)
+[![Actions Status](https://github.com/biluohc/fht2p/workflows/CI/badge.svg)](https://github.com/biluohc/fht2p/actions)
 
 [中文](https://github.com/biluohc/fht2p/blob/master/readme_zh.md)
 
@@ -68,7 +68,7 @@ fht2p is a cross-platform HTTP static file server developed using Rust. The CI t
 - The third is --config specifies the configuration file, the fourth option is ignored
 - The fourth is other options and parameters, once you have it, the default configuration file will be ignored (this is to prevent the priority from being too complicated)
 
-2. About security and HTTPS
+5. About security and HTTPS
 
 - HTTP is a plain text protocol based on TCP. There is no security at all. If security is required, HTTPS must be used.
 - The program listens to the local loopback address (`127.0.0.1`) by default for security. If you want to access outside the machine, you can monitor` 0.0.0.0` or a specific address and configure your firewall
