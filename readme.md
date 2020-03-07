@@ -1,6 +1,7 @@
 [![Build status](https://travis-ci.org/biluohc/fht2p.svg?branch=master)](https://github.com/biluohc/fht2p)
 
 [中文](https://github.com/biluohc/fht2p/blob/master/readme_zh.md)
+
 fht2p is a cross-platform HTTP static file server developed using Rust. The project has been tested on Linux, MacOS and Windows.
 
 ## Features
@@ -49,47 +50,13 @@ fht2p is a cross-platform HTTP static file server developed using Rust. The proj
     ./target/release/fht2p --help
 ```
 
-### The Help information, the configuration file can refer to the config directory under this project
-```sh
-fht2p 0.9.3 (8d8f1c78-modified@master rustc1.41.1 2020-03-07~12:16:57UTC)
-Wspsxing <biluohc@qq.com>
-A cross-platform HTTP static file server developed using Rust
-
-USAGE:
-    fht2p [FLAGS] [OPTIONS] [PATH]...
-
-FLAGS:
-    -F, --config-print     Print the content of default config file
-    -d, --disable-index    Disable index(directory) view(will return 403)
-    -f, --follow-links     Enable follow links
-    -h, --help             Prints help information
-    -k, --keepalive        Close HTTP keep alive
-    -m, --mkdir            Enable mkdir function
-    -Q, --qr-code          Show URL's QR code at startup
-    -r, --redirect-html    Redirect dir to `index.html` or `index.htm` if it exists
-    -s, --show-hider       Show entries starts with '.'
-    -u, --upload           Enable upload function
-    -V, --version          Prints version information
-    -v, --verbose          Increases logging verbosity each use(warn0_info1_debug2_trace3+)
-
-OPTIONS:
-    -a, --auth <auth>                  Set the username:password for authorization
-    -S, --cache-secs <cache-secs>      Set the secs of cache(use 0 to close) [default: 60]
-    -C, --cert <cert>                  Set the cert for https,  public_cert_file:private_key_file
-        --compress <compress>          Set the level for index compress, should between 0~9, use 0 to close [default: 5]
-    -c, --config <config>              Set the path to use a custom config file
-                                       default path: ~/.config/fht2p/fht2p.json
-    -i, --ip <ip>                      Set listenning ip address [default: 127.0.0.1]
-    -M, --magic-limit <magic-limit>    The size limit for detect file ContenType(use 0 to close) [default: 10485760]
-    -p, --port <port>                  Set listenning port [default: 8000]
-    -P, --proxy <proxy>                Enable http proxy(Regular for allowed domains, empty string can allow all)
-
-ARGS:
-    <PATH>...    Set the paths to share [Default: "."]
-```
-
 ### Tips
-1. About the priority of options and profiles
+
+1. View help information by using the --help option
+1. View the default configuration content by using the --config-print option.
+1. See a complete configuration example from the config directory under this project.
+
+2. About the priority of options and profiles
 
     The default configuration file is located in `$HOME/.config/fht2p/fht2p.json`, if not exist, you can create
 

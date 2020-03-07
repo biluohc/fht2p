@@ -2,6 +2,7 @@
 [![Actions Status](https://github.com/biluohc/fht2p/workflows/CI/badge.svg)](https://github.com/biluohc/fht2p/actions)
 
 [English](https://github.com/biluohc/fht2p/blob/master/readme.md)
+
 fht2p 是使用 Rust 开发的，跨平台的 HTTP 静态文件服务器，项目已经在 Linux, MacOS 和 Windows 三大平台测试了。
 
 ## 特点
@@ -50,46 +51,13 @@ fht2p 是使用 Rust 开发的，跨平台的 HTTP 静态文件服务器，项�
     ./target/release/fht2p --help
 ```
 
-### 帮助信息，配置文件可以参考项目下的 config 目录
-```shfht2p 0.9.3 (8d8f1c78-modified@master rustc1.41.1 2020-03-07~12:16:57UTC)
-Wspsxing <biluohc@qq.com>
-A cross-platform HTTP static file server developed using Rust
 
-USAGE:
-    fht2p [FLAGS] [OPTIONS] [PATH]...
+### 提示
+1. --help 可以查看帮助信息
+1. --config-print 可以查看默认配置内容
+1. 项目下的config目录里有完整的配置文件示例
 
-FLAGS:
-    -F, --config-print     Print the content of default config file
-    -d, --disable-index    Disable index(directory) view(will return 403)
-    -f, --follow-links     Enable follow links
-    -h, --help             Prints help information
-    -k, --keepalive        Close HTTP keep alive
-    -m, --mkdir            Enable mkdir function
-    -Q, --qr-code          Show URL's QR code at startup
-    -r, --redirect-html    Redirect dir to `index.html` or `index.htm` if it exists
-    -s, --show-hider       Show entries starts with '.'
-    -u, --upload           Enable upload function
-    -V, --version          Prints version information
-    -v, --verbose          Increases logging verbosity each use(warn0_info1_debug2_trace3+)
-
-OPTIONS:
-    -a, --auth <auth>                  Set the username:password for authorization
-    -S, --cache-secs <cache-secs>      Set the secs of cache(use 0 to close) [default: 60]
-    -C, --cert <cert>                  Set the cert for https,  public_cert_file:private_key_file
-        --compress <compress>          Set the level for index compress, should between 0~9, use 0 to close [default: 5]
-    -c, --config <config>              Set the path to use a custom config file
-                                       default path: ~/.config/fht2p/fht2p.json
-    -i, --ip <ip>                      Set listenning ip address [default: 127.0.0.1]
-    -M, --magic-limit <magic-limit>    The size limit for detect file ContenType(use 0 to close) [default: 10485760]
-    -p, --port <port>                  Set listenning port [default: 8000]
-    -P, --proxy <proxy>                Enable http proxy(Regular for allowed domains, empty string can allow all)
-
-ARGS:
-    <PATH>...    Set the paths to share [Default: "."]
-```
-
-### 注意事项
-1. 关于选项和配置文件的优先级
+2. 关于选项和配置文件的优先级
 
     默认配置文件位于 `$HOME/.config/fht2p/fht2p.json`, 如果没有，可以新建
 
