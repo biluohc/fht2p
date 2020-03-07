@@ -1,6 +1,6 @@
 [package]
 name = "fht2p"
-version = "0.9.3" # alpha<alpha.1<beta<rc
+version = "0.9.4" # alpha<alpha.1<beta<rc
 authors = ["Wspsxing <biluohc@qq.com>"]
 description = "A cross-platform HTTP static file server developed using Rust"
 build = "build.rs"
