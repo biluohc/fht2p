@@ -1,5 +1,5 @@
 [Unit]
-Description=fht2p - A HTTP Server for Static File written with Rust
+Description=fht2p - A cross-platform HTTP static file server developed using Rust
 Documentation=https://github.com/biluohc/fht2p
 After=network.target remote-fs.target nss-lookup.target
 

@@ -1,7 +1,7 @@
 // name: "fht2p",
 // version: "0.9",
 // author: "Wspsxing <biluohc@qq.com>",
-// desc: "A HTTP Server for Static File written with Rust",
+// desc: "A cross-platform HTTP static file server developed using Rust",
 // repo: "https://github.com/biluohc/fht2p",
 // encoding: "utf8",
 // path: ~/.config/fht2p/fht2p.json
