@@ -1,27 +1,42 @@
-name: Rust
+name: CI
 
 on: [push, pull_request]
 
+# https://github.com/marketplace/actions/rust-toolchain
 jobs:
   Check:
     name: Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+      - name: Install stable Rust rustfmt
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: rustfmt
+
       - name: Format
-        run: rustup component add rustfmt && cargo fmt -- --check
+        run: cargo fmt -- --check
 
   Linux:
     name: Linux ubuntu-latest
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+      - name: Install stable Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
       - name: Update
         run: |
           rustc -V 
           rustup update --no-self-update stable 
           rustup default stable
           rustc -V
+
       - name: Build
         run: |
           cargo build --release
@@ -34,12 +49,19 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v1
+      - name: Install stable Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
       - name: Update
         run: |
           rustc -V 
           rustup update --no-self-update stable 
           rustup default stable
           rustc -V
+
       - name: Build
         run: |
           cargo build --release
@@ -53,10 +75,19 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
+        rust: [stable]
     steps:
       - uses: actions/checkout@v1
+      - name: Install ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+
       - name: Update
         run: rustc -V
+
       - name: Build
         run: |
           cargo build --release

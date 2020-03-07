@@ -27,9 +27,6 @@ t:
 tr: 
 	cargo test --release -- --nocapture 
 
-readme:
-	cargo readme -i src/main.rs > readme.md
-
 clippy:
 	cargo clippy
 
@@ -39,5 +36,6 @@ clippy:
 musl:
 	rustup target add x86_64-unknown-linux-musl && cargo build --release --target x86_64-unknown-linux-musl
 
+# docker run -v $PWD:/volume  -v $CACHE:/volume/target -v $CACHE:/root/.cargo/registry  --rm -t clux/muslrust cargo build --release 
 musld:
 	docker pull clux/muslrust && docker run -v `pwd`:/volume --rm -t clux/muslrust cargo build --release
