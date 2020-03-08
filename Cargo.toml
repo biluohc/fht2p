@@ -3,6 +3,7 @@ name = "fht2p"
 version = "0.9.4" # alpha<alpha.1<beta<rc
 authors = ["Wspsxing <biluohc@qq.com>"]
 description = "A cross-platform HTTP static file server developed using Rust"
+homepage = "https://github.com/biluohc/fht2p"
 build = "build.rs"
 license = "MIT"
 edition = "2018"
@@ -70,4 +71,12 @@ flate2 = "1.0"
 rand = "0.7.2"
 nom = "5.0.1"
 # ring = "0.16"
+
+[package.metadata.rpm.cargo]
+# target = "x86_64-unknown-linux-gnu"
+target = "x86_64-unknown-linux-musl"
+buildflags = ["--release"]
+
+[package.metadata.rpm.targets]
+fht2p = { path = "/usr/bin/fht2p" }
 

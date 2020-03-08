@@ -39,3 +39,18 @@ musl:
 # docker run -v $PWD:/volume  -v $CACHE:/volume/target -v $CACHE:/root/.cargo/registry  --rm -t clux/muslrust cargo build --release 
 musld:
 	docker pull clux/muslrust && docker run -v `pwd`:/volume --rm -t clux/muslrust cargo build --release
+
+# zypper install -y dpkg
+# cargo install cargo-deb
+deb:
+	cargo deb --target x86_64-unknown-linux-musl
+
+# zypper install -y rpm-build
+# apt install -y rpm
+# cargo install cargo-rpm
+# cargo rpm init
+# but cargo-rpm-0.7.0 can't work with custom target-dir # ln -s $CACHE/cargo target
+rpm:
+	cargo rpm build
+
+

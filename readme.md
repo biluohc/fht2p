@@ -60,7 +60,7 @@ fht2p is a cross-platform HTTP static file server developed using Rust. The CI t
 
 2. About the priority of options and profiles
 
-    The default configuration file is located in `$HOME/.config/fht2p/fht2p.json`, if not exist, you can create
+    The default configuration file is located in `$HOME/.config/fht2p/fht2p.json`, you can create if it doesn't exist.
 
     There are four types of options:
 - The first is --help, --version and --config-print. Programs will exit very quickly, regardless of priority.

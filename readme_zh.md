@@ -3,7 +3,7 @@
 
 [English](https://github.com/biluohc/fht2p/blob/master/readme.md)
 
-fht2p 是使用 Rust 开发的，跨平台的 HTTP 静态文件服务器，CI测试覆盖了 Linux, MacOS 和 Windows 三大平台。
+fht2p 是使用 Rust 开发的，跨平台的 HTTP 静态文件服务器，CI测试覆盖 Linux, MacOS 和 Windows 三大平台。
 
 ## 特点
 - 可靠： 使用 Rust 实现，集成测试，安全可靠
