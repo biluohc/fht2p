@@ -25,11 +25,19 @@ pub fn url_for_path(path: &str) -> String {
 }
 
 pub fn url_path_decode(path: &str) -> Cow<'_, str> {
-    percent_decode(path.as_bytes()).decode_utf8().unwrap()
+    percent_decode(path.as_bytes()).decode_utf8_lossy()
 }
 
 pub fn url_component_encode(input: &str) -> PercentEncode {
     percent_encode(input.as_bytes(), PATH_ENCODE_SET)
+}
+
+#[test]
+fn test_url_path_decode() {
+    assert_eq!(
+        url_path_decode("/imkv/%E5%AD%A4%E7%AB%B9%E7%BF%8A%20-%20%E6%9C%B1%E9%9B%80%E4%B9%8B%E8%AF%9mp4"),
+        "/imkv/孤竹翊 - 朱雀之�%9mp4"
+    );
 }
 
 #[test]
