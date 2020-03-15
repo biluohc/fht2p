@@ -2,10 +2,10 @@ $version = "0.0.0"
 Function build_and_package {
     Foreach ($target in $args) {
         Write-Host "run build for $target start:"
-        $res = (Start-Process cargo -ArgumentList "build --release --target x86_64-pc-windows-msvc" -Wait -PassThru -NoNewWindow).ExitCode -Eq 0
+        $res = (Start-Process cargo -ArgumentList "build --release --target $target" -Wait -PassThru -NoNewWindow).ExitCode -Eq 0
         Write-Host "build $target ok: $res"
         $res -and (
-            Compress-Archive -WhatIf -Path target/$target/release/fht2p.exe -CompressionLevel Optimal -Force -DestinationPath target/fht2p-$version-$target.zip
+            Compress-Archive -Verbose -Path target/$target/release/fht2p.exe -CompressionLevel Optimal -Force -DestinationPath target/fht2p-v$version-$target.zip
         )
     }
 }
