@@ -26,6 +26,7 @@
         },
         "/target/": {
             "path": "./target",
+            "followLinks": true,
             "authorized": true,
             "upload": true
         }

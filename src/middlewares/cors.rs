@@ -39,47 +39,37 @@ impl CorsController {
 impl MiddleWare for CorsController {
     fn before(&self, req: &Request, addr: &SocketAddr, ctx: &mut Ctx) -> Result<(), Response> {
         let host = req.headers().get_str(header::HOST);
-        if let Some(origin) = req.headers().get_str_option(header::ORIGIN) {
-            debug!("addr: {}, host: {}, origin: {}", addr, host, origin);
 
-            if self
-                .allow_origins
-                .as_ref()
-                .map(|reg| reg.is_match(origin))
-                .unwrap_or_default()
-            {
-                // Access-Control-Allow-Origin: * or scheme://$host ?
-                ctx.insert(true);
-            } else {
-                return Err(exception_handler_sync(403, Some("Invalid Cross-Origin Resource Sharing"), req, addr).unwrap());
-            }
-        }
+        let mut f = |headkey, reg: &Option<Regex>, kind| {
+            if let Some(headv) = req.headers().get_str_option(headkey) {
+                debug!("addr: {}, host: {}, {}: {}", addr, host, kind, headv);
 
-        if let Some(referer) = req.headers().get_str_option(header::REFERER) {
-            debug!("addr: {}, host: {}, referer: {}", addr, host, referer);
+                let headv_host = match uri_to_host(headv) {
+                    Ok(h) => h,
+                    Err(e) => {
+                        warn!("{}'s request Header has wrong {}({}): {:?}", addr, kind, headv, e);
+                        return Err(exception_handler_sync(400, Some("Invalid request Header"), req, addr).unwrap());
+                    }
+                };
 
-            let referer_host = match uri_to_host(referer) {
-                Ok(h) => h,
-                Err(e) => {
-                    warn!("{}'s request Header has wrong Referer({}): {:?}", addr, referer, e);
-                    return Err(exception_handler_sync(400, Some("Invalid request Header"), req, addr).unwrap());
+                // igrore the case
+                if headv_host.len() == host.len()
+                    && headv_host.chars().zip(host.chars()).all(|(a, b)| a.eq_ignore_ascii_case(&b))
+                    || reg.as_ref().map(|reg| reg.is_match(headv)).unwrap_or_default()
+                {
+                    // Access-Control-Allow-Origin: * or scheme://$host ?
+                    if kind == "Origin" {
+                        ctx.insert(true);
+                    }
+                } else {
+                    return Err(exception_handler_sync(403, Some(&format!("Invalid {}", kind)), req, addr).unwrap());
                 }
-            };
-
-            // do not allocate memory in most cases and igrore the case
-            if referer_host != host
-                && referer_host.to_lowercase() != host.to_lowercase()
-                && !self
-                    .allow_referers
-                    .as_ref()
-                    .map(|reg| reg.is_match(&referer_host))
-                    .unwrap_or_default()
-            {
-                return Err(exception_handler_sync(403, Some("Invalid Referer"), req, addr).unwrap());
             }
-        }
+            Ok(())
+        };
 
-        Ok(())
+        f(header::ORIGIN, &self.allow_origins, "Origin")?;
+        f(header::REFERER, &self.allow_referers, "Referer")
     }
     fn after(&self, resp: &mut Response, _addr: &SocketAddr, ctx: &mut Ctx) {
         let cors = ctx.get::<ctxs::Cors>().copied().unwrap_or_default();
