@@ -16,7 +16,7 @@
         "cors": { // Regex or null
             // null => 'self'
             "allowReferers": ".*",
-            // null => deny
+            // null => 'self'
             "allowOrigins": null
         }
     },

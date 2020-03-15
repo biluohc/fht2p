@@ -10,7 +10,7 @@
         "cors": { // Regex or null
             // null => allow self
             "allowReferers": ".*",
-            // null => deny all
+            // null => allow self
             "allowOrigins": ".*", // allow all is dangerous
         },
         "auth": {

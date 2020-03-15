@@ -98,7 +98,7 @@ impl Into<Route> for ProxyRoute {
 pub struct CorsConfig {
     // null => 'self'
     pub allow_referers: Option<String>,
-    // none => deny
+    // null => 'self'
     pub allow_origins: Option<String>,
 }
 
