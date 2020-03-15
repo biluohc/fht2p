@@ -39,6 +39,7 @@ fht2p 是使用 Rust 开发的，跨平台的 HTTP 静态文件服务器，CI测
 #### 从源码编译
 ```sh
     cargo install --git https://github.com/biluohc/fht2p fht2p -f
+    # cargo install --git https://github.com/biluohc/fht2p --branch dev fht2p -f
 
     fht2p -h
 ```
