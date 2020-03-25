@@ -36,6 +36,10 @@ walkdir = "2.3.1"
 chrono  = { version = "0.4.10", features = ["serde"] }
 rsass = "0.12"
 
+[features]
+default = [ "proxy-auth-hide" ]
+proxy-auth-hide = []
+
 [dependencies]
 nonblock-logger = { version = "0.1", features = [ "color", "dbg" ] }
 clap = { version = "2.33.0", features = [ "suggestions", "color" ] }

@@ -49,6 +49,16 @@ impl MiddleWare for Authenticator {
                 .unwrap()
         };
 
+        // #[cfg(not(feature = "proxy-auth-hide"))]
+        #[cfg(any(feature = "proxy-auth-hide"))]
+        let f = move |desc: &'static str| {
+            if code == 401 {
+                f(desc)
+            } else {
+                crate::handlers::exception::exception_handler_sync(404, None, req, addr).unwrap()
+            }
+        };
+
         let www = req.headers().get_str(authorization);
 
         let auth = match www_base64_to_auth(www) {

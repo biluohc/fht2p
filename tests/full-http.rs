@@ -21,6 +21,7 @@ use walkdir::WalkDir;
 const USER_PASSWORD: &str = "www:basic";
 const SERVE_POST: &str = "9880";
 
+// cargo run --release -- -p 9880 -u -m -r . .gitignore -vvv
 const ARGS_GET_POST: &[&str] = &[
     "run",
     "--release",
@@ -35,6 +36,8 @@ const ARGS_GET_POST: &[&str] = &[
     ".gitignore",
 ];
 
+// cargo run --release -- -p 9880 -P "" -a www:basic . .gitignore -vvv
+// cargo run --release --no-default-features -- -p 9880 -P "" -a www:basic . .gitignore -vvv
 const ARGS_GET_PROXY_WITH_AUTH: &[&str] = &[
     "run",
     "--release",
@@ -343,7 +346,7 @@ async fn httpt_get_proxy_with_auth() {
             panic!("exec curl failed1");
         }
 
-        // normal: curl --proxy http://www:yos@127.0.0.1:8000 127.0.0.1:8080/
+        // normal: curl --proxy http://www:basic@127.0.0.1:9880 127.0.0.1:8080/
         let es = Command::new("curl")
             .args(&[
                 "-v",
@@ -363,7 +366,7 @@ async fn httpt_get_proxy_with_auth() {
             panic!("exec curl failed1");
         }
 
-        // tunnel: curl --proxy http://www:yos@127.0.0.1:8000 https://tools.ietf.org/favicon.ico
+        // tunnel: curl --proxy http://www:basic@127.0.0.1:9880 https://tools.ietf.org/favicon.ico
         let es = Command::new("curl")
             .args(&[
                 "-v",
