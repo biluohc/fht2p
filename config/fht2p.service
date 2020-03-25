@@ -22,3 +22,4 @@ WantedBy=multi-user.target
 # sudo systemctl status fht2p.service
 # sudo systemctl restart fht2p.service
 # sudo journalctl -u fht2p.service
+# journalctl -u fht2p.service |tail -n 10
