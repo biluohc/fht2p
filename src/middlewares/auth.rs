@@ -4,9 +4,12 @@ use hyper::header;
 use std::{net::SocketAddr, str};
 
 use crate::{
-    base::{ctx::Ctx, middleware::MiddleWare, response, HeaderGetStr, Request, Response},
+    base::{
+        ctx::{ctxs, Ctx},
+        middleware::MiddleWare,
+        response, HeaderGetStr, Request, Response,
+    },
     config::Auth,
-    handlers::method_maybe_proxy,
 };
 
 #[derive(Debug, Clone)]
@@ -29,11 +32,11 @@ impl Authenticator {
 // tips: base64encode(Aladdin:open sesame)=QWxhZGRpbjpvcGVuIHNlc2FtZQ==
 
 impl MiddleWare for Authenticator {
-    fn before(&self, req: &Request, addr: &SocketAddr, _ctx: &mut Ctx) -> Result<(), Response> {
+    fn before(&self, req: &Request, addr: &SocketAddr, ctx: &mut Ctx) -> Result<(), Response> {
         // info!("url: {:?}", req.uri());
         // info!("header: {:?}", req.headers());
 
-        let method_is_proxy = method_maybe_proxy(req).is_some();
+        let method_is_proxy = ctx.get::<ctxs::IsProxy>().is_some();
 
         let (authorization, code, authenticate) = if method_is_proxy {
             (header::PROXY_AUTHORIZATION, 407, header::PROXY_AUTHENTICATE)

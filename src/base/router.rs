@@ -79,6 +79,11 @@ impl Router {
         let mut ctx = Ctx::with_capacity(ctxs::CAPACITY);
         ctx.insert(state);
 
+        let maybe_is_proxy = method_maybe_proxy(&req).is_some();
+        if maybe_is_proxy {
+            ctx.insert(());
+        }
+
         for idx in 0..this.global_middlewares.len() {
             if let Err(mut resp) = (this.global_middlewares[idx]).before(&req, &addr, &mut ctx) {
                 // take global_middlewares return ok
@@ -91,7 +96,7 @@ impl Router {
         }
 
         let reqpath = ctx.get::<ctxs::ReqPath>().unwrap();
-        let matched = if method_maybe_proxy(&req).is_some() {
+        let matched = if maybe_is_proxy {
             this.proxy.as_ref()
         } else {
             this.routes.iter().find(|&(route, _, _)| {

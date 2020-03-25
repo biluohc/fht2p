@@ -38,6 +38,10 @@ impl CorsController {
 // https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Access_control_CORS
 impl MiddleWare for CorsController {
     fn before(&self, req: &Request, addr: &SocketAddr, ctx: &mut Ctx) -> Result<(), Response> {
+        if ctx.get::<ctxs::IsProxy>().is_some() {
+            return Ok(());
+        }
+
         let host = req.headers().get_str(header::HOST);
 
         let mut f = |headkey, reg: &Option<Regex>, kind| {

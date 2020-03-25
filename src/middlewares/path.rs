@@ -15,6 +15,10 @@ pub struct PathNormalizer;
 
 impl MiddleWare for PathNormalizer {
     fn before(&self, req: &Request, _addr: &SocketAddr, ctx: &mut Ctx) -> Result<(), Response> {
+        if ctx.get::<ctxs::IsProxy>().is_some() {
+            return Ok(());
+        }
+
         let reqpath = ctx.get::<ctxs::ReqPath>().unwrap();
         let reqpath_components_raw = reqpath.split('/').filter(|c| !c.is_empty() && c != &".");
 
