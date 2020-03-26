@@ -37,7 +37,7 @@ chrono  = { version = "0.4.10", features = ["serde"] }
 rsass = "0.12"
 
 [features]
-default = [ "proxy-auth-hide" ]
+default = []
 proxy-auth-hide = []
 
 [dependencies]
