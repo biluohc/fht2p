@@ -265,6 +265,11 @@ impl Config {
             cfg.set_single_cert(certs, key)
                 .map_err(|e| format_err!("set single cert failed: {:?}", e))?;
 
+            // Configure ALPN to accept HTTP/2, HTTP/1.1, etc
+            // Have to modify the proxy module because of the request's path from hyper has domain name all when h2 is turned on
+            // values: h2, http/1.1
+            cfg.set_protocols(&[b"http/1.1".to_vec()]);
+
             HSTS_HEADER.set(cert.hsts.as_ref().and_then(|c| c.to_header()));
 
             return Ok(Some(TlsAcceptor::from(Arc::new(cfg))));
