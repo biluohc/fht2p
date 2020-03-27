@@ -18,8 +18,9 @@ use std::net::{Ipv4Addr, SocketAddr};
 
 lazy_static! {
     //  10485760 = 10M
-    pub static ref MAGIC_LIMIT: MutStatic<u64> = MutStatic::new(1024*1024*10);
-    pub static ref SERVER_ADDR: MutStatic<SocketAddr> = MutStatic::new(SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 8000));
+    pub static ref MAGIC_LIMIT: MutStatic<u64> = (1024*1024*10).into();
+    pub static ref HSTS_HEADER: MutStatic<Option<String>> = Default::default();
+    pub static ref SERVER_ADDR: MutStatic<SocketAddr> = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 8000).into();
 }
 
 /// it's unsync, but only modify it before read it concurrent, lazy to use `RwLock`..
@@ -45,6 +46,18 @@ impl<T> MutStatic<T> {
 
 unsafe impl<T> Send for MutStatic<T> {}
 unsafe impl<T> Sync for MutStatic<T> {}
+
+impl<T: Default> Default for MutStatic<T> {
+    fn default() -> Self {
+        Self::new(T::default())
+    }
+}
+
+impl<T> From<T> for MutStatic<T> {
+    fn from(from: T) -> Self {
+        Self::new(from)
+    }
+}
 
 #[test]
 fn consts_test() {

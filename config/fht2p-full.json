@@ -11,7 +11,12 @@
         },
         "cert": {
             "pub": "cert/rsa_public_key.pem",
-            "key": "cert/rsa_private_key.pem"
+            "key": "cert/rsa_private_key.pem",
+            "hsts": {
+                "maxAge": 2592000,
+                "includeSubDomains": true,
+                "preload": true
+            }
         },
         "cors": { // Regex or null
             // null => 'self'

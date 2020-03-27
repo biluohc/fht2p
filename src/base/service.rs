@@ -1,5 +1,5 @@
 use futures::{Future, FutureExt};
-use hyper::header;
+use hyper::header::*;
 use tower_service::Service as TowerService;
 
 use std::net::SocketAddr;
@@ -8,6 +8,7 @@ use std::task::{Context, Poll};
 
 use crate::{
     base::{http, Request, Response, Router},
+    consts::HSTS_HEADER,
     service::GlobalState,
 };
 
@@ -42,7 +43,13 @@ impl TowerService<Request> for Service {
         Router::call(self.peer_addr, req, self.state)
             .map(move |resp| {
                 resp.map(|mut resp| {
-                    resp.headers_mut().insert(header::CONNECTION, keepalive.parse().unwrap());
+                    let headers = resp.headers_mut();
+
+                    headers.insert(CONNECTION, HeaderValue::from_static(keepalive));
+                    if let Some(hsts) = HSTS_HEADER.get() {
+                        headers.insert(STRICT_TRANSPORT_SECURITY, HeaderValue::from_static(hsts.as_str()));
+                    }
+
                     resp
                 })
             })

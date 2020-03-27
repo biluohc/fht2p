@@ -59,6 +59,8 @@ pub struct Cert {
     #[serde(rename = "pub")]
     pub pub_: String,
     pub key: String,
+    #[serde(default)]
+    pub hsts: Option<StrictTransportSecurity>,
 }
 
 impl FromStr for Cert {
@@ -66,7 +68,34 @@ impl FromStr for Cert {
 
     fn from_str(s: &str) -> Result<Self> {
         let (pub_, key) = kv_parser(s).map(|(k, v)| (k.to_owned(), v.to_owned()))?;
-        Ok(Self { pub_, key })
+        Ok(Self { pub_, key, hsts: None })
+    }
+}
+
+#[serde(rename_all = "camelCase")]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+pub struct StrictTransportSecurity {
+    max_age: u32,
+    include_sub_domains: bool,
+    preload: bool,
+}
+
+// HSTS: HTTP Strict Transport Security
+// https://developer.mozilla.org/zh-CN/docs/Security/HTTP_Strict_Transport_Security
+impl StrictTransportSecurity {
+    pub fn to_header(&self) -> Option<String> {
+        if self.max_age > 0 {
+            let mut args = format!("max-age={}", self.max_age);
+            if self.include_sub_domains {
+                args.push_str("; includeSubDomains");
+            }
+            if self.preload {
+                args.push_str("; preload");
+            }
+            Some(args)
+        } else {
+            None
+        }
     }
 }
 
@@ -204,6 +233,7 @@ impl Default for Config {
             routes: map,
             auth: None,
             cert: None,
+            hsts_header: None,
         }
     }
 }
@@ -222,6 +252,7 @@ pub struct Config {
     pub proxy: Option<Route>,
     pub compress_level: u32,
     pub cors: CorsConfig,
+    pub hsts_header: Option<String>,
 }
 
 impl Config {
@@ -233,6 +264,8 @@ impl Config {
 
             cfg.set_single_cert(certs, key)
                 .map_err(|e| format_err!("set single cert failed: {:?}", e))?;
+
+            HSTS_HEADER.set(cert.hsts.as_ref().and_then(|c| c.to_header()));
 
             return Ok(Some(TlsAcceptor::from(Arc::new(cfg))));
         }
