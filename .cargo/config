@@ -1,0 +1,32 @@
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+## i586-pc-windows-msvc: error LNK2019
+# PS C:\Users\*****\fht2p> & 'C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\dumpbin.exe'  -dependents .\target\x86_64-pc-windows-msvc\release\fht2p.exe .\target\i586-pc-windows-msvc\release\fht2p.exe
+
+# Dump of file .\target\x86_64-pc-windows-msvc\release\fht2p.exe
+# File Type: EXECUTABLE IMAGE
+
+#   Image has the following dependencies:
+#     IPHLPAPI.DLL
+#     ADVAPI32.dll
+#     WS2_32.dll
+#     KERNEL32.dll
+#     USERENV.dll
+
+# Dump of file .\target\i586-pc-windows-msvc\release\fht2p.exe
+# File Type: EXECUTABLE IMAGE
+
+#   Image has the following dependencies:
+#     IPHLPAPI.DLL
+#     ADVAPI32.dll
+#     WS2_32.dll
+#     KERNEL32.dll
+#     USERENV.dll
+#     VCRUNTIME140.dll
+#     api-ms-win-crt-math-l1-1-0.dll
+#     api-ms-win-crt-string-l1-1-0.dll
+#     api-ms-win-crt-heap-l1-1-0.dll
+#     api-ms-win-crt-runtime-l1-1-0.dll
+#     api-ms-win-crt-stdio-l1-1-0.dll
+#     api-ms-win-crt-locale-l1-1-0.dll
