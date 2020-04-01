@@ -37,15 +37,15 @@ fht2p is a cross-platform HTTP static file server developed using Rust. The CI t
 
 #### 2. Compile from Source Code
 ```sh
-    cargo install --git https://github.com/biluohc/fht2p fht2p -f
-    # cargo install --git https://github.com/biluohc/fht2p --branch dev fht2p -f
+    cargo install --locked --git https://github.com/biluohc/fht2p fht2p -f
+    # cargo install --locked --git https://github.com/biluohc/fht2p --branch dev fht2p -f
     
     fht2p -h
 ```
 ##### Or
 ```sh
     git clone https://github.com/biluohc/fht2p
-    # cargo  install --path fht2p/ fht2p -f
+    # cargo install --locked --path fht2p/ fht2p -f
 
     cd fht2p
     cargo build --release
