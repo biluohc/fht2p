@@ -1,13 +1,10 @@
 extern crate chrono;
 extern crate rsass;
 
-use chrono::offset::Utc;
-use rsass::{compile_scss_file, OutputStyle};
-
 use std::env;
 use std::fs::File;
 use std::io::{self, Write};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command as Cmd;
 
 const VERSION_FILE_NAME: &str = "fht2p.txt";
@@ -22,7 +19,14 @@ fn main() {
 
 // use sass to compress css file
 fn css(out_dir: &PathBuf) -> io::Result<()> {
-    let css = compile_scss_file(Path::new(CSS_PATH), OutputStyle::Compressed).unwrap();
+    use rsass::{compile_scss_file, output::*};
+
+    let format = Format {
+        style: Style::Compressed,
+        precision: 5,
+    };
+    let css = compile_scss_file(CSS_PATH.as_ref(), format).unwrap();
+
     let out_path = out_dir.join(CSS_FILE_NAME);
     File::create(&out_path).and_then(|mut f| f.write_all(css.as_slice()))
 }
@@ -46,6 +50,8 @@ fn fun() -> String {
 
 // date --help
 fn date_time() -> String {
+    use chrono::offset::Utc;
+
     // Utc::now().format("%Y-%m-%dUTC").to_string()
     Utc::now().format("%Y-%m-%d~%H:%M:%SUTC").to_string()
 }
