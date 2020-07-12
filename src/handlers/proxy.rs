@@ -4,7 +4,11 @@ use http::request::Parts;
 use hyper::{header, upgrade::Upgraded, Body, Method};
 use regex::Regex;
 use reqwest::Client;
-use tokio::{io, net::TcpStream, task, time};
+use tokio::{
+    io,
+    net::{lookup_host, TcpStream},
+    task, time,
+};
 
 use std::{net::SocketAddr, time::Duration};
 
@@ -76,6 +80,24 @@ fn host_addr(uri: &http::Uri) -> Option<&str> {
     uri.authority().map(|auth| auth.as_str())
 }
 
+async fn connect_host(uri: &str) -> io::Result<TcpStream> {
+    let mut sa = None;
+    for a in lookup_host(uri).await? {
+        sa = Some(a);
+        if a.is_ipv4() {
+            break;
+        }
+    }
+    let sa = sa.ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::NotFound,
+            "failed to lookup address information: Name or service not known",
+        )
+    })?;
+
+    TcpStream::connect(sa).await
+}
+
 async fn http_tunnel(upgraded: Upgraded, addr: &SocketAddr, mut proxy_socket: TcpStream, dest_addr: &str) {
     let (mut client_r, mut client_w) = io::split(upgraded);
     let (mut proxy_r, mut proxy_w) = proxy_socket.split();
@@ -110,7 +132,7 @@ async fn http_proxy_tunnel<'a>(
         Some(da) => da,
         None => return response().status(400).body("connect addr exception".into()),
     };
-    let proxy_socket = time::timeout(Duration::from_millis(5000), TcpStream::connect(dest_addr)).await;
+    let proxy_socket = time::timeout(Duration::from_millis(5000), connect_host(dest_addr)).await;
 
     match proxy_socket {
         Ok(Ok(proxy_socket)) => {

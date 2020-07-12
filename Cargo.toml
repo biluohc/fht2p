@@ -54,7 +54,7 @@ anyhow = "1.0.25"
 # bitflags = "1.2"
 
 reqwest = { version = "0.10.3", default-features = false, features = ["rustls-tls", "cookies", "stream", "gzip"] }
-tokio = { version = "0.2.5", features = [ "blocking", "dns", "rt-threaded", "tcp", "time", "sync", "process"] }
+tokio = { version = "0.2.5", features = [ "blocking", "io-util", "dns", "rt-threaded", "tcp", "time", "sync", "process"] }
 tokio-rustls = "0.13"
 futures = "0.3.2"
 num_cpus = "1.12"
