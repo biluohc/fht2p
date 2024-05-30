@@ -47,7 +47,7 @@ serde = { version = "1.0.102", features = ["derive"] }
 chrono = { version = "0.4.10", features = ["serde"] }
 qr2term = "0.2.1"
 json5 = "0.4.1"
-systemstat = "0.1.5"
+systemstat = "0.2.3"
 lazy_static = "1.4.0"
 thiserror = "1.0.9"
 anyhow = "1.0.25"
