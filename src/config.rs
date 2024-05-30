@@ -72,8 +72,8 @@ impl FromStr for Cert {
     }
 }
 
-#[serde(rename_all = "camelCase")]
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StrictTransportSecurity {
     max_age: u32,
     include_sub_domains: bool,
@@ -153,8 +153,8 @@ pub fn load_private_key(path: &str) -> Result<rustls::PrivateKey> {
     Ok(keys.remove(0))
 }
 
-#[serde(rename_all = "camelCase")]
 #[derive(Debug, Default, Deserialize, PartialEq, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Route {
     pub path: String,
     #[serde(default)]

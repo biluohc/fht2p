@@ -352,8 +352,8 @@ impl Into<SocketAddr> for Server {
     }
 }
 
-#[serde(rename_all = "camelCase")]
 #[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Fht2p {
     setting: Setting,
     proxy: Option<ProxyRoute>,
